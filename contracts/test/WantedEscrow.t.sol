@@ -756,13 +756,94 @@ contract WantedEscrowTest is Test {
     }
 
     // approveWinner for address that never submitted → BountyNotFound
-    function test_ApproveWinnerRevertsForNonSubmitter() public {
+    // v3: submissions live off-chain, so approving an address that never called submit() works and pays.
+    function test_ApproveWinnerWorksWithoutOnchainSubmission() public {
         _createBounty();
-        _warpPastDeadlineOnly();
+
+        uint256 before_ = usdc.balanceOf(alice);
+        vm.prank(poster);
+        escrow.approveWinner(1, alice);
+
+        assertEq(usdc.balanceOf(alice) - before_, REWARD, "winner paid instantly");
+        assertEq(uint256(escrow.payoutStatus(1, alice)), uint256(WantedEscrow.PayoutStatus.Paid));
+        assertEq(uint256(escrow.getMyStatus(1, alice)), uint256(WantedEscrow.MyStatus.WinnerPaid));
+        (uint256 paid, uint256 pending, uint256 wins) = escrow.getEarnings(alice);
+        assertEq(paid, REWARD);
+        assertEq(pending, 0);
+        assertEq(wins, 1);
+
+        uint256[] memory hist = escrow.getSubmittedBounties(alice, 0, 10);
+        assertEq(hist.length, 1, "bounty listed in winner history");
+        assertEq(hist[0], 1);
+    }
+
+    function test_ApproveWinnerRevertsForPosterAndZeroAddress() public {
+        _createBounty();
+
+        vm.startPrank(poster);
+        vm.expectRevert(WantedEscrow.InvalidWinner.selector);
+        escrow.approveWinner(1, poster);
+        vm.expectRevert(WantedEscrow.InvalidWinner.selector);
+        escrow.approveWinner(1, address(0));
+        vm.stopPrank();
+    }
+
+    function test_ApproveThenOnchainSubmitDoesNotDuplicateHistory() public {
+        _createBounty();
+        vm.prank(poster);
+        escrow.approveWinner(1, alice);
+
+        _submit(1, alice); // legacy path still works before the deadline
+
+        assertEq(escrow.getSubmittedBounties(alice, 0, 10).length, 1, "no duplicate history entry");
+        assertEq(uint256(escrow.getMyStatus(1, alice)), uint256(WantedEscrow.MyStatus.WinnerPaid));
+    }
+
+    function test_ApproveRespectsMaxWinnersForOffchainWinners() public {
+        _createBounty();
+        address c = makeAddr("carol");
+        address d = makeAddr("dave");
+        vm.startPrank(poster);
+        escrow.approveWinner(1, alice);
+        escrow.approveWinner(1, bob);
+        escrow.approveWinner(1, c);
+        vm.expectRevert(WantedEscrow.BountyFull.selector);
+        escrow.approveWinner(1, d);
+        vm.stopPrank();
+    }
+
+    function test_CancelRevertsAfterCancelWindow() public {
+        _createBounty();
+        vm.warp(block.timestamp + escrow.CANCEL_WINDOW() + 1);
 
         vm.prank(poster);
-        vm.expectRevert(WantedEscrow.BountyNotFound.selector);
+        vm.expectRevert(WantedEscrow.CancelWindowClosed.selector);
+        escrow.cancel(1);
+    }
+
+    function test_CancelWorksInsideCancelWindow() public {
+        _createBounty();
+        vm.warp(block.timestamp + escrow.CANCEL_WINDOW());
+
+        uint256 before_ = usdc.balanceOf(poster);
+        vm.prank(poster);
+        escrow.cancel(1);
+        assertEq(usdc.balanceOf(poster) - before_, TOTAL_ESCROW, "full refund inside window");
+    }
+
+    function test_CancelRevertsAfterAnApproval() public {
+        _createBounty();
+        vm.startPrank(poster);
         escrow.approveWinner(1, alice);
+        vm.expectRevert(WantedEscrow.HasSubmissions.selector);
+        escrow.cancel(1);
+        vm.stopPrank();
+    }
+
+    function test_CreatedAtIsRecorded() public {
+        uint256 t = block.timestamp;
+        _createBounty();
+        assertEq(uint256(escrow.createdAt(1)), t);
     }
 
     // reclaimUnused by non-poster → NotPoster
