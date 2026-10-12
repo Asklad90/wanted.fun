@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useSwitchChain } from 'wagmi'
 import { toast } from 'sonner'
 import { WindowCard } from './WindowCard'
@@ -9,8 +9,11 @@ import { TxStatus } from './TxStatus'
 import { ClockIcon, TrophyIcon, LockIcon, CoinIcon, FolderIcon } from './Icons'
 import { BOUNTY_BOARD_ABI } from '../bounty-abi'
 import { CHAIN_ID, CONTRACT_ADDRESS } from '../bounty-config'
-import { barColor, formatUsdc, formatAddress, timeLeft, bountyStatus, parseOnchainError, encodeText, decodeBytes } from '../lib/utils'
+import { barColor, formatUsdc, formatAddress, timeLeft, bountyStatus, parseOnchainError, decodeBytes } from '../lib/utils'
 import { BountyData } from './BountyCard'
+import { SubmissionForm } from './SubmissionForm'
+import { SubmissionsPanel } from './SubmissionsPanel'
+import { fetchCounts } from '../lib/submissions-api'
 
 // Snapshot current unix seconds — defined outside components to avoid purity lint
 const _getNowSec = (): number => Date.now() / 1000
@@ -28,7 +31,8 @@ interface BountyPageProps {
 export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) {
   const { address, chainId } = useAccount()
   const { switchChain } = useSwitchChain()
-  const [submissionText, setSubmissionText] = useState('')
+  const [subCountRemote, setSubCountRemote] = useState(0)
+  const [refreshKey, setRefreshKey] = useState(0)
   const isWrongChain = chainId !== CHAIN_ID
 
   const { data: bounty, refetch: refetchBounty } = useReadContract({
@@ -36,16 +40,15 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
     args: [bountyId], chainId: CHAIN_ID,
   }) as { data: BountyData | undefined; refetch: () => void }
 
-  const { data: submissions, refetch: refetchSubs } = useReadContract({
-    address: CONTRACT_ADDRESS, abi: BOUNTY_BOARD_ABI, functionName: 'getSubmissions',
-    args: [bountyId, 0n, 50n], chainId: CHAIN_ID,
-  }) as { data: Array<{ id: bigint; submitter: string; bountyId: bigint; content: `0x${string}` }> | undefined; refetch: () => void }
+  const { data: createdAtRaw } = useReadContract({
+    address: CONTRACT_ADDRESS, abi: BOUNTY_BOARD_ABI, functionName: 'createdAt',
+    args: [bountyId], chainId: CHAIN_ID,
+  }) as { data: bigint | undefined }
 
-  const { data: userHasSubmitted, refetch: refetchHasSubmitted } = useReadContract({
-    address: CONTRACT_ADDRESS, abi: BOUNTY_BOARD_ABI, functionName: 'hasSubmitted',
-    args: [bountyId, address ?? '0x0000000000000000000000000000000000000000'],
-    chainId: CHAIN_ID, query: { enabled: !!address },
-  }) as { data: boolean | undefined; refetch: () => void }
+  const { data: cancelWindowRaw } = useReadContract({
+    address: CONTRACT_ADDRESS, abi: BOUNTY_BOARD_ABI, functionName: 'CANCEL_WINDOW',
+    chainId: CHAIN_ID,
+  }) as { data: bigint | undefined }
 
   const { data: userPayoutStatus, refetch: refetchPayoutStatus } = useReadContract({
     address: CONTRACT_ADDRESS, abi: BOUNTY_BOARD_ABI, functionName: 'payoutStatus',
@@ -57,10 +60,6 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
     address: CONTRACT_ADDRESS, abi: BOUNTY_BOARD_ABI, functionName: 'reviewWindow',
     chainId: CHAIN_ID,
   }) as { data: number | undefined }
-
-  // Write: submit
-  const { writeContract: submitWork, data: submitHash, isPending: submitPending, error: submitErr } = useWriteContract()
-  const { isLoading: submitConfirming, isSuccess: submitSuccess } = useWaitForTransactionReceipt({ hash: submitHash })
 
   // Write: claim (pending payout)
   const { writeContract: claimReward, data: claimHash, isPending: claimPending, error: claimErr } = useWriteContract()
@@ -75,18 +74,14 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
   const { isLoading: cancelConfirming, isSuccess: cancelSuccess } = useWaitForTransactionReceipt({ hash: cancelHash })
 
   function refetchAll() {
-    refetchBounty(); refetchSubs(); refetchHasSubmitted(); refetchPayoutStatus(); onDataChange?.()
+    refetchBounty(); refetchPayoutStatus(); setRefreshKey((k) => k + 1); loadCount(); onDataChange?.()
   }
 
-  function handleSubmit() {
-    if (isWrongChain) { switchChain({ chainId: CHAIN_ID }); return }
-    if (!submissionText.trim()) { toast.error('Please write your submission first.'); return }
-    if (new TextEncoder().encode(submissionText).length > 300) { toast.error('Submission is too long (max 300 chars).'); return }
-    submitWork(
-      { address: CONTRACT_ADDRESS, abi: BOUNTY_BOARD_ABI, functionName: 'submit', args: [bountyId, encodeText(submissionText)], chainId: CHAIN_ID },
-      { onSuccess: () => { toast.success('Submission sent!'); refetchAll() }, onError: (err) => toast.error(parseOnchainError(err)) }
-    )
+  function loadCount() {
+    fetchCounts([Number(bountyId)]).then((c) => setSubCountRemote(c[String(Number(bountyId))] ?? 0))
   }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { loadCount() }, [bountyId])
 
   function handleClaim() {
     if (isWrongChain) { switchChain({ chainId: CHAIN_ID }); return }
@@ -125,8 +120,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
   const idNum = Number(bounty.id)
   const titleStr = decodeBytes(bounty.title) || `Bounty #${idNum}`
   const descStr = decodeBytes(bounty.description)
-  const subList = submissions ?? []
-  const subCount = subList.length
+  const subCount = subCountRemote
 
   // Timing — snapshot at mount, good enough for deadline comparisons
   const now = Math.floor(_getNowSec())
@@ -135,6 +129,8 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
   const afterReviewWindow = now > approvalCutoff
   const totalPrize = bounty.rewardPerWinner * bounty.maxWinners
   const paidOut = totalPrize - bounty.escrowRemaining
+  const cancelDeadline = createdAtRaw !== undefined && cancelWindowRaw !== undefined ? Number(createdAtRaw) + Number(cancelWindowRaw) : 0
+  const canCancel = !bounty.cancelled && bounty.winnersApproved === 0n && now <= cancelDeadline
 
   return (
     <div className="flex flex-col gap-5 max-w-2xl mx-auto">
@@ -216,41 +212,15 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
         </WindowCard>
       )}
 
-      {/* Submit form */}
-      {!isPoster && status === 'OPEN' && !userHasSubmitted && address && (userPayoutStatus === undefined || userPayoutStatus === 0) && (
-        <WindowCard title="SUBMIT_WORK.EXE" titleBarColor="#A78BFA">
-          <div className="flex flex-col gap-3">
-            <div className="font-mono-ui text-[11px] text-[#111]/60 border-2 border-[#111] rounded-lg p-2 bg-[#FFE600]/20">
-              Text you post is <strong>permanent and public</strong> onchain. Max 300 chars.
-            </div>
-            <textarea value={submissionText} onChange={e => setSubmissionText(e.target.value)}
-              placeholder="Paste a link or describe your work..." rows={5}
-              className="border-[3px] border-[#111] rounded-lg px-3 py-2.5 text-[15px] font-body bg-white focus:outline-none focus:bg-[#FFFDF0] w-full resize-none"
-            />
-            <div className={`font-mono-ui text-[10px] text-right ${new TextEncoder().encode(submissionText).length > 300 ? 'text-[#FF6B57]' : 'text-[#111]/40'}`}>
-              {new TextEncoder().encode(submissionText).length}/300
-            </div>
-            <TxStatus hash={submitHash} isPending={submitPending} isConfirming={submitConfirming} isSuccess={submitSuccess} isError={!!submitErr} error={submitErr ? parseOnchainError(submitErr) : undefined} successMessage="Submission sent!" />
-            {isWrongChain ? (
-              <PillButton variant="pink" onClick={() => switchChain({ chainId: CHAIN_ID })} showArrow={false}>Switch Network</PillButton>
-            ) : (
-              <PillButton onClick={handleSubmit} loading={submitPending || submitConfirming} disabled={submitSuccess}>Submit work →</PillButton>
-            )}
-          </div>
-        </WindowCard>
+      {/* Free submit form (no gas, wallet signature only) */}
+      {!isPoster && status === 'OPEN' && address && (userPayoutStatus === undefined || userPayoutStatus === 0) && (
+        <SubmissionForm bountyId={bountyId} onSubmitted={() => { loadCount(); setRefreshKey((k) => k + 1) }} />
       )}
 
-      {/* Not connected — prompt */}
+      {/* Not connected  prompt */}
       {!address && status === 'OPEN' && (
         <WindowCard title="SUBMIT_WORK.EXE" titleBarColor="#A78BFA">
-          <div className="font-mono-bold text-[13px] uppercase tracking-wider text-[#111]/60 text-center py-4">Connect your wallet to submit work</div>
-        </WindowCard>
-      )}
-
-      {/* Already submitted notice */}
-      {!isPoster && userHasSubmitted && (userPayoutStatus === 0 || userPayoutStatus === undefined) && (
-        <WindowCard title="SUBMITTED.EXE" titleBarColor="#7FF3F0">
-          <div className="font-mono-bold text-[12px] uppercase tracking-wider text-[#111]/70">You submitted to this bounty. Waiting for poster review.</div>
+          <div className="font-mono-bold text-[13px] uppercase tracking-wider text-[#111]/60 text-center py-4">Connect your wallet to submit work (it&apos;s free)</div>
         </WindowCard>
       )}
 
@@ -269,10 +239,10 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
           )}
 
           {/* Cancel — only with 0 submissions */}
-          {subCount === 0 && !bounty.cancelled && (
+          {canCancel && (
             <WindowCard title="CANCEL_BOUNTY.EXE" titleBarColor="#CCCCCC">
               <div className="flex flex-col gap-3">
-                <div className="font-body text-[14px] text-[#111]">No submissions yet. You can cancel and get your full escrow back.</div>
+                <div className="font-body text-[14px] text-[#111]">You can cancel and get your full escrow back during the first 10 minutes after posting. After that the prize stays locked so workers can trust it.</div>
                 <TxStatus hash={cancelHash} isPending={cancelPending} isConfirming={cancelConfirming} isSuccess={cancelSuccess} isError={!!cancelErr} error={cancelErr ? parseOnchainError(cancelErr) : undefined} successMessage="Bounty cancelled, escrow refunded." />
                 {!cancelSuccess && <PillButton onClick={handleCancel} loading={cancelPending || cancelConfirming} variant="ink" showArrow={false}>Cancel bounty</PillButton>}
               </div>
@@ -281,107 +251,10 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
         </>
       )}
 
-      {/* Submissions list */}
-      <SubmissionList submissions={subList} bountyId={bountyId} isPoster={isPoster} rewardPerWinner={bounty.rewardPerWinner} afterReviewWindow={afterReviewWindow} approvalCutoff={approvalCutoff} onApproved={refetchAll} />
-    </div>
-  )
-}
-
-interface SubmissionListProps {
-  submissions: Array<{ id: bigint; submitter: string; bountyId: bigint; content: `0x${string}` }>
-  bountyId: bigint
-  isPoster: boolean
-  rewardPerWinner: bigint
-  afterReviewWindow: boolean
-  approvalCutoff: number
-  onApproved: () => void
-}
-
-function SubmissionList({ submissions, bountyId, isPoster, rewardPerWinner, afterReviewWindow, approvalCutoff: _approvalCutoff, onApproved }: SubmissionListProps) {
-  if (submissions.length === 0) {
-    return (
-      <WindowCard title="SUBMISSIONS.EXE" titleBarColor="#7FF3F0">
-        <div className="checkerboard rounded-lg py-10 flex flex-col items-center gap-3">
-          <FolderIcon size={36} />
-          <div className="font-mono-bold text-[12px] uppercase tracking-widest text-[#111]/50">No submissions yet</div>
-        </div>
-      </WindowCard>
-    )
-  }
-
-  return (
-    <WindowCard title={`SUBMISSIONS.EXE (${submissions.length})`} titleBarColor="#7FF3F0">
-      <div className="flex flex-col gap-3">
-        {submissions.map((sub) => (
-          <SingleSubmission key={sub.id.toString()} sub={sub} bountyId={bountyId} isPoster={isPoster} rewardPerWinner={rewardPerWinner} canApprove={!afterReviewWindow} onApproved={onApproved} />
-        ))}
-      </div>
-    </WindowCard>
-  )
-}
-
-interface SingleSubmissionProps {
-  sub: { id: bigint; submitter: string; content: `0x${string}` }
-  bountyId: bigint
-  isPoster: boolean
-  rewardPerWinner: bigint
-  canApprove: boolean
-  onApproved: () => void
-}
-
-function SingleSubmission({ sub, bountyId, isPoster, rewardPerWinner, canApprove, onApproved }: SingleSubmissionProps) {
-  const { chainId } = useAccount()
-  const { switchChain } = useSwitchChain()
-  const isWrongChain = chainId !== CHAIN_ID
-
-  const { data: winnerStatus } = useReadContract({
-    address: CONTRACT_ADDRESS, abi: BOUNTY_BOARD_ABI, functionName: 'payoutStatus',
-    args: [bountyId, sub.submitter as `0x${string}`], chainId: CHAIN_ID,
-  }) as { data: number | undefined }
-
-  const { writeContract: approve, data: approveHash, isPending: approvePending, error: approveErr } = useWriteContract()
-  const { isLoading: approveConfirming, isSuccess: approveSuccess } = useWaitForTransactionReceipt({ hash: approveHash })
-
-  function handleApprove() {
-    if (isWrongChain) { switchChain({ chainId: CHAIN_ID }); return }
-    approve(
-      { address: CONTRACT_ADDRESS, abi: BOUNTY_BOARD_ABI, functionName: 'approveWinner', args: [bountyId, sub.submitter as unknown as `0x${string}`], chainId: CHAIN_ID },
-      {
-        onSuccess: () => { toast.success('Winner approved & paid!'); onApproved() },
-        onError: (err) => toast.error(parseOnchainError(err)),
-      }
-    )
-  }
-
-  const isWinner = winnerStatus !== undefined && winnerStatus > 0
-  const isPending = winnerStatus === PAYOUT_PENDING
-  const isPaid = winnerStatus === PAYOUT_PAID
-  const contentStr = decodeBytes(sub.content)
-
-  return (
-    <div className={`border-[3px] border-[#111] rounded-lg p-3 ${isWinner ? 'bg-[#C6F23A]/20' : 'bg-white'}`}>
-      <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
-        <span className="font-mono-bold text-[10px] uppercase tracking-wider text-[#111]">
-          SUB #{String(Number(sub.id)).padStart(2, '0')} — {formatAddress(sub.submitter)}
-        </span>
-        {isPaid && (
-          <span className="font-mono-bold text-[10px] uppercase bg-[#C6F23A] border-2 border-[#111] px-2 py-0.5 rounded-full">PAID {formatUsdc(rewardPerWinner)} USDC</span>
-        )}
-        {isPending && (
-          <span className="font-mono-bold text-[10px] uppercase bg-[#FFE600] border-2 border-[#111] px-2 py-0.5 rounded-full">PAYOUT PENDING</span>
-        )}
-        {!isWinner && isPoster && canApprove && (
-          <PillButton size="sm" variant="lime" onClick={handleApprove} loading={approvePending || approveConfirming} disabled={approveSuccess} showArrow={false}>
-            Approve &amp; pay →
-          </PillButton>
-        )}
-      </div>
-      <p className="font-body text-[13px] text-[#111]/80 whitespace-pre-wrap leading-relaxed">{contentStr}</p>
-      {(approvePending || approveConfirming || approveSuccess || approveErr) && (
-        <div className="mt-2">
-          <TxStatus hash={approveHash} isPending={approvePending} isConfirming={approveConfirming} isSuccess={approveSuccess} isError={!!approveErr} error={approveErr ? parseOnchainError(approveErr) : undefined} successMessage="Winner approved & paid!" />
-        </div>
-      )}
+      {/* Submissions: poster opens everything, workers see their own */}
+      <SubmissionsPanel bountyId={bountyId} isPoster={isPoster} rewardPerWinner={bounty.rewardPerWinner}
+        canApprove={!afterReviewWindow && bounty.winnersApproved < bounty.maxWinners} count={subCount}
+        refreshKey={refreshKey} onApproved={refetchAll} />
     </div>
   )
 }

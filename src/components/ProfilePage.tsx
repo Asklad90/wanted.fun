@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useWaitForTransactionReceipt as useWaitForWrite } from 'wagmi'
-import { useSwitchChain } from 'wagmi'
+import { useSwitchChain, useSignMessage } from 'wagmi'
 import { isAddress, parseUnits } from 'viem'
 import { BOUNTY_BOARD_ABI } from '../bounty-abi'
 import { USDC_ADDRESS, USDC_DECIMALS, CONTRACT_ADDRESS, CHAIN_ID, getTxUrl, getAddressUrl } from '../bounty-config'
@@ -10,6 +10,8 @@ import { StatusTag } from './StatusTag'
 import { PixelAvatar } from './PixelAvatar'
 import { QRCode } from './QRCode'
 import { TxStatus } from './TxStatus'
+import { PillButton } from './PillButton'
+import { hasCachedAuth, mySubmissions } from '../lib/submissions-api'
 
 // ─── MyStatus enum (mirrors Solidity) ────────────────────────────────────────
 const MY_STATUS_NONE = 0
@@ -177,12 +179,16 @@ function ReceiveModal({ address, onClose }: { address: string; onClose: () => vo
 const _rowNowSec = (): number => Date.now() / 1000
 
 // ─── Bounty row in profile tabs ───────────────────────────────────────────────
-function BountyRow({ bountyId, profileAddr, onSelect, tabMode }: {
+function BountyRow({ bountyId, profileAddr, onSelect, tabMode, remote }: {
   bountyId: bigint
   profileAddr: `0x${string}`
   onSelect: (id: bigint) => void
   tabMode: 'participating' | 'past' | 'posted'
+  remote?: boolean
 }) {
+  const { data: reviewWindowRaw } = useReadContract({
+    address: CONTRACT_ADDRESS, abi: BOUNTY_BOARD_ABI, functionName: 'reviewWindow', chainId: CHAIN_ID,
+  }) as { data: number | undefined }
   const { data: bounty } = useReadContract({
     address: CONTRACT_ADDRESS, abi: BOUNTY_BOARD_ABI, functionName: 'getBounty',
     args: [bountyId], chainId: CHAIN_ID,
@@ -205,7 +211,12 @@ function BountyRow({ bountyId, profileAddr, onSelect, tabMode }: {
 
   const titleStr = decodeBytes(bounty.title)
   const status = bountyStatus(bounty)
-  const myStatus = myStatusRaw ?? MY_STATUS_NONE
+  // Free (off-chain) submissions are unknown to the contract until a win, so derive their status here.
+  let myStatus = myStatusRaw ?? MY_STATUS_NONE
+  if (remote && myStatus === MY_STATUS_NONE) {
+    const cutoff = Number(bounty.deadline) + (reviewWindowRaw ?? 0)
+    myStatus = Math.floor(_rowNowSec()) > cutoff ? MY_STATUS_NOT_SELECTED : MY_STATUS_SUBMITTED
+  }
   const myStatusInfo = MY_STATUS_LABELS[myStatus] ?? MY_STATUS_LABELS[MY_STATUS_NONE]
 
   return (
@@ -282,7 +293,30 @@ export function ProfilePage({ address, onBack, onSelectBounty }: ProfilePageProp
 
   const handleSendClose = useCallback(() => { setShowSend(false); refetchBalance() }, [refetchBalance])
 
-  const submittedList: readonly bigint[] = submittedIds ?? []
+  // Free submissions live off-chain and are private: load them with a free signature (own profile only).
+  const { signMessageAsync } = useSignMessage()
+  const [remoteIds, setRemoteIds] = useState<bigint[] | null>(null)
+  const [remoteLoading, setRemoteLoading] = useState(false)
+  const [remoteError, setRemoteError] = useState('')
+  const loadRemote = useCallback(async () => {
+    if (!connectedAddr) return
+    setRemoteLoading(true); setRemoteError('')
+    try {
+      const r = await mySubmissions(connectedAddr, (m) => signMessageAsync({ message: m }))
+      setRemoteIds(r.submissions.map((x) => BigInt(x.bountyId)))
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Could not load submissions.'
+      setRemoteError(/rejected|denied/i.test(msg) ? 'Signature cancelled.' : msg)
+    } finally { setRemoteLoading(false) }
+  }, [connectedAddr, signMessageAsync])
+  useEffect(() => {
+    if (isOwn && connectedAddr && hasCachedAuth('mine', connectedAddr)) void loadRemote()
+  }, [isOwn, connectedAddr, loadRemote])
+
+  const remoteSet = new Set((isOwn ? remoteIds ?? [] : []).map((x) => x.toString()))
+  const mergedMap = new Map<string, bigint>()
+  for (const id of [...(submittedIds ?? []), ...(isOwn ? remoteIds ?? [] : [])]) mergedMap.set(id.toString(), id)
+  const submittedList: readonly bigint[] = [...mergedMap.values()].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
   const postedList: readonly bigint[] = postedIds ?? []
 
   // Both tabs get the same submitted list; BountyRow filters itself by deadline/status
@@ -368,12 +402,19 @@ export function ProfilePage({ address, onBack, onSelectBounty }: ProfilePageProp
             >{t.label}</button>
           ))}
         </div>
-        <div className="border-[3px] border-t-0 border-[#111] rounded-b-lg rounded-tr-lg p-4 bg-[#FFFDF0]">
+        <div className="border-[3px] border-t-0 border-[#111] rounded-b-lg rounded-tr-lg p-4 bg-[#FFFDF0] flex flex-col gap-3">
+          {isOwn && remoteIds === null && tab !== 'posted' && (
+            <div className="flex flex-col gap-2 items-start border-[3px] border-[#111] rounded-lg p-3 bg-[#7FF3F0]/30">
+              <div className="font-body text-[13px] text-[#111]/80">Your free submissions are private. Sign a free message (no gas) to load them here.</div>
+              {remoteError && <div className="font-mono-bold text-[12px] text-[#FF3E9A]">{remoteError}</div>}
+              <PillButton size="sm" variant="cyan" onClick={loadRemote} loading={remoteLoading}>Load my submissions </PillButton>
+            </div>
+          )}
           {tab === 'participating' && (
-            <BountyList ids={participatingIds as bigint[]} profileAddr={address} onSelect={onSelectBounty} emptyMsg="No active submissions yet." tabMode="participating" />
+            <BountyList ids={participatingIds as bigint[]} profileAddr={address} onSelect={onSelectBounty} emptyMsg="No active submissions yet." tabMode="participating" remoteSet={remoteSet} />
           )}
           {tab === 'past' && (
-            <BountyList ids={pastIds as bigint[]} profileAddr={address} onSelect={onSelectBounty} emptyMsg="No past bounties yet." tabMode="past" />
+            <BountyList ids={pastIds as bigint[]} profileAddr={address} onSelect={onSelectBounty} emptyMsg="No past bounties yet." tabMode="past" remoteSet={remoteSet} />
           )}
           {tab === 'posted' && (
             <BountyList ids={postedList as bigint[]} profileAddr={address} onSelect={onSelectBounty} emptyMsg="No bounties posted yet." tabMode="posted" />
@@ -388,7 +429,8 @@ export function ProfilePage({ address, onBack, onSelectBounty }: ProfilePageProp
 }
 
 // ─── Bounty list ──────────────────────────────────────────────────────────────
-function BountyList({ ids, profileAddr, onSelect, emptyMsg, tabMode }: {
+function BountyList({ ids, profileAddr, onSelect, emptyMsg, tabMode, remoteSet }: {
+  remoteSet?: Set<string>
   ids: bigint[]
   profileAddr: `0x${string}`
   onSelect: (id: bigint) => void
@@ -409,7 +451,7 @@ function BountyList({ ids, profileAddr, onSelect, emptyMsg, tabMode }: {
   return (
     <div className="flex flex-col gap-2">
       {ids.map(id => (
-        <BountyRow key={id.toString()} bountyId={id} profileAddr={profileAddr} onSelect={onSelect} tabMode={tabMode} />
+        <BountyRow key={id.toString()} bountyId={id} profileAddr={profileAddr} onSelect={onSelect} tabMode={tabMode} remote={remoteSet?.has(id.toString())} />
       ))}
     </div>
   )

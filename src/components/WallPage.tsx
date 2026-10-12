@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { useReadContract } from 'wagmi'
 import { BountyCard, BountyData } from './BountyCard'
 import { WindowCard } from './WindowCard'
@@ -6,6 +7,7 @@ import { TrophyIcon } from './Icons'
 import { BOUNTY_BOARD_ABI } from '../bounty-abi'
 import { CHAIN_ID, CONTRACT_ADDRESS, CONTRACT_DEPLOYED } from '../bounty-config'
 import { formatUsdc } from '../lib/utils'
+import { fetchCounts } from '../lib/submissions-api'
 
 interface WallPageProps {
   onSelectBounty: (id: bigint) => void
@@ -13,7 +15,7 @@ interface WallPageProps {
   refreshKey: number
 }
 
-function useBountyData(id: bigint, enabled: boolean) {
+function useBountyData(id: bigint, enabled: boolean, submissionCount?: number) {
   const { data: bounty } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: BOUNTY_BOARD_ABI,
@@ -22,30 +24,29 @@ function useBountyData(id: bigint, enabled: boolean) {
     chainId: CHAIN_ID,
     query: { enabled },
   })
-  const { data: subs } = useReadContract({
-    address: CONTRACT_ADDRESS,
-    abi: BOUNTY_BOARD_ABI,
-    functionName: 'getSubmissions',
-    args: [id, 0n, 100n],
-    chainId: CHAIN_ID,
-    query: { enabled },
-  })
   return bounty
-    ? ({ ...(bounty as BountyData), submissionCount: BigInt(Array.isArray(subs) ? subs.length : 0) } as BountyData)
+    ? ({ ...(bounty as BountyData), submissionCount: submissionCount !== undefined ? BigInt(submissionCount) : undefined } as BountyData)
     : null
 }
 
-function BountyItem({ bountyId, onSelect }: { bountyId: bigint; onSelect: (id: bigint) => void }) {
-  const bounty = useBountyData(bountyId, true)
+function BountyItem({ bountyId, count, onSelect }: { bountyId: bigint; count?: number; onSelect: (id: bigint) => void }) {
+  const bounty = useBountyData(bountyId, true, count)
   if (!bounty) return <div className="border-[3px] border-[#111] rounded-lg bg-[#FFFDF0] animate-pulse h-60" />
   return <BountyCard bounty={bounty} onClick={() => onSelect(bountyId)} />
 }
 
 function BountyGrid({ total, onSelectBounty }: { total: number; onSelectBounty: (id: bigint) => void }) {
   const ids = Array.from({ length: Math.min(total, 24) }, (_, i) => BigInt(total - i))
+  const [counts, setCounts] = useState<Record<string, number>>({})
+  useEffect(() => {
+    let live = true
+    fetchCounts(ids.map(Number)).then((c) => { if (live) setCounts(c) })
+    return () => { live = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [total])
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      {ids.map(id => <BountyItem key={id.toString()} bountyId={id} onSelect={onSelectBounty} />)}
+      {ids.map(id => <BountyItem key={id.toString()} bountyId={id} count={counts[id.toString()] ?? 0} onSelect={onSelectBounty} />)}
     </div>
   )
 }

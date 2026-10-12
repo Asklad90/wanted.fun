@@ -66,6 +66,8 @@ contract WantedEscrow is ReentrancyGuard {
     error ReviewWindowActive();
     error AlreadyReclaimed();
     error NothingToReclaim();
+    error InvalidWinner();
+    error CancelWindowClosed();
 
     event BountyCreated(
         uint256 indexed id,
@@ -91,6 +93,9 @@ contract WantedEscrow is ReentrancyGuard {
     event EscrowReclaimed(uint256 indexed bountyId, address indexed poster, uint256 amount);
     event BountyCancelled(uint256 indexed bountyId, address indexed poster, uint256 refundAmount);
 
+    /// Posters may only cancel (full refund) shortly after creating a bounty, so they cannot pull the prize once workers have started.
+    uint256 public constant CANCEL_WINDOW = 10 minutes;
+
     address public immutable usdc;
     uint32 public immutable reviewWindow;
 
@@ -110,6 +115,8 @@ contract WantedEscrow is ReentrancyGuard {
     mapping(uint256 => mapping(address => PayoutStatus)) private _payoutStatus;
 
     mapping(uint256 => uint256) private _pendingCount;
+    mapping(uint256 => uint64) private _createdAt;
+    mapping(uint256 => mapping(address => bool)) private _listedForUser;
 
     mapping(address => uint256[]) private _posterBounties;
     mapping(address => uint256[]) private _submitterBounties;
@@ -166,6 +173,7 @@ contract WantedEscrow is ReentrancyGuard {
             cancelled: false
         });
 
+        _createdAt[bountyId] = uint64(block.timestamp);
         _posterBounties[msg.sender].push(bountyId);
         _totalEscrowed += total;
 
@@ -190,7 +198,10 @@ contract WantedEscrow is ReentrancyGuard {
 
         _hasSubmitted[bountyId][msg.sender] = true;
         _submissionCountByBounty[bountyId] += 1;
-        _submitterBounties[msg.sender].push(bountyId);
+        if (!_listedForUser[bountyId][msg.sender]) {
+            _listedForUser[bountyId][msg.sender] = true;
+            _submitterBounties[msg.sender].push(bountyId);
+        }
 
         emit WorkSubmitted(bountyId, submissionId, msg.sender, content);
     }
@@ -200,7 +211,8 @@ contract WantedEscrow is ReentrancyGuard {
 
         if (msg.sender != bounty.poster) revert NotPoster();
         if (block.timestamp > _approvalCutoff(bounty.deadline)) revert ApprovalWindowClosed();
-        if (!_hasSubmitted[bountyId][submitter]) revert BountyNotFound();
+        // Submissions now live off-chain (free for workers), so the poster may approve any address.
+        if (submitter == address(0) || submitter == bounty.poster) revert InvalidWinner();
         if (_isWinner[bountyId][submitter]) revert AlreadyWinner();
         if (bounty.winnersApproved >= bounty.maxWinners) revert BountyFull();
 
@@ -210,6 +222,11 @@ contract WantedEscrow is ReentrancyGuard {
         bounty.winnersApproved += 1;
         bounty.escrowRemaining -= amount;
         _payoutStatus[bountyId][submitter] = PayoutStatus.Pending;
+
+        if (!_listedForUser[bountyId][submitter]) {
+            _listedForUser[bountyId][submitter] = true;
+            _submitterBounties[submitter].push(bountyId);
+        }
 
         (bool ok, bytes memory data) = usdc.call(abi.encodeWithSelector(IERC20.transfer.selector, submitter, amount));
         bool transferOk;
@@ -281,8 +298,10 @@ contract WantedEscrow is ReentrancyGuard {
         Bounty storage bounty = _bounty(bountyId);
 
         if (msg.sender != bounty.poster) revert NotPoster();
-        if (_submissionCountByBounty[bountyId] != 0) revert HasSubmissions();
         if (bounty.cancelled) revert BountyAlreadyCancelled();
+        if (block.timestamp > uint256(_createdAt[bountyId]) + CANCEL_WINDOW) revert CancelWindowClosed();
+        if (_submissionCountByBounty[bountyId] != 0) revert HasSubmissions();
+        if (bounty.winnersApproved != 0) revert HasSubmissions();
 
         uint256 refundAmount = bounty.escrowRemaining;
 
@@ -297,6 +316,11 @@ contract WantedEscrow is ReentrancyGuard {
 
     function getBounty(uint256 id) external view returns (Bounty memory) {
         return _bounty(id);
+    }
+
+    function createdAt(uint256 bountyId) external view returns (uint64) {
+        _requireBountyExists(bountyId);
+        return _createdAt[bountyId];
     }
 
     function getBountyCount() external view returns (uint256) {
@@ -357,18 +381,16 @@ contract WantedEscrow is ReentrancyGuard {
     }
 
     function getMyStatus(uint256 bountyId, address addr) external view returns (MyStatus) {
-        if (!_hasSubmitted[bountyId][addr]) return MyStatus.None;
-        if (!_isWinner[bountyId][addr]) {
-            Bounty storage bounty = _bounties[bountyId];
-            if (bounty.id != 0 && block.timestamp > _approvalCutoff(bounty.deadline)) {
-                return MyStatus.NotSelected;
-            }
-            return MyStatus.Submitted;
+        if (_isWinner[bountyId][addr]) {
+            return _payoutStatus[bountyId][addr] == PayoutStatus.Pending ? MyStatus.WinnerPending : MyStatus.WinnerPaid;
         }
+        if (!_hasSubmitted[bountyId][addr]) return MyStatus.None;
 
-        PayoutStatus ps = _payoutStatus[bountyId][addr];
-        if (ps == PayoutStatus.Pending) return MyStatus.WinnerPending;
-        return MyStatus.WinnerPaid;
+        Bounty storage bounty = _bounties[bountyId];
+        if (bounty.id != 0 && block.timestamp > _approvalCutoff(bounty.deadline)) {
+            return MyStatus.NotSelected;
+        }
+        return MyStatus.Submitted;
     }
 
     function hasSubmitted(uint256 bountyId, address user) external view returns (bool) {
