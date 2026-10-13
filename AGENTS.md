@@ -1,12 +1,17 @@
 # Wanted.fun
 
-## WantedEscrow v2 (with profile) — Arc Testnet (current)
+## WantedEscrow v3 (7-day reviewWindow) — Arc Testnet (current)
+- Address: `0xaa248ec80896dae9b6e310401741798a77db56f9`
+- Explorer: https://explorer.testnet.arc.io/address/0xaa248ec80896dae9b6e310401741798a77db56f9
+- Constructor: `usdc=0x3600000000000000000000000000000000000000`, `reviewWindow=604800` (7 days — mainnet-ready)
+- Deployed: 2026-10-13
+- 57/57 Foundry tests pass (unit + fuzz + invariant)
+
+## WantedEscrow v2 (with profile) — Arc Testnet (deprecated)
 - Address: `0x804f81d88e42e8a63ee419b3faf98d055d2255b8`
 - Explorer: https://explorer.testnet.arc.io/address/0x804f81d88e42e8a63ee419b3faf98d055d2255b8
 - Constructor: `usdc=0x3600000000000000000000000000000000000000`, `reviewWindow=300` (5 min for testing)
 - Deployed: 2026-10-12
-- 57/57 Foundry tests pass (unit + fuzz + invariant)
-- Adds: getPostedBounties, getSubmittedBounties, getEarnings, getMyStatus, per-address bookkeeping
 
 ## WantedEscrow v1 — Arc Testnet (deprecated)
 - Address: `0xadfd672aade3bd34907154b07f995f0654169b6d`
