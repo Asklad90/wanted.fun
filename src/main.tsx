@@ -70,14 +70,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <ConnectKitProvider
-          options={{
-            // Show WalletConnect QR + deep-link for mobile wallets (MetaMask, etc.)
-            walletConnectCTA: 'both',
-            // Embedded wallet list — MetaMask first
-            initialChainId: 0,
-          }}
-        >
+        <ConnectKitProvider>
           <App />
           <StudioWatermark />
           <Toaster position="top-center" />
