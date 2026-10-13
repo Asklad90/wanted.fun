@@ -35,7 +35,10 @@ export async function fetchSubmissions(
   if (viewer) params.set('viewer', viewer.toLowerCase())
   if (poster) params.set('poster', poster.toLowerCase())
   const res = await fetch(`/api/bounties/${bountyId}/submissions?${params}`)
-  if (!res.ok) throw new Error('Failed to fetch submissions')
+  if (!res.ok) {
+    const body = await res.text()
+    throw new Error(`Failed to fetch submissions: ${res.status} ${body}`)
+  }
   return res.json() as Promise<SubmissionsResponse>
 }
 

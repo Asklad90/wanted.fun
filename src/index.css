@@ -18,7 +18,7 @@ body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background-image: radial-gradient(#11111118 1.5px, transparent 1.5px);
+  background-image: radial-gradient(#11111138 2.5px, transparent 2.5px);
   background-size: 28px 28px;
   pointer-events: none;
   z-index: 0;
