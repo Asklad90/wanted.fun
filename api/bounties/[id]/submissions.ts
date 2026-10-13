@@ -1,8 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { pool, ensureSchema } from '../../_db'
+import { pool, ensureSchema } from '../../_db.js'
 
 const MAX_TEXT = 1000
-const MAX_BYTES = 5 * 1024 * 1024 // 5 MB for base64 uploads
+// Vercel rejects request bodies over 4.5 MB, so cap the base64 data URL below that.
+const MAX_BYTES = 4_300_000
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
@@ -62,7 +63,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!isDataUrl && content.length > MAX_TEXT)
         return res.status(400).json({ error: 'Content too long (max 1000 chars)' })
       if (isDataUrl && content.length > MAX_BYTES)
-        return res.status(400).json({ error: 'File too large (max 5 MB)' })
+        return res.status(400).json({ error: 'File too large (max 3 MB)' })
 
       // Ensure bounty row exists
       await pool.sql`
