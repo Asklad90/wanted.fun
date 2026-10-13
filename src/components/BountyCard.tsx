@@ -51,7 +51,7 @@ export function BountyCard({ bounty, onClick }: BountyCardProps) {
         {/* Top row: status + time */}
         <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
           <StatusTag status={status} />
-          <div className="flex items-center gap-1 text-[#111]/50">
+          <div className="flex items-center gap-1 text-[#111]/70">
             <ClockIcon size={12} />
             <span className="font-mono-bold text-[10px] uppercase tracking-wider">{timeLeft(bounty.deadline)}</span>
           </div>
@@ -67,7 +67,7 @@ export function BountyCard({ bounty, onClick }: BountyCardProps) {
           <span className="font-heading text-[36px] font-extrabold tabular-nums text-[#111] leading-none" style={{ letterSpacing: '-0.02em' }}>
             {formatUsdc(bounty.rewardPerWinner)}
           </span>
-          <span className="font-mono-bold text-[11px] text-[#111]/50 uppercase">USDC / winner</span>
+          <span className="font-mono-bold text-[11px] text-[#111]/60 uppercase font-bold">USDC / winner</span>
         </div>
 
         {/* Prize locked pill */}
@@ -87,7 +87,7 @@ export function BountyCard({ bounty, onClick }: BountyCardProps) {
         />
 
         {/* Footer: submissions */}
-        <div className="flex items-center gap-1.5 mt-2 text-[#111]/40">
+        <div className="flex items-center gap-1.5 mt-2 text-[#111]/60">
           <FolderIcon size={13} />
           <span className="font-mono-bold text-[10px] uppercase tracking-wider">{subCount} submission{subCount !== 1 ? 's' : ''}</span>
         </div>

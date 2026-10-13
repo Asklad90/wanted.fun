@@ -37,5 +37,11 @@ export default defineConfig({
   server: {
     allowedHosts: true,
     cors: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+    },
   },
 })

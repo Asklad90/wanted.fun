@@ -1,25 +1,16 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useAccount } from 'wagmi'
 import { ConnectButton } from './components/ConnectButton'
 import { WallPage } from './components/WallPage'
 import { BountyPage } from './components/BountyPage'
 import { CreateBountyForm } from './components/CreateBountyForm'
-import { MyBounties, MySubmissions } from './components/MyBounties'
 import { ProfilePage } from './components/ProfilePage'
 import { CHAIN_NAME } from './bounty-config'
 
-type Tab = 'wall' | 'my-bounties' | 'my-submissions'
 type View = 'wall' | 'bounty' | 'create' | 'profile'
-
-const TAB_LABELS: { id: Tab; label: string; color: string }[] = [
-  { id: 'wall',           label: 'BOUNTY WALL',    color: '#FFE600' },
-  { id: 'my-bounties',   label: 'MY BOUNTIES',    color: '#FF3E9A' },
-  { id: 'my-submissions', label: 'MY SUBMISSIONS', color: '#8B5CF6' },
-]
 
 export default function App() {
   const { address: connectedAddr } = useAccount()
-  const [tab, setTab] = useState<Tab>('wall')
   const [view, setView] = useState<View>('wall')
   const [activeBountyId, setActiveBountyId] = useState<bigint | null>(null)
   const [activeProfileAddr, setActiveProfileAddr] = useState<`0x${string}` | null>(null)
@@ -29,7 +20,7 @@ export default function App() {
   function openProfile(addr: `0x${string}`) { setActiveProfileAddr(addr); setView('profile') }
   function goBack() { setView('wall'); setActiveBountyId(null); setActiveProfileAddr(null) }
   function openCreate() { setView('create') }
-  function onCreated() { setRefreshKey(k => k + 1); setView('wall'); setTab('wall') }
+  function onCreated() { setRefreshKey(k => k + 1); setView('wall') }
 
   return (
     <div className="min-h-dvh flex flex-col">
@@ -38,13 +29,13 @@ export default function App() {
         <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
           {/* Logo */}
           <button
-            onClick={() => { setView('wall'); setTab('wall') }}
+            onClick={() => { setView('wall') }}
             className="flex items-center gap-1 select-none"
             aria-label="Wanted.fun home"
           >
             <span style={{
               display: 'inline-block',
-              color: '#111111',
+              color: '#000000',
               backgroundColor: '#FF3E9A',
               border: '3px solid white',
               borderRadius: '8px',
@@ -54,13 +45,22 @@ export default function App() {
               transform: 'rotate(-8deg)',
               boxShadow: '3px 3px 0 white, 5px 5px 0 #FF3E9A',
               fontFamily: '"Space Mono", monospace',
-              fontWeight: 700,
-              fontSize: '15px',
+              fontWeight: 900,
+              fontSize: '18px',
               textTransform: 'uppercase',
             }}>
               WANTED
             </span>
-            <span style={{ color: '#1A1AE6', letterSpacing: 0, fontFamily: '"Space Mono", monospace', fontWeight: 700, fontSize: '26px', lineHeight: 1 }}>
+            <span style={{
+              color: '#A78BFA',
+              letterSpacing: 0,
+              fontFamily: '"Fredoka One", cursive',
+              fontSize: '34px',
+              lineHeight: 1,
+              marginLeft: '4px',
+              WebkitTextStroke: '3px #111',
+              paintOrder: 'stroke fill',
+            }}>
               .fun
             </span>
           </button>
@@ -102,22 +102,7 @@ export default function App() {
             <CreateBountyForm onClose={() => setView('wall')} onSuccess={onCreated} />
           </div>
         ) : (
-          <>
-            {/* Tabs */}
-            <div className="flex gap-0 mb-6 border-[3px] border-[#111] rounded-t-lg overflow-hidden shadow-hard w-fit">
-              {TAB_LABELS.map(({ id, label, color }) => (
-                <button
-                  key={id}
-                  onClick={() => setTab(id)}
-                  className="px-4 py-2.5 font-mono-bold text-[11px] uppercase tracking-widest text-[#111] transition-colors border-r-[3px] border-[#111] last:border-r-0"
-                  style={{ backgroundColor: tab === id ? color : '#FFFDF0', minWidth: 0 }}
-                >{label}</button>
-              ))}
-            </div>
-            {tab === 'wall' && <WallPage onSelectBounty={openBounty} onCreateBounty={openCreate} refreshKey={refreshKey} />}
-            {tab === 'my-bounties' && <MyBounties onSelectBounty={openBounty} onCreateBounty={openCreate} />}
-            {tab === 'my-submissions' && <MySubmissions onSelectBounty={openBounty} />}
-          </>
+          <WallPage onSelectBounty={openBounty} onCreateBounty={openCreate} refreshKey={refreshKey} />
         )}
       </main>
 
