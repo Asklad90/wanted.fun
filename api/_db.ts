@@ -4,7 +4,11 @@
  */
 import { neon } from '@neondatabase/serverless'
 
-const sql = neon(process.env.DATABASE_URL!)
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL environment variable is not set')
+}
+
+const sql = neon(process.env.DATABASE_URL)
 
 /** Ensure tables exist — called at cold start of each function. */
 export async function ensureSchema(): Promise<void> {

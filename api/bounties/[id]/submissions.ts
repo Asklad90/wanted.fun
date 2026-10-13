@@ -5,6 +5,7 @@ const MAX_TEXT = 1000
 const MAX_BYTES = 5 * 1024 * 1024 // 5 MB for base64 uploads
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  try {
   if (req.method === 'OPTIONS') return res.status(204).end()
 
   const bountyId = req.query.id as string
@@ -84,4 +85,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   return res.status(405).json({ error: 'Method not allowed' })
+  } catch (e) {
+    console.error('submissions handler error:', e)
+    return res.status(500).json({ error: 'Server error', detail: String(e) })
+  }
 }
