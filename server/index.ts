@@ -126,7 +126,11 @@ const server = Bun.serve({
 
       if (!submitter || !/^0x[0-9a-f]{40}$/i.test(submitter)) return err('Invalid submitter address')
       if (!content) return err('Content is required')
-      if (content.length > 1000) return err('Content too long (max 1000 chars)')
+      // Allow up to 5 MB for base64-encoded file uploads; text capped at 1000 chars
+      const MAX_BYTES = 5 * 1024 * 1024
+      const isDataUrl = content.startsWith('data:')
+      if (!isDataUrl && content.length > 1000) return err('Content too long (max 1000 chars)')
+      if (isDataUrl && content.length > MAX_BYTES) return err('File too large (max 5 MB)')
 
       // Ensure bounty row exists
       stmtUpsertBounty.run(bountyId)

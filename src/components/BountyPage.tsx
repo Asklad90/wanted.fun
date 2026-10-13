@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useSwitchChain } from 'wagmi'
 import { toast } from 'sonner'
 import { WindowCard } from './WindowCard'
@@ -37,6 +37,10 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
   const { address, chainId } = useAccount()
   const { switchChain } = useSwitchChain()
   const [submissionText, setSubmissionText] = useState('')
+  const [submitMode, setSubmitMode] = useState<'text' | 'file'>('text')
+  const [uploadFile, setUploadFile] = useState<File | null>(null)
+  const [uploadPreview, setUploadPreview] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const isWrongChain = chainId !== CHAIN_ID
 
   // Off-chain submission state
@@ -101,20 +105,52 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
     refetchBounty(); refetchPayoutStatus(); void loadSubs(); onDataChange?.()
   }
 
+  // ── File picker helpers ────────────────────────────────────────────────────
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null
+    setUploadFile(file)
+    setUploadPreview(null)
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File is too large. Max 5 MB.')
+      setUploadFile(null)
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => setUploadPreview(reader.result as string)
+    reader.readAsDataURL(file)
+  }
+
+  function clearFile() {
+    setUploadFile(null)
+    setUploadPreview(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
   // ── Off-chain submit ───────────────────────────────────────────────────────
   async function handleSubmit() {
     if (!address) { toast.error('Connect your wallet first.'); return }
-    if (!submissionText.trim()) { toast.error('Please write your submission first.'); return }
-    if (submissionText.length > 1000) { toast.error('Submission is too long (max 1000 chars).'); return }
+
+    let content: string
+    if (submitMode === 'file') {
+      if (!uploadPreview) { toast.error('Please select a file first.'); return }
+      content = uploadPreview
+    } else {
+      if (!submissionText.trim()) { toast.error('Please write your submission first.'); return }
+      if (submissionText.length > 1000) { toast.error('Submission is too long (max 1000 chars).'); return }
+      content = submissionText.trim()
+    }
+
     setSubmitting(true)
     try {
-      const result = await postSubmission(bountyId.toString(), address, submissionText.trim())
+      const result = await postSubmission(bountyId.toString(), address, content)
       if (!result.ok) {
         toast.error(result.error ?? 'Submission failed.')
         return
       }
       toast.success('Submission sent — free, no gas!')
       setSubmissionText('')
+      clearFile()
       await loadSubs()
     } catch {
       toast.error('Network error. Please try again.')
@@ -278,17 +314,93 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
       {!isPoster && status === 'OPEN' && !alreadySubmitted && address && (userPayoutStatus === undefined || userPayoutStatus === 0) && (
         <WindowCard title="SUBMIT_WORK.EXE" titleBarColor="#A78BFA">
           <div className="flex flex-col gap-3">
+            {/* Info banner */}
             <div className="font-mono-ui text-[11px] text-[#111]/60 border-2 border-[#111] rounded-lg p-2 bg-[#C6F23A]/20">
-              <strong>Free submission</strong> — no gas, stored off-chain. Max 1000 chars. Paste a URL, image link, YouTube link, or plain text.
+              <strong>Free submission</strong> — no gas, stored off-chain.
             </div>
-            <textarea value={submissionText} onChange={e => setSubmissionText(e.target.value)}
-              placeholder="Paste a link, YouTube URL, or describe your work..." rows={5}
-              className="border-[3px] border-[#111] rounded-lg px-3 py-2.5 text-[15px] font-body bg-white focus:outline-none focus:bg-[#FFFDF0] w-full resize-none"
-            />
-            <div className={`font-mono-ui text-[10px] text-right ${submissionText.length > 1000 ? 'text-[#FF6B57]' : 'text-[#111]/40'}`}>
-              {submissionText.length}/1000
+
+            {/* Mode toggle */}
+            <div className="flex gap-0 border-[2px] border-[#111] rounded-lg overflow-hidden w-fit">
+              <button
+                onClick={() => setSubmitMode('text')}
+                className="px-4 py-2 font-mono-bold text-[11px] uppercase tracking-widest text-[#111] border-r-[2px] border-[#111] transition-colors"
+                style={{ backgroundColor: submitMode === 'text' ? '#A78BFA' : '#FFFDF0' }}
+              >
+                ✏️ Text / Link
+              </button>
+              <button
+                onClick={() => setSubmitMode('file')}
+                className="px-4 py-2 font-mono-bold text-[11px] uppercase tracking-widest text-[#111] transition-colors"
+                style={{ backgroundColor: submitMode === 'file' ? '#A78BFA' : '#FFFDF0' }}
+              >
+                📎 Upload File
+              </button>
             </div>
-            <PillButton onClick={() => { void handleSubmit() }} loading={submitting} disabled={submitting || submissionText.length > 1000}>
+
+            {/* Text/link input */}
+            {submitMode === 'text' && (
+              <>
+                <textarea
+                  value={submissionText}
+                  onChange={e => setSubmissionText(e.target.value)}
+                  placeholder="Paste a link, YouTube URL, or describe your work..."
+                  rows={5}
+                  className="border-[3px] border-[#111] rounded-lg px-3 py-2.5 text-[15px] font-body bg-white focus:outline-none focus:bg-[#FFFDF0] w-full resize-none"
+                />
+                <div className={`font-mono-ui text-[10px] text-right ${submissionText.length > 1000 ? 'text-[#FF6B57]' : 'text-[#111]/40'}`}>
+                  {submissionText.length}/1000
+                </div>
+              </>
+            )}
+
+            {/* File upload input */}
+            {submitMode === 'file' && (
+              <div className="flex flex-col gap-2">
+                {/* Drop zone / picker */}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-[3px] border-dashed border-[#111] rounded-lg p-6 flex flex-col items-center gap-2 bg-[#FFFDF0] hover:bg-[#A78BFA]/10 transition-colors cursor-pointer"
+                >
+                  <UploadIcon />
+                  <span className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111]/60">
+                    {uploadFile ? uploadFile.name : 'Tap to choose image or video'}
+                  </span>
+                  <span className="font-mono-ui text-[10px] text-[#111]/40">Max 5 MB · JPG, PNG, GIF, WEBP, MP4, MOV, WEBM</span>
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/quicktime,video/webm"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+
+                {/* Preview */}
+                {uploadPreview && (
+                  <div className="relative border-[2px] border-[#111] rounded-lg overflow-hidden">
+                    {uploadFile?.type.startsWith('video/') ? (
+                      // eslint-disable-next-line jsx-a11y/media-has-caption
+                      <video src={uploadPreview} controls className="w-full max-h-48 bg-black" />
+                    ) : (
+                      <img src={uploadPreview} alt="Preview" className="w-full max-h-48 object-contain bg-[#FFFDF0]" />
+                    )}
+                    <button
+                      onClick={clearFile}
+                      className="absolute top-2 right-2 bg-[#FF3E9A] border-[2px] border-[#111] rounded-full w-6 h-6 flex items-center justify-center font-mono-bold text-[11px] text-white shadow-hard-sm"
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <PillButton
+              onClick={() => { void handleSubmit() }}
+              loading={submitting}
+              disabled={submitting || (submitMode === 'text' && submissionText.length > 1000) || (submitMode === 'file' && !uploadPreview)}
+            >
               Submit work — free →
             </PillButton>
           </div>
@@ -497,5 +609,14 @@ function SingleOffchainSubmission({ sub, bountyId, isPoster, rewardPerWinner, ca
         </div>
       )}
     </div>
+  )
+}
+
+function UploadIcon() {
+  return (
+    <svg width={28} height={28} viewBox="0 0 24 24" fill="none">
+      <path d="M12 16V8M12 8l-3 3M12 8l3 3" stroke="#A78BFA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <rect x="3" y="16" width="18" height="5" rx="2" fill="#A78BFA" stroke="#111" strokeWidth="1.5" />
+    </svg>
   )
 }
