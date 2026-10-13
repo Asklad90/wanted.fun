@@ -1,4 +1,5 @@
 import { useReadContract } from 'wagmi'
+import { useState } from 'react'
 import { BountyCard, BountyData } from './BountyCard'
 import { WindowCard } from './WindowCard'
 import { PillButton } from './PillButton'
@@ -6,6 +7,14 @@ import { TrophyIcon } from './Icons'
 import { BOUNTY_BOARD_ABI } from '../bounty-abi'
 import { CHAIN_ID, CONTRACT_ADDRESS, CONTRACT_DEPLOYED } from '../bounty-config'
 import { formatUsdc } from '../lib/utils'
+import { MyBounties, MySubmissions } from './MyBounties'
+
+const TAB_LABELS = [
+  { id: 'wall',           label: 'BOUNTY WALL',    color: '#FFE600' },
+  { id: 'my-bounties',   label: 'MY BOUNTIES',    color: '#FFFDF0' },
+  { id: 'my-submissions', label: 'MY SUBMISSIONS', color: '#FFFDF0' },
+] as const
+type TabId = typeof TAB_LABELS[number]['id']
 
 interface WallPageProps {
   onSelectBounty: (id: bigint) => void
@@ -51,6 +60,8 @@ function BountyGrid({ total, onSelectBounty }: { total: number; onSelectBounty: 
 }
 
 export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshKey }: WallPageProps) {
+  const [tab, setTab] = useState<TabId>('wall')
+
   const { data: totalBountiesRaw } = useReadContract({
     address: CONTRACT_ADDRESS, abi: BOUNTY_BOARD_ABI, functionName: 'totalBounties',
     chainId: CHAIN_ID, query: { enabled: CONTRACT_DEPLOYED, refetchInterval: 8000 },
@@ -114,10 +125,26 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
         </WindowCard>
       ) : (
         <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <h2 className="font-heading text-[20px] font-bold text-[#111]">All Bounties ({totalBounties})</h2>
+          {/* Tab strip */}
+          <div className="flex gap-0 border-[3px] border-[#111] rounded-t-lg overflow-hidden shadow-hard w-fit">
+            {TAB_LABELS.map(({ id, label }) => (
+              <button
+                key={id}
+                onClick={() => setTab(id)}
+                className="px-4 py-2.5 font-mono-bold text-[11px] uppercase tracking-widest text-[#111] transition-colors border-r-[3px] border-[#111] last:border-r-0"
+                style={{ backgroundColor: tab === id ? '#FFE600' : '#FFFDF0', minWidth: 0 }}
+              >{label}</button>
+            ))}
           </div>
-          <BountyGrid total={totalBounties} onSelectBounty={onSelectBounty} />
+
+          {tab === 'wall' && (
+            <>
+              <h2 className="font-heading text-[20px] font-bold text-[#111]">All Bounties ({totalBounties})</h2>
+              <BountyGrid total={totalBounties} onSelectBounty={onSelectBounty} />
+            </>
+          )}
+          {tab === 'my-bounties' && <MyBounties onSelectBounty={onSelectBounty} onCreateBounty={onCreateBounty} />}
+          {tab === 'my-submissions' && <MySubmissions onSelectBounty={onSelectBounty} />}
         </div>
       )}
     </div>

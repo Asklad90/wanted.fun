@@ -18,10 +18,7 @@ export const config = createConfig({
   chains: [arcTestnet, mainnet],
   connectors: [
     injected(),
-    walletConnect({
-      projectId,
-      showQrModal: false, // ConnectKit owns the modal — prevent WC from opening its own
-    }),
+    walletConnect({ projectId, showQrModal: false }),
   ],
   transports: {
     [arcTestnet.id]: http(),

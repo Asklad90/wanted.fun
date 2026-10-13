@@ -10,7 +10,6 @@ export function ConnectButton({ onProfileClick }: ConnectButtonProps) {
     <ConnectKitButton.Custom>
       {({ isConnected, show, address }) => (
         <div className="flex items-center gap-2">
-          {/* Mobile: my profile icon when connected */}
           {isConnected && onProfileClick && (
             <button
               onClick={onProfileClick}

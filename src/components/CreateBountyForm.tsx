@@ -11,6 +11,7 @@ import { CHAIN_ID, CONTRACT_ADDRESS, USDC_ADDRESS, USDC_DECIMALS, CONTRACT_DEPLO
 import { parseOnchainError, encodeText } from '../lib/utils'
 import { parseUnits } from 'viem'
 
+
 // Deadline minimum: 1 hour from module load
 const MIN_DEADLINE_DATE: string = new Date(Date.now() + 3600_000).toISOString().slice(0, 16)
 
