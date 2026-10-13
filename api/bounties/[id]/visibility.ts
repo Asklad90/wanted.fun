@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { sql, ensureSchema } from '../../_db'
+import { pool, ensureSchema } from '../../_db'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') return res.status(204).end()
@@ -13,7 +13,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   await ensureSchema()
 
-  await sql`
+  await pool.sql`
     INSERT INTO bounties (id, is_public)
     VALUES (${bountyId}, ${isPublic})
     ON CONFLICT (id) DO UPDATE SET is_public = ${isPublic}
