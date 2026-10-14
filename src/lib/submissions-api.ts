@@ -51,9 +51,13 @@ export interface SubmissionsResponse {
 
 // ── API calls ─────────────────────────────────────────────────────────────────
 
-/** Register a bounty so it has a row in the DB (idempotent). */
-export async function registerBounty(bountyId: string): Promise<void> {
-  await fetch(`/api/bounties/${bountyId}/register`, { method: 'POST' })
+/** Register a bounty so it has a row in the DB (idempotent). Sends poster address so access control works. */
+export async function registerBounty(bountyId: string, poster?: string): Promise<void> {
+  await fetch(`/api/bounties/${bountyId}/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ poster: poster ?? '' }),
+  })
 }
 
 /**

@@ -119,7 +119,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
   // Register bounty + load subs + load examples when bounty data arrives
   useEffect(() => {
     if (!bounty) return
-    void registerBounty(bountyId.toString()).then(() => loadSubs())
+    void registerBounty(bountyId.toString(), bounty.poster.toLowerCase()).then(() => loadSubs())
     fetchExamples(bountyId.toString()).then(setExamples).catch(() => {})
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bountyId, bounty?.poster, address])

@@ -132,7 +132,7 @@ export function CreateBountyForm({ onClose, onSuccess }: CreateBountyFormProps) 
             void saveExamples(hash, examples.map(e => e.dataUrl)).catch(() => {
               toast.error('Examples could not be saved — try re-uploading from the bounty page.')
             })
-            void registerBounty(hash)
+            void registerBounty(hash, address?.toLowerCase())
           }
         },
         onError: (err) => toast.error(parseOnchainError(err)),
