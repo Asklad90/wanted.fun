@@ -9,3 +9,10 @@ contracts/broadcast/
 *.db
 *.db-shm
 *.db-wal
+
+# Debug / trace files — never commit these
+console.jsonl
+traces.jsonl
+
+# Foundry artifacts (generated — do not commit)
+contracts/out/

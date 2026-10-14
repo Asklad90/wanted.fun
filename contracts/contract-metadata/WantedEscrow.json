@@ -1,13 +1,20 @@
 {
-  "contractAddress": "0xaa248ec80896dae9b6e310401741798a77db56f9",
+  "contractAddress": "0x92c351215f9182100f01ef3fe1bc7023b72460b9",
   "network": "ARC-TESTNET",
   "deployerWalletId": "3c2464b2-8369-52e2-a782-800bbeca5396",
   "contract_code_path": "/home/user/app/contracts/WantedEscrow.sol",
   "contract_compiled_code_path": "/home/user/app/contracts/out/WantedEscrow.sol/WantedEscrow.json",
   "contract_network_and_links": {
-    "Arc Testnet": "https://explorer.testnet.arc.io/address/0xaa248ec80896dae9b6e310401741798a77db56f9"
+    "Arc Testnet": "https://explorer.testnet.arc.io/address/0x92c351215f9182100f01ef3fe1bc7023b72460b9"
   },
   "contract_deployments": [
+    {
+      "chain": "Arc Testnet",
+      "address": "0x92c351215f9182100f01ef3fe1bc7023b72460b9",
+      "explorerUrl": "https://explorer.testnet.arc.io/address/0x92c351215f9182100f01ef3fe1bc7023b72460b9",
+      "txHash": "0xefe06bebc7511f49bb489e41134f3573427bf050e069f056f872ded5bdba8a37",
+      "deployedAt": "2026-10-14T08:43:53.745Z"
+    },
     {
       "chain": "Arc Testnet",
       "address": "0xaa248ec80896dae9b6e310401741798a77db56f9",
