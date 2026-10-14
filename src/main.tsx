@@ -31,7 +31,13 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <ConnectKitProvider>
+        <ConnectKitProvider
+          options={{
+            hideNoWalletCTA: false,
+            walletConnectCTA: 'modal',
+            enforceSupportedChains: false,
+          }}
+        >
           <App />
           <Toaster position="top-center" />
         </ConnectKitProvider>
