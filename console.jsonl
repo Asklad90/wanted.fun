@@ -352,3 +352,22 @@
 {"level":"warn","message":"Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.","timestamp":1791965503856}
 {"level":"warn","message":"Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.","timestamp":1791965522460}
 {"level":"error","message":"Origin https://ipnz75bgvzojlk9tos7j8.preview.studio.arc.io not found on Allowlist - update configuration on cloud.reown.com","timestamp":1791965523241}
+{"level":"error","message":"[vite] failed to connect to websocket.\nyour current setup:\n  (browser) ipnz75bgvzojlk9tos7j8.preview.studio.arc.io/ <--[HTTP]--> localhost:5173/ (server)\n  (browser) ipnz75bgvzojlk9tos7j8.preview.studio.arc.io:/ <--[WebSocket (failing)]--> localhost:5173/ (server)\nCheck out your Vite / network configuration and https://vite.dev/config/server-options.html#server-hmr .","timestamp":1791965695461}
+{"level":"warn","message":"Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.","timestamp":1791965696839}
+{"level":"error","message":"Origin https://ipnz75bgvzojlk9tos7j8.preview.studio.arc.io not found on Allowlist - update configuration on cloud.reown.com","timestamp":1791965702211}
+{"level":"warn","message":"Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.","timestamp":1791965905088}
+{"level":"error","message":"Origin https://ipnz75bgvzojlk9tos7j8.preview.studio.arc.io not found on Allowlist - update configuration on cloud.reown.com","timestamp":1791965906169}
+{"level":"warn","message":"Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.","timestamp":1791966013184}
+{"level":"error","message":"Origin https://ipnz75bgvzojlk9tos7j8.preview.studio.arc.io not found on Allowlist - update configuration on cloud.reown.com","timestamp":1791966013787}
+{"level":"warn","message":"Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.","timestamp":1791966034134}
+{"level":"error","message":"Origin https://ipnz75bgvzojlk9tos7j8.preview.studio.arc.io not found on Allowlist - update configuration on cloud.reown.com","timestamp":1791966034393}
+{"level":"error","message":"[vite] failed to connect to websocket.\nyour current setup:\n  (browser) ipnz75bgvzojlk9tos7j8.preview.studio.arc.io/ <--[HTTP]--> localhost:5173/ (server)\n  (browser) ipnz75bgvzojlk9tos7j8.preview.studio.arc.io:/ <--[WebSocket (failing)]--> localhost:5173/ (server)\nCheck out your Vite / network configuration and https://vite.dev/config/server-options.html#server-hmr .","timestamp":1791966063923}
+{"level":"warn","message":"Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.","timestamp":1791966064139}
+{"level":"error","message":"Origin https://ipnz75bgvzojlk9tos7j8.preview.studio.arc.io not found on Allowlist - update configuration on cloud.reown.com","timestamp":1791966064397}
+{"level":"error","message":"[vite] failed to connect to websocket.\nyour current setup:\n  (browser) ipnz75bgvzojlk9tos7j8.preview.studio.arc.io/ <--[HTTP]--> localhost:5173/ (server)\n  (browser) ipnz75bgvzojlk9tos7j8.preview.studio.arc.io:/ <--[WebSocket (failing)]--> localhost:5173/ (server)\nCheck out your Vite / network configuration and https://vite.dev/config/server-options.html#server-hmr .","timestamp":1791966097410}
+{"level":"warn","message":"Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.","timestamp":1791966097567}
+{"level":"error","message":"Origin https://ipnz75bgvzojlk9tos7j8.preview.studio.arc.io not found on Allowlist - update configuration on cloud.reown.com","timestamp":1791966098166}
+{"level":"warn","message":"Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.","timestamp":1791966114195}
+{"level":"error","message":"Origin https://ipnz75bgvzojlk9tos7j8.preview.studio.arc.io not found on Allowlist - update configuration on cloud.reown.com","timestamp":1791966114498}
+{"level":"warn","message":"Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.","timestamp":1791966244626}
+{"level":"error","message":"Origin https://ipnz75bgvzojlk9tos7j8.preview.studio.arc.io not found on Allowlist - update configuration on cloud.reown.com","timestamp":1791966245694}
