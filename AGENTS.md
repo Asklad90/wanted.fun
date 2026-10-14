@@ -1,12 +1,20 @@
 # Wanted.fun
 
-## WantedEscrow v4 — Arc Testnet (current)
-- Address: `0x7d664d50d8d0bf777c81a21aa3ac1ec91405cdf8`
-- Explorer: https://explorer.testnet.arc.io/address/0x7d664d50d8d0bf777c81a21aa3ac1ec91405cdf8
+## WantedEscrow v5 — Arc Testnet (current)
+- Address: `0x7d3e0e2ad77edd23dce5d0731497526ec3f2c891`
+- Explorer: https://explorer.testnet.arc.io/address/0x7d3e0e2ad77edd23dce5d0731497526ec3f2c891
 - Constructor: `usdc=0x3600000000000000000000000000000000000000`, `reviewWindow=604800` (7 days)
 - Deployed: 2026-10-14
 - 57/57 Foundry tests pass (unit + fuzz + invariant)
 - VITE_CONTRACT_ADDRESS set in .env
+- Key change: removed `_hasSubmitted` guard from `approveWinner` — off-chain submitters can now be approved and paid
+
+## WantedEscrow v4 — Arc Testnet (deprecated)
+- Address: `0x7d664d50d8d0bf777c81a21aa3ac1ec91405cdf8`
+- Explorer: https://explorer.testnet.arc.io/address/0x7d664d50d8d0bf777c81a21aa3ac1ec91405cdf8
+- Constructor: `usdc=0x3600000000000000000000000000000000000000`, `reviewWindow=604800` (7 days)
+- Deployed: 2026-10-14
+- BLOCKER: approveWinner reverted for off-chain submitters — do not use
 
 ## WantedEscrow v3 (7-day reviewWindow) — Arc Testnet (deprecated)
 - Address: `0xaa248ec80896dae9b6e310401741798a77db56f9`

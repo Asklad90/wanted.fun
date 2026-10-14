@@ -200,7 +200,6 @@ contract WantedEscrow is ReentrancyGuard {
 
         if (msg.sender != bounty.poster) revert NotPoster();
         if (block.timestamp > _approvalCutoff(bounty.deadline)) revert ApprovalWindowClosed();
-        if (!_hasSubmitted[bountyId][submitter]) revert BountyNotFound();
         if (_isWinner[bountyId][submitter]) revert AlreadyWinner();
         if (bounty.winnersApproved >= bounty.maxWinners) revert BountyFull();
 

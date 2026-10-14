@@ -19,6 +19,7 @@ import {
   postSubmission,
   fetchExamples,
   primeSubmitAuth,
+  setVisibility,
   type OffchainSubmission,
   type BountyExample,
 } from '../lib/submissions-api'
@@ -228,14 +229,9 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
 
   async function handleToggleVisibility() {
     const next = !isPublic
-    // Optimistic update — no wallet signature needed for a simple toggle
-    setIsPublic(next)
+    setIsPublic(next) // optimistic
     try {
-      await fetch(`/api/bounties/${bountyId.toString()}/visibility`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_public: next }),
-      })
+      await setVisibility(bountyId.toString(), next)
       toast.success(next ? 'Submissions are now public.' : 'Submissions are now private.')
     } catch {
       setIsPublic(!next) // revert on failure

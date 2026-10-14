@@ -755,14 +755,15 @@ contract WantedEscrowTest is Test {
         escrow.approveWinner(1, alice);
     }
 
-    // approveWinner for address that never submitted → BountyNotFound
-    function test_ApproveWinnerRevertsForNonSubmitter() public {
+    // approveWinner for address that never submitted onchain now succeeds (off-chain
+    // submissions are tracked in the DB; the contract no longer gate-keeps by _hasSubmitted).
+    function test_ApproveWinnerWorksForOffchainSubmitter() public {
         _createBounty();
-        _warpPastDeadlineOnly();
-
+        // alice never called submit() onchain, but poster can still approve her
         vm.prank(poster);
-        vm.expectRevert(WantedEscrow.BountyNotFound.selector);
         escrow.approveWinner(1, alice);
+        // alice should now have a payout status
+        assertTrue(uint8(escrow.payoutStatus(1, alice)) > 0, "alice should have a payout status");
     }
 
     // reclaimUnused by non-poster → NotPoster
