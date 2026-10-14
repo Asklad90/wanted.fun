@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { motion } from 'framer-motion'
 import { useReadContract } from 'wagmi'
 import { BountyCard, BountyData } from './BountyCard'
 import { WindowCard } from './WindowCard'
@@ -50,7 +51,15 @@ const HIDE_AFTER_SEC = 3 * 24 * 60 * 60 // 3 days
 // Module-level snapshot — avoids impure Date.now() inside render
 const _wallNowSec = (): number => Date.now() / 1000
 
-function BountyItem({ bountyId, onSelect }: { bountyId: bigint; onSelect: (id: bigint) => void }) {
+const cardVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: (i: number) => ({
+    opacity: 1, y: 0,
+    transition: { delay: i * 0.06, duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] },
+  }),
+}
+
+function BountyItem({ bountyId, index, onSelect }: { bountyId: bigint; index: number; onSelect: (id: bigint) => void }) {
   const bounty = useBountyData(bountyId, true)
   if (!bounty) return <div className="border-[3px] border-[#111] rounded-lg bg-[#FFFDF0] animate-pulse h-60" />
 
@@ -59,14 +68,25 @@ function BountyItem({ bountyId, onSelect }: { bountyId: bigint; onSelect: (id: b
   const isInactive = bounty.cancelled || nowSec > deadlineSec
   if (isInactive && nowSec > deadlineSec + HIDE_AFTER_SEC) return null
 
-  return <BountyCard bounty={bounty} onClick={() => onSelect(bountyId)} />
+  return (
+    <motion.div
+      custom={index}
+      variants={cardVariants}
+      initial="hidden"
+      animate="visible"
+      whileHover={{ y: -3, transition: { duration: 0.15 } }}
+      whileTap={{ scale: 0.98, transition: { duration: 0.1 } }}
+    >
+      <BountyCard bounty={bounty} onClick={() => onSelect(bountyId)} />
+    </motion.div>
+  )
 }
 
 function BountyGrid({ total, onSelectBounty }: { total: number; onSelectBounty: (id: bigint) => void }) {
   const ids = Array.from({ length: Math.min(total, 24) }, (_, i) => BigInt(total - i))
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      {ids.map(id => <BountyItem key={id.toString()} bountyId={id} onSelect={onSelectBounty} />)}
+      {ids.map((id, i) => <BountyItem key={id.toString()} bountyId={id} index={i} onSelect={onSelectBounty} />)}
     </div>
   )
 }
@@ -94,12 +114,17 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
   return (
     <div className="flex flex-col gap-8">
       {/* Hero */}
-      <section className="checkerboard border-[3px] border-[#111] rounded-xl shadow-hard overflow-hidden">
+      <motion.section
+        className="checkerboard border-[3px] border-[#111] rounded-xl shadow-hard overflow-hidden"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
+      >
         <div className="bg-[#FFFDF0]/92 px-6 py-10 flex flex-col gap-5">
           <h1 className="font-heading text-[44px] sm:text-[58px] font-extrabold leading-[1.05] text-[#111] text-balance" style={{ letterSpacing: '-0.02em' }}>
             Post a bounty.<br />Get it done.
           </h1>
-          <p className="font-body text-[16px] font-semibold text-[#111]/80 max-w-md">
+          <p className="font-heading text-[18px] font-bold text-[#111] max-w-md leading-relaxed">
             Lock USDC in escrow, get work done onchain. The prize is guaranteed before a single worker types a word.
           </p>
           <div>
@@ -113,10 +138,15 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
             </div>
           )}
         </div>
-      </section>
+      </motion.section>
 
       {/* Tab strip */}
-      <div className="flex gap-0 border-[3px] border-[#111] rounded-t-lg overflow-hidden shadow-hard w-fit">
+      <motion.div
+        className="flex gap-0 border-[3px] border-[#111] rounded-t-lg overflow-hidden shadow-hard w-fit"
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.3, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
+      >
         {TAB_LABELS.map(({ id, label, color }) => (
           <button
             key={id}
@@ -125,7 +155,7 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
             style={{ backgroundColor: tab === id ? color : '#FFFDF0', minWidth: 0 }}
           >{label}</button>
         ))}
-      </div>
+      </motion.div>
 
       {/* Tab content */}
       {tab === 'my-bounties' && (

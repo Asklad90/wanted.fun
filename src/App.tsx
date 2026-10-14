@@ -1,13 +1,28 @@
 import React, { useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { useAccount } from 'wagmi'
 import { ConnectButton } from './components/ConnectButton'
 import { WallPage } from './components/WallPage'
 import { BountyPage } from './components/BountyPage'
 import { CreateBountyForm } from './components/CreateBountyForm'
 import { ProfilePage } from './components/ProfilePage'
-import { CHAIN_NAME } from './bounty-config'
+import { CHAIN_NAME, CONTRACT_ADDRESS, CONTRACT_DEPLOYED, getAddressUrl } from './bounty-config'
 
 type View = 'wall' | 'bounty' | 'create' | 'profile'
+
+const pageVariants = {
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] } },
+  exit:    { opacity: 0, y: -8, transition: { duration: 0.15, ease: 'easeIn' } },
+}
+
+function PageView({ children }: { children: React.ReactNode }) {
+  return (
+    <motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit">
+      {children}
+    </motion.div>
+  )
+}
 
 export default function App() {
   const { address: connectedAddr } = useAccount()
@@ -85,25 +100,27 @@ export default function App() {
 
       {/* ─── Main ─────────────────────────────────────────────────────────────── */}
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-6">
-        {view === 'profile' && activeProfileAddr ? (
-          <ProfilePage
-            address={activeProfileAddr}
-            onBack={goBack}
-            onSelectBounty={openBounty}
-          />
-        ) : view === 'bounty' && activeBountyId !== null ? (
-          <BountyPage
-            bountyId={activeBountyId}
-            onBack={goBack}
-            onDataChange={() => setRefreshKey(k => k + 1)}
-          />
-        ) : view === 'create' ? (
-          <div className="max-w-lg mx-auto">
-            <CreateBountyForm onClose={() => setView('wall')} onSuccess={onCreated} />
-          </div>
-        ) : (
-          <WallPage onSelectBounty={openBounty} onCreateBounty={openCreate} refreshKey={refreshKey} />
-        )}
+        <AnimatePresence mode="wait">
+          {view === 'profile' && activeProfileAddr ? (
+            <PageView key="profile">
+              <ProfilePage address={activeProfileAddr} onBack={goBack} onSelectBounty={openBounty} />
+            </PageView>
+          ) : view === 'bounty' && activeBountyId !== null ? (
+            <PageView key={`bounty-${activeBountyId}`}>
+              <BountyPage bountyId={activeBountyId} onBack={goBack} onDataChange={() => setRefreshKey(k => k + 1)} />
+            </PageView>
+          ) : view === 'create' ? (
+            <PageView key="create">
+              <div className="max-w-lg mx-auto">
+                <CreateBountyForm onClose={() => setView('wall')} onSuccess={onCreated} />
+              </div>
+            </PageView>
+          ) : (
+            <PageView key="wall">
+              <WallPage onSelectBounty={openBounty} onCreateBounty={openCreate} refreshKey={refreshKey} />
+            </PageView>
+          )}
+        </AnimatePresence>
       </main>
 
       {/* ─── Footer ───────────────────────────────────────────────────────────── */}
@@ -112,8 +129,18 @@ export default function App() {
           <span className="font-mono-ui text-[11px] text-[#FFFDF0]/50 uppercase tracking-wider">
             Text posted onchain is permanent and public. Review before submitting.
           </span>
-          <span className="font-mono-ui text-[11px] text-[#FFFDF0]/30">
+          <span className="font-mono-ui text-[11px] text-[#FFFDF0]/30 flex items-center gap-2 flex-wrap justify-center sm:justify-end">
             Wanted.fun · {CHAIN_NAME} · USDC
+            {CONTRACT_DEPLOYED && (
+              <a
+                href={getAddressUrl(CONTRACT_ADDRESS)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#C6F23A]/60 hover:text-[#C6F23A] transition-colors underline underline-offset-2"
+              >
+                Verify contract ↗
+              </a>
+            )}
           </span>
         </div>
       </footer>

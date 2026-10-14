@@ -41,7 +41,7 @@ export function BountyCard({ bounty, onClick }: BountyCardProps) {
   return (
     <button
       onClick={onClick}
-      className="text-left w-full hover:-translate-y-0.5 transition-transform"
+      className="text-left w-full"
     >
       <WindowCard
         title={`BOUNTY_${String(idNum).padStart(3, '0')}.EXE`}

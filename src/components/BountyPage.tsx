@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
+import confetti from 'canvas-confetti'
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useSwitchChain } from 'wagmi'
 import { toast } from 'sonner'
 import { WindowCard } from './WindowCard'
@@ -49,6 +50,18 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
   const [subsLoading, setSubsLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
 
+  // Confetti — fires once when user opens a bounty they won
+  const confettiFired = useRef(false)
+  const fireConfetti = useCallback(() => {
+    if (confettiFired.current) return
+    confettiFired.current = true
+    const colors = ['#FF3E9A', '#FFE600', '#A78BFA', '#C6F23A', '#7FF3F0', '#FF6B57']
+    void confetti({ particleCount: 120, spread: 80, origin: { y: 0.55 }, colors, scalar: 1.1 })
+    setTimeout(() => { void confetti({ particleCount: 60, spread: 120, origin: { y: 0.4 }, colors, scalar: 0.9 }) }, 200)
+    setTimeout(() => { void confetti({ particleCount: 40, angle: 60, spread: 60, origin: { x: 0, y: 0.6 }, colors }) }, 350)
+    setTimeout(() => { void confetti({ particleCount: 40, angle: 120, spread: 60, origin: { x: 1, y: 0.6 }, colors }) }, 350)
+  }, [])
+
   const { data: bounty, refetch: refetchBounty } = useReadContract({
     address: CONTRACT_ADDRESS, abi: BOUNTY_BOARD_ABI, functionName: 'getBounty',
     args: [bountyId], chainId: CHAIN_ID,
@@ -93,6 +106,13 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
       setSubsLoading(false)
     }
   }
+
+  // Fire confetti when user is a winner on this bounty
+  useEffect(() => {
+    if (userPayoutStatus === PAYOUT_PENDING || userPayoutStatus === PAYOUT_PAID) {
+      fireConfetti()
+    }
+  }, [userPayoutStatus, fireConfetti])
 
   // Register bounty + load subs when bounty data arrives
   useEffect(() => {
