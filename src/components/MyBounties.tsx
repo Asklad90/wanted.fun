@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { useAccount, useReadContract } from 'wagmi'
 import { BountyCard, BountyData } from './BountyCard'
 import { WindowCard } from './WindowCard'
@@ -68,12 +69,28 @@ interface MySubmissionsProps {
 
 export function MySubmissions({ onSelectBounty }: MySubmissionsProps) {
   const { address } = useAccount()
+  const [bountyIds, setBountyIds] = useState<bigint[] | null>(null)
+  const [fetchedFor, setFetchedFor] = useState<string | null>(null)
 
-  const { data: ids } = useReadContract({
-    address: CONTRACT_ADDRESS, abi: BOUNTY_BOARD_ABI, functionName: 'getBountiesBySubmitter',
-    args: [address ?? '0x0000000000000000000000000000000000000000'],
-    chainId: CHAIN_ID, query: { enabled: !!address },
-  }) as { data: bigint[] | undefined }
+  // Kick off a fetch whenever the address changes; track which address was fetched
+  // so we can show a spinner while the new result is in-flight.
+  useEffect(() => {
+    if (!address) return
+    void fetch(`/api/submissions-by-wallet?wallet=${address.toLowerCase()}`)
+      .then(r => r.ok ? r.json() as Promise<{ bountyIds: string[] }> : Promise.resolve({ bountyIds: [] }))
+      .then(d => {
+        setBountyIds(d.bountyIds.map(id => BigInt(id)).reverse())
+        setFetchedFor(address.toLowerCase())
+      })
+      .catch(() => {
+        setBountyIds([])
+        setFetchedFor(address.toLowerCase())
+      })
+  }, [address])
+
+  // Loading: wallet connected but result not yet back for this address
+  const isLoading = !!address && fetchedFor !== address.toLowerCase()
+  const effectiveIds = address ? bountyIds : null
 
   if (!address) return (
     <WindowCard title="MY_SUBMISSIONS.EXE" titleBarColor="#A78BFA">
@@ -81,9 +98,15 @@ export function MySubmissions({ onSelectBounty }: MySubmissionsProps) {
     </WindowCard>
   )
 
-  const list = ids ?? []
+  if (isLoading || effectiveIds === null) return (
+    <WindowCard title="MY_SUBMISSIONS.EXE" titleBarColor="#A78BFA">
+      <div className="py-10 flex justify-center">
+        <span className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111]/50 animate-pulse">Loading...</span>
+      </div>
+    </WindowCard>
+  )
 
-  if (list.length === 0) return (
+  if (effectiveIds.length === 0) return (
     <WindowCard title="MY_SUBMISSIONS.EXE" titleBarColor="#A78BFA">
       <div className="checkerboard rounded-lg py-12 flex flex-col items-center gap-4">
         <FolderIcon size={40} />
@@ -94,9 +117,9 @@ export function MySubmissions({ onSelectBounty }: MySubmissionsProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="font-heading text-[18px] font-bold text-[#111]">My Submissions ({list.length})</h2>
+      <h2 className="font-heading text-[18px] font-bold text-[#111]">My Submissions ({effectiveIds.length})</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {[...list].reverse().map(id => <BountyItem key={id.toString()} id={id} onSelect={onSelectBounty} />)}
+        {effectiveIds.map(id => <BountyItem key={id.toString()} id={id} onSelect={onSelectBounty} />)}
       </div>
     </div>
   )
