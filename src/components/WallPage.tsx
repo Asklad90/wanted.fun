@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useReadContract } from 'wagmi'
 import { BountyCard, BountyData } from './BountyCard'
@@ -33,16 +33,18 @@ function useBountyData(id: bigint, enabled: boolean) {
     chainId: CHAIN_ID,
     query: { enabled },
   })
-  const { data: subs } = useReadContract({
-    address: CONTRACT_ADDRESS,
-    abi: BOUNTY_BOARD_ABI,
-    functionName: 'getSubmissions',
-    args: [id, 0n, 100n],
-    chainId: CHAIN_ID,
-    query: { enabled },
-  })
+  const [subCount, setSubCount] = useState<number>(0)
+
+  useEffect(() => {
+    if (!bounty) return
+    fetch(`/api/bounties/${id.toString()}/submissions`)
+      .then(r => r.ok ? r.json() as Promise<{ submissions: unknown[] }> : Promise.resolve({ submissions: [] }))
+      .then(d => setSubCount(d.submissions.length))
+      .catch(() => {})
+  }, [id, bounty])
+
   return bounty
-    ? ({ ...(bounty as BountyData), submissionCount: BigInt(Array.isArray(subs) ? subs.length : 0) } as BountyData)
+    ? ({ ...(bounty as BountyData), submissionCount: BigInt(subCount) } as BountyData)
     : null
 }
 

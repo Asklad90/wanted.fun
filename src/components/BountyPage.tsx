@@ -39,7 +39,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
   const { address, chainId } = useAccount()
   const { switchChain } = useSwitchChain()
   const [submissionText, setSubmissionText] = useState('')
-  const [submitMode, setSubmitMode] = useState<'text' | 'file'>('text')
+
   const [uploadFile, setUploadFile] = useState<File | null>(null)
   const [uploadPreview, setUploadPreview] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -52,8 +52,9 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
   const [submitting, setSubmitting] = useState(false)
   const [examples, setExamples] = useState<BountyExample[]>([])
 
-  // Confetti — fires once when user opens a bounty they won
+  // Confetti — fires once per bounty visit when user is a winner
   const confettiFired = useRef(false)
+  useEffect(() => { confettiFired.current = false }, [bountyId])
   const fireConfetti = useCallback(() => {
     if (confettiFired.current) return
     confettiFired.current = true
@@ -109,10 +110,12 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
     }
   }
 
-  // Fire confetti when user is a winner on this bounty
+  // Fire confetti when user is a winner on this bounty (pending OR paid)
   useEffect(() => {
     if (userPayoutStatus === PAYOUT_PENDING || userPayoutStatus === PAYOUT_PAID) {
-      fireConfetti()
+      // Small delay so the page renders first, then confetti pops
+      const t = setTimeout(() => fireConfetti(), 400)
+      return () => clearTimeout(t)
     }
   }, [userPayoutStatus, fireConfetti])
 
@@ -154,13 +157,19 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
   async function handleSubmit() {
     if (!address) { toast.error('Connect your wallet first.'); return }
 
+    const hasText = submissionText.trim().length > 0
+    const hasFile = !!uploadPreview
+
+    if (!hasText && !hasFile) { toast.error('Add some text or attach a file.'); return }
+    if (hasText && submissionText.length > 1000) { toast.error('Text is too long (max 1000 chars).'); return }
+
+    // Encode as JSON if both present, otherwise plain string
     let content: string
-    if (submitMode === 'file') {
-      if (!uploadPreview) { toast.error('Please select a file first.'); return }
-      content = uploadPreview
+    if (hasText && hasFile) {
+      content = JSON.stringify({ text: submissionText.trim(), file: uploadPreview })
+    } else if (hasFile) {
+      content = uploadPreview!
     } else {
-      if (!submissionText.trim()) { toast.error('Please write your submission first.'); return }
-      if (submissionText.length > 1000) { toast.error('Submission is too long (max 1000 chars).'); return }
       content = submissionText.trim()
     }
 
@@ -375,87 +384,62 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
               <strong>Free submission</strong> — no gas, stored off-chain.
             </div>
 
-            {/* Mode toggle */}
-            <div className="flex gap-0 border-[2px] border-[#111] rounded-lg overflow-hidden w-fit">
-              <button
-                onClick={() => setSubmitMode('text')}
-                className="px-4 py-2 font-mono-bold text-[11px] uppercase tracking-widest text-[#111] border-r-[2px] border-[#111] transition-colors"
-                style={{ backgroundColor: submitMode === 'text' ? '#A78BFA' : '#FFFDF0' }}
-              >
-                Text / Link
-              </button>
-              <button
-                onClick={() => setSubmitMode('file')}
-                className="px-4 py-2 font-mono-bold text-[11px] uppercase tracking-widest text-[#111] transition-colors"
-                style={{ backgroundColor: submitMode === 'file' ? '#A78BFA' : '#FFFDF0' }}
-              >
-                📎 Upload File
-              </button>
+            {/* Text / link */}
+            <div className="flex flex-col gap-1">
+              <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/50">Text / Link</span>
+              <textarea
+                value={submissionText}
+                onChange={e => setSubmissionText(e.target.value)}
+                placeholder="Paste a link, YouTube URL, or describe your work..."
+                rows={4}
+                className="border-[3px] border-[#111] rounded-lg px-3 py-2.5 text-[15px] font-body bg-white focus:outline-none focus:bg-[#FFFDF0] w-full resize-none"
+              />
+              <div className={`font-mono-ui text-[10px] text-right ${submissionText.length > 1000 ? 'text-[#FF6B57]' : 'text-[#111]/40'}`}>
+                {submissionText.length}/1000
+              </div>
             </div>
 
-            {/* Text/link input */}
-            {submitMode === 'text' && (
-              <>
-                <textarea
-                  value={submissionText}
-                  onChange={e => setSubmissionText(e.target.value)}
-                  placeholder="Paste a link, YouTube URL, or describe your work..."
-                  rows={5}
-                  className="border-[3px] border-[#111] rounded-lg px-3 py-2.5 text-[15px] font-body bg-white focus:outline-none focus:bg-[#FFFDF0] w-full resize-none"
-                />
-                <div className={`font-mono-ui text-[10px] text-right ${submissionText.length > 1000 ? 'text-[#FF6B57]' : 'text-[#111]/40'}`}>
-                  {submissionText.length}/1000
+            {/* File upload */}
+            <div className="flex flex-col gap-2">
+              <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/50">Attach image or video (optional)</span>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="border-[3px] border-dashed border-[#111] rounded-lg p-4 flex flex-col items-center gap-1.5 bg-[#FFFDF0] hover:bg-[#A78BFA]/10 transition-colors cursor-pointer"
+              >
+                <UploadIcon />
+                <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/60">
+                  {uploadFile ? uploadFile.name : 'Tap to choose image or video'}
+                </span>
+                <span className="font-mono-ui text-[9px] text-[#111]/40">Max 3 MB · JPG, PNG, GIF, WEBP, MP4, MOV, WEBM</span>
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/quicktime,video/webm"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+              {uploadPreview && (
+                <div className="relative border-[2px] border-[#111] rounded-lg overflow-hidden">
+                  {uploadFile?.type.startsWith('video/') ? (
+                    // eslint-disable-next-line jsx-a11y/media-has-caption
+                    <video src={uploadPreview} controls className="w-full max-h-48 bg-black" />
+                  ) : (
+                    <img src={uploadPreview} alt="Preview" className="w-full max-h-48 object-contain bg-[#FFFDF0]" />
+                  )}
+                  <button
+                    onClick={clearFile}
+                    className="absolute top-2 right-2 bg-[#FF3E9A] border-[2px] border-[#111] rounded-full w-6 h-6 flex items-center justify-center font-mono-bold text-[11px] text-white shadow-hard-sm"
+                  >×</button>
                 </div>
-              </>
-            )}
-
-            {/* File upload input */}
-            {submitMode === 'file' && (
-              <div className="flex flex-col gap-2">
-                {/* Drop zone / picker */}
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="border-[3px] border-dashed border-[#111] rounded-lg p-6 flex flex-col items-center gap-2 bg-[#FFFDF0] hover:bg-[#A78BFA]/10 transition-colors cursor-pointer"
-                >
-                  <UploadIcon />
-                  <span className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111]/60">
-                    {uploadFile ? uploadFile.name : 'Tap to choose image or video'}
-                  </span>
-                  <span className="font-mono-ui text-[10px] text-[#111]/40">Max 3 MB · JPG, PNG, GIF, WEBP, MP4, MOV, WEBM</span>
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/quicktime,video/webm"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-
-                {/* Preview */}
-                {uploadPreview && (
-                  <div className="relative border-[2px] border-[#111] rounded-lg overflow-hidden">
-                    {uploadFile?.type.startsWith('video/') ? (
-                      // eslint-disable-next-line jsx-a11y/media-has-caption
-                      <video src={uploadPreview} controls className="w-full max-h-48 bg-black" />
-                    ) : (
-                      <img src={uploadPreview} alt="Preview" className="w-full max-h-48 object-contain bg-[#FFFDF0]" />
-                    )}
-                    <button
-                      onClick={clearFile}
-                      className="absolute top-2 right-2 bg-[#FF3E9A] border-[2px] border-[#111] rounded-full w-6 h-6 flex items-center justify-center font-mono-bold text-[11px] text-white shadow-hard-sm"
-                    >
-                      ×
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
+              )}
+            </div>
 
             <PillButton
               onClick={() => { void handleSubmit() }}
               loading={submitting}
-              disabled={submitting || (submitMode === 'text' && submissionText.length > 1000) || (submitMode === 'file' && !uploadPreview)}
+              disabled={submitting || submissionText.length > 1000}
             >
               Submit work — free →
             </PillButton>

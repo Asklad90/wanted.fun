@@ -36,6 +36,18 @@ function isUrl(str: string): boolean {
   } catch { return false }
 }
 
+/** Parse a combined text+file JSON envelope, or return null if not that format. */
+function parseCombo(str: string): { text?: string; file?: string } | null {
+  if (!str.startsWith('{')) return null
+  try {
+    const p = JSON.parse(str) as Record<string, unknown>
+    if (typeof p === 'object' && p !== null && ('text' in p || 'file' in p)) {
+      return { text: typeof p.text === 'string' ? p.text : undefined, file: typeof p.file === 'string' ? p.file : undefined }
+    }
+  } catch { /* not JSON */ }
+  return null
+}
+
 /** Returns the mime type from a data URL prefix, or null if not a data URL */
 function dataUrlMime(str: string): string | null {
   const m = str.match(/^data:([a-z0-9+/]+\/[a-z0-9+/.]+);base64,/i)
@@ -44,6 +56,21 @@ function dataUrlMime(str: string): string | null {
 
 export function SubmissionViewer({ content, className = '' }: SubmissionViewerProps) {
   const trimmed = content.trim()
+
+  // ── Combined text + file (JSON envelope) ───────────────────────────────────
+  const combined = parseCombo(trimmed)
+  if (combined) {
+    return (
+      <div className={`flex flex-col gap-2 ${className}`}>
+        {combined.text && (
+          <p className="font-body text-[13px] text-[#111]/80 whitespace-pre-wrap leading-relaxed">
+            {combined.text}
+          </p>
+        )}
+        {combined.file && <SubmissionViewer content={combined.file} />}
+      </div>
+    )
+  }
 
   // ── Base64 data URLs (uploaded files) ──────────────────────────────────────
   const mime = dataUrlMime(trimmed)
