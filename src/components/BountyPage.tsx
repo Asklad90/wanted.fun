@@ -131,8 +131,8 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
     setUploadFile(file)
     setUploadPreview(null)
     if (!file) return
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('File is too large. Max 5 MB.')
+    if (file.size > 3 * 1024 * 1024) {
+      toast.error('File is too large. Max 3 MB.')
       setUploadFile(null)
       return
     }
@@ -386,7 +386,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
                   <span className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111]/60">
                     {uploadFile ? uploadFile.name : 'Tap to choose image or video'}
                   </span>
-                  <span className="font-mono-ui text-[10px] text-[#111]/40">Max 5 MB · JPG, PNG, GIF, WEBP, MP4, MOV, WEBM</span>
+                  <span className="font-mono-ui text-[10px] text-[#111]/40">Max 3 MB · JPG, PNG, GIF, WEBP, MP4, MOV, WEBM</span>
                 </button>
                 <input
                   ref={fileInputRef}

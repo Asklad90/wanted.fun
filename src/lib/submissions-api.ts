@@ -53,8 +53,14 @@ export async function postSubmission(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ submitter: submitter.toLowerCase(), content }),
   })
-  const data = await res.json() as { ok?: boolean; error?: string }
-  if (!res.ok) return { ok: false, error: data.error ?? 'Submission failed' }
+  // Read as text first: Vercel error pages (500/413) are not JSON.
+  const text = await res.text()
+  let data: { ok?: boolean; error?: string; detail?: string } = {}
+  try { data = JSON.parse(text) } catch { /* non-JSON response */ }
+  if (!res.ok) {
+    if (res.status === 413) return { ok: false, error: 'File too large to upload (max 3 MB).' }
+    return { ok: false, error: data.error ?? `Server error (${res.status}). Please try again.` }
+  }
   return { ok: true }
 }
 
