@@ -18,6 +18,7 @@ import {
   fetchSubmissions,
   postSubmission,
   fetchExamples,
+  primeSubmitAuth,
   type OffchainSubmission,
   type BountyExample,
 } from '../lib/submissions-api'
@@ -125,6 +126,15 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
     if (!bounty) return
     void registerBounty(bountyId.toString(), bounty.poster.toLowerCase()).then(() => loadSubs())
     fetchExamples(bountyId.toString()).then(setExamples).catch(() => {})
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bountyId, bounty?.poster, address])
+
+  // Pre-sign submit auth as soon as the form would be visible — eliminates wallet popup delay on submit
+  useEffect(() => {
+    if (!bounty || !address) return
+    const isPoster = address.toLowerCase() === bounty.poster.toLowerCase()
+    if (isPoster) return
+    void primeSubmitAuth(bountyId.toString())
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bountyId, bounty?.poster, address])
 
@@ -636,9 +646,10 @@ interface SingleOffchainSubmissionProps {
 }
 
 function SingleOffchainSubmission({ sub, bountyId, isPoster, rewardPerWinner, canApprove, onApproved }: SingleOffchainSubmissionProps) {
-  const { chainId } = useAccount()
+  const { chainId, address } = useAccount()
   const { switchChain } = useSwitchChain()
   const isWrongChain = chainId !== CHAIN_ID
+  const [expanded, setExpanded] = useState(false)
 
   const { data: winnerStatus } = useReadContract({
     address: CONTRACT_ADDRESS, abi: BOUNTY_BOARD_ABI, functionName: 'payoutStatus',
@@ -662,38 +673,104 @@ function SingleOffchainSubmission({ sub, bountyId, isPoster, rewardPerWinner, ca
   const isPending = winnerStatus === 1
   const isPaid = winnerStatus === 2
   const isWinner = (winnerStatus ?? 0) > 0
+  const isOwnSub = !!address && address.toLowerCase() === sub.submitter.toLowerCase()
+  const canExpand = isPoster || isOwnSub
 
   // Short address display
   const shortAddr = `${sub.submitter.slice(0, 6)}…${sub.submitter.slice(-4)}`
 
   return (
-    <div className={`border-[3px] border-[#111] rounded-lg p-3 ${isWinner ? 'bg-[#C6F23A]/20' : 'bg-white'}`}>
-      <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
-        <span className="font-mono-bold text-[10px] uppercase tracking-wider text-[#111]">
-          SUB #{String(sub.id).padStart(2, '0')} — {shortAddr}
-        </span>
-        {isPaid && (
-          <span className="font-mono-bold text-[10px] uppercase bg-[#C6F23A] border-2 border-[#111] px-2 py-0.5 rounded-full">PAID {formatUsdc(rewardPerWinner)} USDC</span>
-        )}
-        {isPending && (
-          <span className="font-mono-bold text-[10px] uppercase bg-[#FFE600] border-2 border-[#111] px-2 py-0.5 rounded-full">PAYOUT PENDING</span>
-        )}
-        {!isWinner && isPoster && canApprove && (
-          <PillButton size="sm" variant="lime" onClick={handleApprove} loading={approvePending || approveConfirming} disabled={approveSuccess} showArrow={false}>
-            Approve &amp; pay →
-          </PillButton>
+    <>
+      <div className={`border-[3px] border-[#111] rounded-lg p-3 ${isWinner ? 'bg-[#C6F23A]/20' : 'bg-white'}`}>
+        {/* Header row */}
+        <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+          <span className="font-mono-bold text-[10px] uppercase tracking-wider text-[#111]">
+            SUB #{String(sub.id).padStart(2, '0')} — {shortAddr}
+          </span>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {isPaid && (
+              <span className="font-mono-bold text-[10px] uppercase bg-[#C6F23A] border-2 border-[#111] px-2 py-0.5 rounded-full">PAID {formatUsdc(rewardPerWinner)} USDC</span>
+            )}
+            {isPending && (
+              <span className="font-mono-bold text-[10px] uppercase bg-[#FFE600] border-2 border-[#111] px-2 py-0.5 rounded-full">PAYOUT PENDING</span>
+            )}
+            {!isWinner && isPoster && canApprove && (
+              <PillButton size="sm" variant="lime" onClick={handleApprove} loading={approvePending || approveConfirming} disabled={approveSuccess} showArrow={false}>
+                Approve &amp; pay →
+              </PillButton>
+            )}
+            {/* Expand button — poster or own submission */}
+            {canExpand && (
+              <button
+                onClick={() => setExpanded(true)}
+                className="w-5 h-5 rounded-sm border-2 border-[#111] bg-white/80 hover:bg-[#A78BFA]/30 flex items-center justify-center font-mono-bold text-[9px] transition-colors"
+                aria-label="Expand submission"
+                title="View full submission"
+              >□</button>
+            )}
+          </div>
+        </div>
+
+        {/* Rich submission viewer */}
+        <SubmissionViewer content={sub.content} />
+
+        {(approvePending || approveConfirming || approveSuccess || approveErr) && (
+          <div className="mt-2">
+            <TxStatus hash={approveHash} isPending={approvePending} isConfirming={approveConfirming} isSuccess={approveSuccess} isError={!!approveErr} error={approveErr ? parseOnchainError(approveErr) : undefined} successMessage="Winner approved & paid!" />
+          </div>
         )}
       </div>
 
-      {/* Rich submission viewer */}
-      <SubmissionViewer content={sub.content} />
+      {/* Expanded full-view modal */}
+      {expanded && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: 'rgba(17,17,17,0.75)' }}
+          onClick={() => setExpanded(false)}
+        >
+          <div
+            className="relative w-full max-w-lg max-h-[85vh] flex flex-col border-[3px] border-[#111] rounded-2xl overflow-hidden bg-white"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Title bar */}
+            <div className="flex items-center justify-between px-4 py-2 border-b-[3px] border-[#111] shrink-0" style={{ backgroundColor: isWinner ? '#C6F23A' : '#7FF3F0' }}>
+              <span className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111]">
+                SUB_{String(sub.id).padStart(3, '0')}.EXE — {shortAddr}
+              </span>
+              <button
+                onClick={() => setExpanded(false)}
+                className="w-6 h-6 rounded-full border-[2px] border-[#111] bg-[#FF3E9A] flex items-center justify-center font-mono-bold text-[12px] text-white leading-none"
+                aria-label="Close"
+              >×</button>
+            </div>
 
-      {(approvePending || approveConfirming || approveSuccess || approveErr) && (
-        <div className="mt-2">
-          <TxStatus hash={approveHash} isPending={approvePending} isConfirming={approveConfirming} isSuccess={approveSuccess} isError={!!approveErr} error={approveErr ? parseOnchainError(approveErr) : undefined} successMessage="Winner approved & paid!" />
+            {/* Scrollable body */}
+            <div className="overflow-y-auto p-4 flex flex-col gap-3">
+              {/* Status badges */}
+              {(isPaid || isPending || isWinner) && (
+                <div className="flex gap-2 flex-wrap">
+                  {isPaid && <span className="font-mono-bold text-[10px] uppercase bg-[#C6F23A] border-2 border-[#111] px-2 py-0.5 rounded-full">PAID {formatUsdc(rewardPerWinner)} USDC</span>}
+                  {isPending && <span className="font-mono-bold text-[10px] uppercase bg-[#FFE600] border-2 border-[#111] px-2 py-0.5 rounded-full">PAYOUT PENDING</span>}
+                </div>
+              )}
+
+              {/* Full content */}
+              <SubmissionViewer content={sub.content} />
+
+              {/* Approve button inside modal (poster only) */}
+              {!isWinner && isPoster && canApprove && (
+                <div className="pt-2 border-t-[2px] border-[#111]/20 flex flex-col gap-2">
+                  <TxStatus hash={approveHash} isPending={approvePending} isConfirming={approveConfirming} isSuccess={approveSuccess} isError={!!approveErr} error={approveErr ? parseOnchainError(approveErr) : undefined} successMessage="Winner approved & paid!" />
+                  <PillButton variant="lime" onClick={handleApprove} loading={approvePending || approveConfirming} disabled={approveSuccess} showArrow={false}>
+                    Approve &amp; pay →
+                  </PillButton>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
-    </div>
+    </>
   )
 }
 

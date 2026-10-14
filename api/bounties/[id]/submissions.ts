@@ -79,10 +79,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     await ensureSchema()
 
-    // ── GET — fetch submissions ─────────────────────────────────────────────
+    // ── GET — fetch submissions (or just count) ────────────────────────────
     if (req.method === 'GET') {
       const ip = getClientIp(req.headers as Record<string, string | string[] | undefined>)
       if (getLimiter.isLimited(ip)) return res.status(429).json({ error: 'Too many requests' })
+
+      // ?count=1 — always-public total count, no content exposed
+      if (req.query.count === '1') {
+        const { rows } = await pool.sql`
+          SELECT COUNT(*)::int AS count FROM submissions WHERE bounty_id = ${bountyId}
+        `
+        const count = (rows[0] as { count: number } | undefined)?.count ?? 0
+        return res.status(200).json({ count })
+      }
 
       const viewer = ((req.query.viewer as string) ?? '').toLowerCase()
       const poster = ((req.query.poster as string) ?? '').toLowerCase()

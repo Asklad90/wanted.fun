@@ -17,6 +17,11 @@ function buildAuthMessage(action: AuthAction, bountyId: string, timestamp: numbe
   return `want.fun:${action}:${bountyId}:${timestamp}`
 }
 
+// Pre-signed auth cache — keyed by `${action}:${bountyId}:${address}`, TTL 4 min
+const AUTH_TTL_MS = 4 * 60 * 1000
+interface CachedAuth { address: string; timestamp: number; signature: string; expiresAt: number }
+const _authCache = new Map<string, CachedAuth>()
+
 async function signAuth(
   action: AuthAction,
   bountyId: string,
@@ -24,14 +29,25 @@ async function signAuth(
   try {
     const walletClient = await getWalletClient(config)
     if (!walletClient) return null
-    const address = walletClient.account.address
+    const address = walletClient.account.address.toLowerCase()
+    const cacheKey = `${action}:${bountyId}:${address}`
+    const cached = _authCache.get(cacheKey)
+    if (cached && Date.now() < cached.expiresAt) {
+      return { address: cached.address, timestamp: cached.timestamp, signature: cached.signature }
+    }
     const timestamp = Math.floor(Date.now() / 1000)
     const message = buildAuthMessage(action, bountyId, timestamp)
     const signature = await walletClient.signMessage({ message })
-    return { address: address.toLowerCase(), timestamp, signature }
+    _authCache.set(cacheKey, { address, timestamp, signature, expiresAt: Date.now() + AUTH_TTL_MS })
+    return { address, timestamp, signature }
   } catch {
     return null
   }
+}
+
+/** Call this as soon as the submit form mounts so the wallet popup fires early. */
+export async function primeSubmitAuth(bountyId: string): Promise<void> {
+  await signAuth('submit', bountyId)
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────

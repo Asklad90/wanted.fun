@@ -37,9 +37,9 @@ function useBountyData(id: bigint, enabled: boolean) {
 
   useEffect(() => {
     if (!bounty) return
-    fetch(`/api/bounties/${id.toString()}/submissions`)
-      .then(r => r.ok ? r.json() as Promise<{ submissions: unknown[] }> : Promise.resolve({ submissions: [] }))
-      .then(d => setSubCount(d.submissions.length))
+    fetch(`/api/bounties/${id.toString()}/submissions?count=1`)
+      .then(r => r.ok ? r.json() as Promise<{ count: number }> : Promise.resolve({ count: 0 }))
+      .then(d => setSubCount(d.count))
       .catch(() => {})
   }, [id, bounty])
 
