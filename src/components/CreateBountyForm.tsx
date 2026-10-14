@@ -1,6 +1,6 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useSwitchChain } from 'wagmi'
-import { erc20Abi, parseUnits } from 'viem'
+import { erc20Abi, parseUnits, parseEventLogs } from 'viem'
 import { toast } from 'sonner'
 import { ImageIcon, VideoIcon, XIcon, PlusIcon } from 'lucide-react'
 import { WindowCard } from './WindowCard'
@@ -49,7 +49,25 @@ export function CreateBountyForm({ onClose, onSuccess }: CreateBountyFormProps) 
 
   // Create bounty
   const { writeContract: createBounty, data: createHash, isPending: createPending, error: createErr, reset: resetCreate } = useWriteContract()
-  const { isLoading: createConfirming, isSuccess: createSuccess } = useWaitForTransactionReceipt({ hash: createHash })
+  const { isLoading: createConfirming, isSuccess: createSuccess, data: createReceipt } = useWaitForTransactionReceipt({ hash: createHash })
+
+  // Once the tx confirms, save examples under the real onchain bounty ID from the BountyCreated event
+  useEffect(() => {
+    if (!createSuccess || !createReceipt || examples.length === 0) return
+    try {
+      const logs = parseEventLogs({ abi: BOUNTY_BOARD_ABI, logs: createReceipt.logs, eventName: 'BountyCreated' })
+      const bountyId = logs[0]?.args?.id
+      if (bountyId == null) return
+      const idStr = bountyId.toString()
+      void saveExamples(idStr, examples.map(e => e.dataUrl)).catch(() => {
+        toast.error('Examples could not be saved — try re-uploading from the bounty page.')
+      })
+      void registerBounty(idStr, address?.toLowerCase())
+    } catch {
+      // If log parsing fails, examples are silently skipped
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [createSuccess, createReceipt])
 
   const rewardRaw = rewardPerWinner ? parseUnits(rewardPerWinner, USDC_DECIMALS) : 0n
   const maxWinnersNum = Math.max(1, Math.min(50, parseInt(maxWinners) || 1))
@@ -125,15 +143,8 @@ export function CreateBountyForm({ onClose, onSuccess }: CreateBountyFormProps) 
         chainId: CHAIN_ID,
       },
       {
-        onSuccess: (hash) => {
+        onSuccess: () => {
           toast.success('Bounty posted — prize locked in escrow!')
-          // Save examples off-chain keyed by tx hash (best-effort)
-          if (examples.length > 0) {
-            void saveExamples(hash, examples.map(e => e.dataUrl)).catch(() => {
-              toast.error('Examples could not be saved — try re-uploading from the bounty page.')
-            })
-            void registerBounty(hash, address?.toLowerCase())
-          }
         },
         onError: (err) => toast.error(parseOnchainError(err)),
       }
