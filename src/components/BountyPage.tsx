@@ -17,7 +17,6 @@ import {
   registerBounty,
   fetchSubmissions,
   postSubmission,
-  setVisibility,
   fetchExamples,
   type OffchainSubmission,
   type BountyExample,
@@ -209,11 +208,17 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
 
   async function handleToggleVisibility() {
     const next = !isPublic
+    // Optimistic update — no wallet signature needed for a simple toggle
+    setIsPublic(next)
     try {
-      await setVisibility(bountyId.toString(), next)
-      setIsPublic(next)
+      await fetch(`/api/bounties/${bountyId.toString()}/visibility`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_public: next }),
+      })
       toast.success(next ? 'Submissions are now public.' : 'Submissions are now private.')
     } catch {
+      setIsPublic(!next) // revert on failure
       toast.error('Failed to update visibility.')
     }
   }
@@ -557,7 +562,10 @@ function OffchainSubmissionList({
           <button
             onClick={onToggleVisibility}
             className="font-mono-bold text-[10px] uppercase tracking-widest border-[2px] border-[#111] rounded-full px-3 py-1 transition-colors btn-press"
-            style={{ backgroundColor: isPublic ? '#C6F23A' : '#FFFDF0' }}
+            style={{
+              backgroundColor: isPublic ? '#1A1AE6' : '#FFFDF0',
+              color: isPublic ? '#fff' : '#111',
+            }}
           >
             {isPublic ? 'Make private' : 'Make public'}
           </button>
