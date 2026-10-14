@@ -114,12 +114,13 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
   return (
     <div className="flex flex-col gap-8">
       {/* Hero */}
-      <motion.section
-        className="checkerboard border-[3px] border-[#111] rounded-xl shadow-hard overflow-hidden"
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
-      >
+      <div>
+        <motion.section
+          className="checkerboard border-[3px] border-[#111] rounded-xl shadow-hard overflow-hidden"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
+        >
         <div className="bg-[#FFFDF0]/92 px-6 py-10 flex flex-col gap-5">
           <h1 className="font-heading text-[44px] sm:text-[58px] font-extrabold leading-[1.05] text-[#111] text-balance" style={{ letterSpacing: '-0.02em' }}>
             Post a bounty.<br />Get it done.
@@ -139,6 +140,7 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
           )}
         </div>
       </motion.section>
+      </div>
 
       {/* Tab strip */}
       <motion.div

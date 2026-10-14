@@ -1,6 +1,14 @@
 # Wanted.fun
 
-## WantedEscrow v3 (7-day reviewWindow) — Arc Testnet (current)
+## WantedEscrow v4 — Arc Testnet (current)
+- Address: `0x92c351215f9182100f01ef3fe1bc7023b72460b9`
+- Explorer: https://explorer.testnet.arc.io/address/0x92c351215f9182100f01ef3fe1bc7023b72460b9
+- Constructor: `usdc=0x3600000000000000000000000000000000000000`, `reviewWindow=604800` (7 days)
+- Deployed: 2026-10-14
+- 57/57 Foundry tests pass (unit + fuzz + invariant)
+- VITE_CONTRACT_ADDRESS set in .env
+
+## WantedEscrow v3 (7-day reviewWindow) — Arc Testnet (deprecated)
 - Address: `0xaa248ec80896dae9b6e310401741798a77db56f9`
 - Explorer: https://explorer.testnet.arc.io/address/0xaa248ec80896dae9b6e310401741798a77db56f9
 - Constructor: `usdc=0x3600000000000000000000000000000000000000`, `reviewWindow=604800` (7 days — mainnet-ready)

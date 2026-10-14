@@ -18,7 +18,9 @@ import {
   fetchSubmissions,
   postSubmission,
   setVisibility,
+  fetchExamples,
   type OffchainSubmission,
+  type BountyExample,
 } from '../lib/submissions-api'
 
 // Snapshot current unix seconds — defined outside components to avoid purity lint
@@ -49,6 +51,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
   const [isPublic, setIsPublic] = useState(false)
   const [subsLoading, setSubsLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [examples, setExamples] = useState<BountyExample[]>([])
 
   // Confetti — fires once when user opens a bounty they won
   const confettiFired = useRef(false)
@@ -114,10 +117,11 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
     }
   }, [userPayoutStatus, fireConfetti])
 
-  // Register bounty + load subs when bounty data arrives
+  // Register bounty + load subs + load examples when bounty data arrives
   useEffect(() => {
     if (!bounty) return
     void registerBounty(bountyId.toString()).then(() => loadSubs())
+    fetchExamples(bountyId.toString()).then(setExamples).catch(() => {})
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bountyId, bounty?.poster, address])
 
@@ -266,6 +270,33 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
 
         <h1 className="font-heading text-[26px] font-extrabold leading-tight text-[#111]">{titleStr}</h1>
         <p className="font-body text-[14px] leading-relaxed text-[#111]/80 whitespace-pre-wrap">{descStr}</p>
+
+        {/* Example attachments from poster */}
+        {examples.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <div className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/50">
+              Examples from poster
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {examples.map((ex, idx) => (
+                <a
+                  key={idx}
+                  href={ex.content}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="relative border-[2px] border-[#111] rounded-lg overflow-hidden w-24 h-24 bg-[#FFFDF0] hover:opacity-90 transition-opacity shrink-0 block"
+                >
+                  {ex.content.startsWith('data:video') ? (
+                    // eslint-disable-next-line jsx-a11y/media-has-caption
+                    <video src={ex.content} className="w-full h-full object-cover" muted />
+                  ) : (
+                    <img src={ex.content} alt={`Example ${idx + 1}`} className="w-full h-full object-cover" />
+                  )}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Stats grid */}
         <div className="grid grid-cols-3 gap-3">
