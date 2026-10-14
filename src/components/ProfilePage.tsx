@@ -3,7 +3,7 @@ import { useAccount, useReadContract, useWriteContract, useWaitForTransactionRec
 import { useSwitchChain } from 'wagmi'
 import { isAddress, parseUnits } from 'viem'
 import { BOUNTY_BOARD_ABI } from '../bounty-abi'
-import { USDC_ADDRESS, USDC_DECIMALS, CONTRACT_ADDRESS, CHAIN_ID, getTxUrl, getAddressUrl } from '../bounty-config'
+import { USDC_ADDRESS, USDC_DECIMALS, CONTRACT_ADDRESS, CHAIN_ID, CHAIN_NAME, getTxUrl, getAddressUrl } from '../bounty-config'
 import { formatUsdc, formatAddress, parseOnchainError, decodeBytes, bountyStatus, timeLeft } from '../lib/utils'
 import { WindowCard } from './WindowCard'
 import { StatusTag } from './StatusTag'
@@ -165,7 +165,7 @@ function ReceiveModal({ address, onClose }: { address: string; onClose: () => vo
               {address}
             </div>
             <CopyButton text={address} label="Copy address" />
-            <p className="font-mono-ui text-[10px] uppercase tracking-widest text-[#111]/50 text-center">USDC on Arc Testnet only</p>
+            <p className="font-mono-ui text-[10px] uppercase tracking-widest text-[#111]/50 text-center">USDC on {CHAIN_NAME} only</p>
           </div>
         </WindowCard>
       </div>
