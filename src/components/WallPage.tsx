@@ -135,7 +135,7 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
             <div className="flex gap-8 flex-wrap pt-4 mt-1 border-t-[3px] border-[#111]">
               <Stat value={totalBounties.toString()} label="Bounties" />
               <Stat value={`$${formatUsdc(totalEscrowed)}`} label="In escrow" />
-              <Stat value={`$${formatUsdc(totalPaid)}`} label="Winners paid" />
+              <Stat value={`${formatUsdc(totalPaid)} USDC`} label="Paid out" />
             </div>
           )}
         </div>
