@@ -387,6 +387,14 @@ contract WantedEscrow is ReentrancyGuard {
         return _bountyCount;
     }
 
+    function totalWinnersApproved() external view returns (uint256) {
+        uint256 count;
+        for (uint256 i = 1; i <= _bountyCount; i++) {
+            count += _bounties[i].winnersApproved;
+        }
+        return count;
+    }
+
     function _approvalCutoff(uint64 deadline) internal view returns (uint256) {
         return uint256(deadline) + uint256(reviewWindow);
     }

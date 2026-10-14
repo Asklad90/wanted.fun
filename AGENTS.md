@@ -1,8 +1,8 @@
 # Wanted.fun
 
 ## WantedEscrow v4 — Arc Testnet (current)
-- Address: `0x92c351215f9182100f01ef3fe1bc7023b72460b9`
-- Explorer: https://explorer.testnet.arc.io/address/0x92c351215f9182100f01ef3fe1bc7023b72460b9
+- Address: `0x7d664d50d8d0bf777c81a21aa3ac1ec91405cdf8`
+- Explorer: https://explorer.testnet.arc.io/address/0x7d664d50d8d0bf777c81a21aa3ac1ec91405cdf8
 - Constructor: `usdc=0x3600000000000000000000000000000000000000`, `reviewWindow=604800` (7 days)
 - Deployed: 2026-10-14
 - 57/57 Foundry tests pass (unit + fuzz + invariant)

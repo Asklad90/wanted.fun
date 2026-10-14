@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useReadContract } from 'wagmi'
 import { BountyCard, BountyData } from './BountyCard'
 import { WindowCard } from './WindowCard'
 import { PillButton } from './PillButton'
-import { TrophyIcon } from './Icons'
+import { TrophyIcon, CoinIcon } from './Icons'
 import { MyBounties, MySubmissions } from './MyBounties'
 import { BOUNTY_BOARD_ABI } from '../bounty-abi'
 import { CHAIN_ID, CONTRACT_ADDRESS, CONTRACT_DEPLOYED } from '../bounty-config'
@@ -135,7 +135,7 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
             <div className="flex gap-8 flex-wrap pt-4 mt-1 border-t-[3px] border-[#111]">
               <Stat value={totalBounties.toString()} label="Bounties" />
               <Stat value={`$${formatUsdc(totalEscrowed)}`} label="In escrow" />
-              <Stat value={`${formatUsdc(totalPaid)} USDC`} label="Paid out" />
+              <Stat value={`$${formatUsdc(totalPaid)}`} label="Paid out" icon={<CoinIcon size={28} />} />
             </div>
           )}
         </div>
@@ -201,10 +201,13 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
   )
 }
 
-function Stat({ value, label }: { value: string; label: string }) {
+function Stat({ value, label, icon }: { value: string; label: string; icon?: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="font-heading text-[28px] font-extrabold tabular-nums text-[#111]" style={{ letterSpacing: '-0.02em' }}>{value}</span>
+      <div className="flex items-center gap-1.5">
+        <span className="font-heading text-[28px] font-extrabold tabular-nums text-[#111]" style={{ letterSpacing: '-0.02em' }}>{value}</span>
+        {icon}
+      </div>
       <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/70">{label}</span>
     </div>
   )

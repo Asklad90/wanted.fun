@@ -382,7 +382,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
                 className="px-4 py-2 font-mono-bold text-[11px] uppercase tracking-widest text-[#111] border-r-[2px] border-[#111] transition-colors"
                 style={{ backgroundColor: submitMode === 'text' ? '#A78BFA' : '#FFFDF0' }}
               >
-                ✏️ Text / Link
+                Text / Link
               </button>
               <button
                 onClick={() => setSubmitMode('file')}

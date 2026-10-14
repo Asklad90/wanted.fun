@@ -34,7 +34,7 @@ createRoot(document.getElementById('root')!).render(
         <ConnectKitProvider
           options={{
             hideNoWalletCTA: false,
-            walletConnectCTA: 'modal',
+            walletConnectCTA: 'link',
             enforceSupportedChains: false,
           }}
         >

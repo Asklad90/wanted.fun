@@ -307,4 +307,11 @@ export const BOUNTY_BOARD_ABI = [
     outputs: [{ type: 'uint8' }], // MyStatus enum
     stateMutability: 'view',
   },
+  {
+    type: 'function',
+    name: 'totalWinnersApproved',
+    inputs: [],
+    outputs: [{ type: 'uint256' }],
+    stateMutability: 'view',
+  },
 ] as const

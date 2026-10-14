@@ -1,13 +1,20 @@
 {
-  "contractAddress": "0x92c351215f9182100f01ef3fe1bc7023b72460b9",
+  "contractAddress": "0x7d664d50d8d0bf777c81a21aa3ac1ec91405cdf8",
   "network": "ARC-TESTNET",
   "deployerWalletId": "3c2464b2-8369-52e2-a782-800bbeca5396",
   "contract_code_path": "/home/user/app/contracts/WantedEscrow.sol",
   "contract_compiled_code_path": "/home/user/app/contracts/out/WantedEscrow.sol/WantedEscrow.json",
   "contract_network_and_links": {
-    "Arc Testnet": "https://explorer.testnet.arc.io/address/0x92c351215f9182100f01ef3fe1bc7023b72460b9"
+    "Arc Testnet": "https://explorer.testnet.arc.io/address/0x7d664d50d8d0bf777c81a21aa3ac1ec91405cdf8"
   },
   "contract_deployments": [
+    {
+      "chain": "Arc Testnet",
+      "address": "0x7d664d50d8d0bf777c81a21aa3ac1ec91405cdf8",
+      "explorerUrl": "https://explorer.testnet.arc.io/address/0x7d664d50d8d0bf777c81a21aa3ac1ec91405cdf8",
+      "txHash": "0x24c7b54b6f3d933eb967f7c007a5d687ccfc388b33c29f19dee90fb2457d3dd6",
+      "deployedAt": "2026-10-14T14:13:45.059Z"
+    },
     {
       "chain": "Arc Testnet",
       "address": "0x92c351215f9182100f01ef3fe1bc7023b72460b9",
@@ -552,6 +559,19 @@
     {
       "type": "function",
       "name": "totalEscrowLocked",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "totalWinnersApproved",
       "inputs": [],
       "outputs": [
         {

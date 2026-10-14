@@ -14,15 +14,33 @@ export function FolderIcon({ size = 20, className = '' }: IconProps) {
 }
 
 export function CoinIcon({ size = 20, className = '' }: IconProps) {
-  // USDC logo: blue circle, white "USDC" ring mark, white $ centre
+  // Official USDC logo: blue circle, two arc brackets, white $ with vertical stem
   return (
-    <svg width={size} height={size} viewBox="0 0 20 20" fill="none" className={className}>
-      <circle cx="10" cy="10" r="9" fill="#2775CA"/>
-      <circle cx="10" cy="10" r="9" stroke="#111" strokeWidth="1.2"/>
-      {/* outer ring tick marks (simplified) */}
-      <circle cx="10" cy="10" r="6.5" fill="#2775CA" stroke="white" strokeWidth="1"/>
+    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" className={className}>
+      {/* Background circle */}
+      <circle cx="50" cy="50" r="50" fill="#2775CA"/>
+      {/* Left arc bracket */}
+      <path
+        d="M34 26 A28 28 0 0 0 34 74"
+        stroke="white" strokeWidth="8" strokeLinecap="round" fill="none"
+      />
+      {/* Right arc bracket */}
+      <path
+        d="M66 26 A28 28 0 0 1 66 74"
+        stroke="white" strokeWidth="8" strokeLinecap="round" fill="none"
+      />
       {/* $ symbol */}
-      <text x="10" y="14.2" textAnchor="middle" fontSize="8.5" fill="white" fontWeight="900" fontFamily="Arial,sans-serif">$</text>
+      <text
+        x="50" y="67"
+        textAnchor="middle"
+        fontSize="46"
+        fill="white"
+        fontWeight="bold"
+        fontFamily="Arial, Helvetica, sans-serif"
+      >$</text>
+      {/* Vertical stem of $ */}
+      <rect x="47" y="18" width="6" height="10" rx="3" fill="white"/>
+      <rect x="47" y="72" width="6" height="10" rx="3" fill="white"/>
     </svg>
   )
 }
