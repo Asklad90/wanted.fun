@@ -285,7 +285,30 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
         <h1 className="font-heading text-[26px] font-extrabold leading-tight text-[#111]">{titleStr}</h1>
         <p className="font-body text-[14px] leading-relaxed text-[#111]/80 whitespace-pre-wrap">{descStr}</p>
 
-        {/* Example attachments from poster */}
+        {/* View attachments button — opens each file in a new tab */}
+        {examples.length > 0 && (
+          <button
+            type="button"
+            onClick={() => {
+              examples.forEach(ex => {
+                // Convert the data URL to a Blob URL so browsers allow opening it
+                const [header, b64] = ex.content.split(',')
+                const mime = header.match(/:(.*?);/)?.[1] ?? 'application/octet-stream'
+                const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0))
+                const url = URL.createObjectURL(new Blob([bytes], { type: mime }))
+                window.open(url, '_blank', 'noopener,noreferrer')
+                // Revoke after a short delay so the browser has time to load the tab
+                setTimeout(() => URL.revokeObjectURL(url), 60_000)
+              })
+            }}
+            className="self-start flex items-center gap-1.5 border-[2px] border-[#111] rounded-full px-3 py-1.5 bg-[#FFFDF0] hover:bg-[#A78BFA]/20 transition-colors font-mono-bold text-[10px] uppercase tracking-widest text-[#111] btn-press"
+          >
+            <AttachmentIcon />
+            View attachment{examples.length > 1 ? `s (${examples.length})` : ''}
+          </button>
+        )}
+
+        {/* Example thumbnails from poster */}
         {examples.length > 0 && (
           <div className="flex flex-col gap-2">
             <div className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/50">
@@ -293,20 +316,27 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
             </div>
             <div className="flex flex-wrap gap-2">
               {examples.map((ex, idx) => (
-                <a
+                <button
                   key={idx}
-                  href={ex.content}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="relative border-[2px] border-[#111] rounded-lg overflow-hidden w-24 h-24 bg-[#FFFDF0] hover:opacity-90 transition-opacity shrink-0 block"
+                  type="button"
+                  onClick={() => {
+                    const [header, b64] = ex.content.split(',')
+                    const mime = header.match(/:(.*?);/)?.[1] ?? 'application/octet-stream'
+                    const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0))
+                    const url = URL.createObjectURL(new Blob([bytes], { type: mime }))
+                    window.open(url, '_blank', 'noopener,noreferrer')
+                    setTimeout(() => URL.revokeObjectURL(url), 60_000)
+                  }}
+                  className="relative border-[2px] border-[#111] rounded-lg overflow-hidden w-24 h-24 bg-[#FFFDF0] hover:opacity-80 transition-opacity shrink-0 block cursor-pointer"
+                  aria-label={`View attachment ${idx + 1}`}
                 >
                   {ex.content.startsWith('data:video') ? (
                     // eslint-disable-next-line jsx-a11y/media-has-caption
-                    <video src={ex.content} className="w-full h-full object-cover" muted />
+                    <video src={ex.content} className="w-full h-full object-cover pointer-events-none" muted />
                   ) : (
-                    <img src={ex.content} alt={`Example ${idx + 1}`} className="w-full h-full object-cover" />
+                    <img src={ex.content} alt={`Example ${idx + 1}`} className="w-full h-full object-cover pointer-events-none" />
                   )}
-                </a>
+                </button>
               ))}
             </div>
           </div>
@@ -660,6 +690,14 @@ function UploadIcon() {
     <svg width={28} height={28} viewBox="0 0 24 24" fill="none">
       <path d="M12 16V8M12 8l-3 3M12 8l3 3" stroke="#A78BFA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       <rect x="3" y="16" width="18" height="5" rx="2" fill="#A78BFA" stroke="#111" strokeWidth="1.5" />
+    </svg>
+  )
+}
+
+function AttachmentIcon() {
+  return (
+    <svg width={12} height={12} viewBox="0 0 24 24" fill="none">
+      <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66L9.41 17.41a2 2 0 01-2.83-2.83l8.49-8.48" stroke="#111" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
