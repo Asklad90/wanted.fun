@@ -51,6 +51,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
   const [subsLoading, setSubsLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [examples, setExamples] = useState<BountyExample[]>([])
+  const [showAttachments, setShowAttachments] = useState(false)
 
   // Confetti — fires once per bounty visit when user is a winner
   const confettiFired = useRef(false)
@@ -285,61 +286,16 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
         <h1 className="font-heading text-[26px] font-extrabold leading-tight text-[#111]">{titleStr}</h1>
         <p className="font-body text-[14px] leading-relaxed text-[#111]/80 whitespace-pre-wrap">{descStr}</p>
 
-        {/* View attachments button — opens each file in a new tab */}
+        {/* View attachments button — opens inline modal */}
         {examples.length > 0 && (
           <button
             type="button"
-            onClick={() => {
-              examples.forEach(ex => {
-                // Convert the data URL to a Blob URL so browsers allow opening it
-                const [header, b64] = ex.content.split(',')
-                const mime = header.match(/:(.*?);/)?.[1] ?? 'application/octet-stream'
-                const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0))
-                const url = URL.createObjectURL(new Blob([bytes], { type: mime }))
-                window.open(url, '_blank', 'noopener,noreferrer')
-                // Revoke after a short delay so the browser has time to load the tab
-                setTimeout(() => URL.revokeObjectURL(url), 60_000)
-              })
-            }}
+            onClick={() => setShowAttachments(true)}
             className="self-start flex items-center gap-1.5 border-[2px] border-[#111] rounded-full px-3 py-1.5 bg-[#FFFDF0] hover:bg-[#A78BFA]/20 transition-colors font-mono-bold text-[10px] uppercase tracking-widest text-[#111] btn-press"
           >
             <AttachmentIcon />
             View attachment{examples.length > 1 ? `s (${examples.length})` : ''}
           </button>
-        )}
-
-        {/* Example thumbnails from poster */}
-        {examples.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <div className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/50">
-              Examples from poster
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {examples.map((ex, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => {
-                    const [header, b64] = ex.content.split(',')
-                    const mime = header.match(/:(.*?);/)?.[1] ?? 'application/octet-stream'
-                    const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0))
-                    const url = URL.createObjectURL(new Blob([bytes], { type: mime }))
-                    window.open(url, '_blank', 'noopener,noreferrer')
-                    setTimeout(() => URL.revokeObjectURL(url), 60_000)
-                  }}
-                  className="relative border-[2px] border-[#111] rounded-lg overflow-hidden w-24 h-24 bg-[#FFFDF0] hover:opacity-80 transition-opacity shrink-0 block cursor-pointer"
-                  aria-label={`View attachment ${idx + 1}`}
-                >
-                  {ex.content.startsWith('data:video') ? (
-                    // eslint-disable-next-line jsx-a11y/media-has-caption
-                    <video src={ex.content} className="w-full h-full object-cover pointer-events-none" muted />
-                  ) : (
-                    <img src={ex.content} alt={`Example ${idx + 1}`} className="w-full h-full object-cover pointer-events-none" />
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
         )}
 
         {/* Stats grid */}
@@ -531,6 +487,62 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
         onApproved={refetchAll}
         onToggleVisibility={isPoster ? () => { void handleToggleVisibility() } : undefined}
       />
+
+      {/* Attachments modal */}
+      {showAttachments && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: 'rgba(17,17,17,0.75)' }}
+          onClick={() => setShowAttachments(false)}
+        >
+          <div
+            className="relative w-full max-w-lg max-h-[85vh] flex flex-col border-[3px] border-[#111] rounded-2xl overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Title bar */}
+            <div className="flex items-center justify-between px-4 py-2 border-b-[3px] border-[#111]" style={{ backgroundColor: '#A78BFA' }}>
+              <span className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111]">
+                ATTACHMENTS.EXE ({examples.length})
+              </span>
+              <button
+                onClick={() => setShowAttachments(false)}
+                className="w-6 h-6 rounded-full border-[2px] border-[#111] bg-[#FF3E9A] flex items-center justify-center font-mono-bold text-[12px] text-white leading-none"
+                aria-label="Close"
+              >×</button>
+            </div>
+
+            {/* Grid of files */}
+            <div className="overflow-y-auto bg-[#FFFDF0] p-4">
+              <div className="grid grid-cols-2 gap-3">
+                {examples.map((ex, idx) => (
+                  <div
+                    key={idx}
+                    className="border-[2px] border-[#111] rounded-xl overflow-hidden bg-white"
+                  >
+                    {ex.content.startsWith('data:video') ? (
+                      // eslint-disable-next-line jsx-a11y/media-has-caption
+                      <video
+                        src={ex.content}
+                        controls
+                        className="w-full max-h-48 object-contain bg-black"
+                      />
+                    ) : (
+                      <img
+                        src={ex.content}
+                        alt={`Attachment ${idx + 1}`}
+                        className="w-full max-h-48 object-contain"
+                      />
+                    )}
+                    <div className="px-2 py-1 border-t-[2px] border-[#111] font-mono-ui text-[9px] uppercase tracking-widest text-[#111]/50">
+                      File {idx + 1}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
