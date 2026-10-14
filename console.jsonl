@@ -341,3 +341,5 @@
 {"level":"error","message":"Origin https://ipnz75bgvzojlk9tos7j8.preview.studio.arc.io not found on Allowlist - update configuration on cloud.reown.com","timestamp":1791958312114}
 {"level":"warn","message":"Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.","timestamp":1791964996789}
 {"level":"error","message":"Origin https://ipnz75bgvzojlk9tos7j8.preview.studio.arc.io not found on Allowlist - update configuration on cloud.reown.com","timestamp":1791964998633}
+{"level":"warn","message":"Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.","timestamp":1791965027140}
+{"level":"error","message":"Origin https://ipnz75bgvzojlk9tos7j8.preview.studio.arc.io not found on Allowlist - update configuration on cloud.reown.com","timestamp":1791965027896}
