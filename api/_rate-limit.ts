@@ -1,10 +1,22 @@
 /**
- * Shared in-memory rate limiter for Vercel serverless functions.
+ * In-memory rate limiter for Vercel serverless functions.
  *
- * Each Vercel function instance has its own process-local map.
- * This is intentionally a soft / spam-deterrent limit — for a hard cap
- * you would use an external store (Redis/Upstash). For a hackathon
- * bounty board this is sufficient.
+ * IMPORTANT LIMITATION: Vercel runs each function in an isolated process
+ * that may be instantiated multiple times in parallel (multiple "instances").
+ * Each instance has its own in-memory map, so this counter is NOT shared
+ * across instances and resets on every cold start.
+ *
+ * What this means in practice:
+ *   - It deters casual abuse and accidental hammering (one user, one instance).
+ *   - It does NOT enforce a hard global cap — a determined attacker hitting
+ *     multiple instances simultaneously can exceed the limit.
+ *
+ * To enforce a hard cap, replace this with a shared external store:
+ *   - Vercel KV (powered by Upstash Redis) — simplest option, already in Vercel
+ *   - Upstash Redis directly — same API, more control
+ *
+ * For the current use-case (hackathon bounty board) this soft limit is
+ * sufficient. Upgrade before going to high-traffic production.
  *
  * Usage:
  *   const limiter = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 5 })
