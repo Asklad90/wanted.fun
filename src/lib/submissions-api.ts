@@ -56,7 +56,7 @@ export async function postSubmission(
   // Read as text first: Vercel error pages (500/413) are not JSON.
   const text = await res.text()
   let data: { ok?: boolean; error?: string; detail?: string } = {}
-  try { data = JSON.parse(text) } catch { /* non-JSON response */ }
+  try { data = JSON.parse(text) as typeof data } catch { /* non-JSON response */ }
   if (!res.ok) {
     if (res.status === 413) return { ok: false, error: 'File too large to upload (max 3 MB).' }
     return { ok: false, error: data.error ?? `Server error (${res.status}). Please try again.` }
