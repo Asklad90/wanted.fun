@@ -104,3 +104,19 @@ Post-deploy:
 The contract is **ready for mainnet deployment**. All 57 tests pass, no critical findings, no high-severity findings. The three findings above are all accepted-by-design for a hackathon launch. The only blockers are the two Vercel env vars (`VITE_CONTRACT_ADDRESS` and `VITE_CHAIN_ID=5042`) which must be set after the mainnet contract deploy.
 
 The frontend and backend are secure for a launch-scale deployment. Rate limiting is soft (in-memory) — harden with Vercel KV before scaling to high traffic.
+
+
+---
+
+## Update 2026-10-15 — hardening pass (branch `fix/pre-mainnet-hardening`)
+
+Changes to `WantedEscrow.sol` (requires a fresh deploy; the testnet v5 address is stale):
+
+- **`cancel()` is now limited to 1 hour after creation** (`CANCEL_WINDOW`) and blocked once any winner is approved (`HasWinners`). Submissions are off-chain, so the on-chain submission count never stopped a poster from cancelling after workers started. This supersedes the "[Low] Single spam submission disables cancel" finding above. Posters can still always recover unused funds via `reclaimUnused()` after the review window.
+- **Constructor reverts with `NotAContract`** if the USDC address has no code.
+- **`getMyStatus`** now reports winners who only submitted off-chain as `WinnerPaid`/`WinnerPending` instead of `None`.
+- New views: `createdAt(bountyId)`, `CANCEL_WINDOW()`.
+
+Frontend: ABI + error messages updated; the Cancel card only shows during the cancel window with no winners.
+
+Tests: 64/64 pass (57 original + 7 new regression tests).

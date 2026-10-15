@@ -625,6 +625,73 @@ contract WantedEscrowTest is Test {
         escrow.cancel(1);
     }
 
+    function test_CancelRevertsAfterCancelWindow() public {
+        _createBounty();
+
+        vm.warp(block.timestamp + escrow.CANCEL_WINDOW() + 1);
+
+        vm.prank(poster);
+        vm.expectRevert(WantedEscrow.CancelWindowClosed.selector);
+        escrow.cancel(1);
+    }
+
+    function test_CancelWorksAtExactEndOfCancelWindow() public {
+        _createBounty();
+
+        vm.warp(block.timestamp + escrow.CANCEL_WINDOW());
+
+        vm.prank(poster);
+        escrow.cancel(1);
+        assertTrue(escrow.getBounty(1).cancelled);
+    }
+
+    // Off-chain submissions never touch the on-chain counter, so the window is what protects workers.
+    function test_PosterCannotCancelAfterWindowEvenWithZeroOnchainSubmissions() public {
+        _createBounty();
+        assertEq(escrow.getBounty(1).winnersApproved, 0);
+
+        vm.warp(block.timestamp + 2 hours);
+
+        vm.prank(poster);
+        vm.expectRevert(WantedEscrow.CancelWindowClosed.selector);
+        escrow.cancel(1);
+
+        // Funds still come back the legitimate way, after the review window.
+        vm.warp(DEADLINE + REVIEW_WINDOW + 1);
+        vm.prank(poster);
+        escrow.reclaimUnused(1);
+    }
+
+    function test_CancelRevertsAfterWinnerApproved() public {
+        _createBounty();
+
+        vm.startPrank(poster);
+        escrow.approveWinner(1, alice);
+        vm.expectRevert(WantedEscrow.HasWinners.selector);
+        escrow.cancel(1);
+        vm.stopPrank();
+    }
+
+    function test_CreatedAtIsRecorded() public {
+        uint256 t = block.timestamp;
+        _createBounty();
+        assertEq(escrow.createdAt(1), uint64(t));
+    }
+
+    function test_GetMyStatusWinnerWithoutOnchainSubmission() public {
+        _createBounty();
+
+        vm.prank(poster);
+        escrow.approveWinner(1, alice); // alice never called submit()
+
+        assertEq(uint256(escrow.getMyStatus(1, alice)), uint256(WantedEscrow.MyStatus.WinnerPaid));
+    }
+
+    function test_ConstructorRevertsOnNonContractAddress() public {
+        vm.expectRevert(WantedEscrow.NotAContract.selector);
+        new WantedEscrow(address(0xBEEF), REVIEW_WINDOW);
+    }
+
     // ═════════════════════════════════════════════════════════════════════════
     // 12. Poster cannot withdraw early
     // ═════════════════════════════════════════════════════════════════════════

@@ -1,5 +1,10 @@
 # Wanted.fun
 
+## WantedEscrow v6 — NOT YET DEPLOYED (branch fix/pre-mainnet-hardening)
+- Adds 1h cancel window, HasWinners guard, NotAContract constructor check, off-chain-winner getMyStatus fix
+- Constructor unchanged: `usdc=0x3600000000000000000000000000000000000000`, `reviewWindow=604800`
+- 64/64 Foundry tests pass. Deploy to Arc Mainnet (chain 5042), then set VITE_CONTRACT_ADDRESS + VITE_CHAIN_ID=5042 in Vercel
+
 ## WantedEscrow v5 — Arc Testnet (current)
 - Address: `0x7d3e0e2ad77edd23dce5d0731497526ec3f2c891`
 - Explorer: https://explorer.testnet.arc.io/address/0x7d3e0e2ad77edd23dce5d0731497526ec3f2c891

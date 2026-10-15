@@ -83,6 +83,8 @@ export function parseOnchainError(error: unknown): string {
   if (msg.includes('notposter')) return 'Only the poster can do this.'
   if (msg.includes('notpendinpayout') || msg.includes('notpendingpayout')) return 'No pending payout to claim.'
   if (msg.includes('hassubmissions')) return 'Cannot cancel — there are submissions.'
+  if (msg.includes('cancelwindowclosed')) return 'Cancel window has closed (1 hour after posting). You can reclaim unused prize after the review window ends.'
+  if (msg.includes('haswinners')) return 'Cannot cancel — a winner has already been approved.'
   if (msg.includes('reviewwindowactive')) return 'Review window is still active.'
   if (msg.includes('alreadyreclaimed')) return 'Escrow already reclaimed.'
   if (msg.includes('nothingtorclaim') || msg.includes('nothingtorceclaim') || msg.includes('nothingtore')) return 'Nothing to reclaim.'
