@@ -78,6 +78,25 @@ body::before {
   .btn-press:active { transform: none; box-shadow: 6px 6px 0 #111111; }
 }
 
+/* ── Skeleton shimmer ── */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    #e8e6d8 0px,
+    #f5f3e5 80px,
+    #e8e6d8 160px
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer { animation: none; background: #e8e6d8; }
+}
+
 /* ── Scrollbar (subtle) ── */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: #FFFDF0; }

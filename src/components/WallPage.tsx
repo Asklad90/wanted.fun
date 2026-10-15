@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useReadContract } from 'wagmi'
 import { BountyCard, BountyData } from './BountyCard'
+import { SkeletonBountyCard } from './Skeleton'
 import { WindowCard } from './WindowCard'
 import { PillButton } from './PillButton'
 import { TrophyIcon, CoinIcon } from './Icons'
@@ -63,7 +64,7 @@ const cardVariants = {
 
 function BountyItem({ bountyId, index, onSelect }: { bountyId: bigint; index: number; onSelect: (id: bigint) => void }) {
   const bounty = useBountyData(bountyId, true)
-  if (!bounty) return <div className="border-[3px] border-[#111] rounded-lg bg-[#FFFDF0] animate-pulse h-60" />
+  if (!bounty) return <SkeletonBountyCard />
 
   const nowSec = _wallNowSec()
   const deadlineSec = Number(bounty.deadline)

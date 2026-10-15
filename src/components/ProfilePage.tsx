@@ -9,6 +9,7 @@ import { WindowCard } from './WindowCard'
 import { StatusTag } from './StatusTag'
 import { PixelAvatar } from './PixelAvatar'
 import { QRCode } from './QRCode'
+import { SkeletonBountyRow } from './Skeleton'
 import { TxStatus } from './TxStatus'
 
 // ─── MyStatus enum (mirrors Solidity) ────────────────────────────────────────
@@ -193,9 +194,7 @@ function BountyRow({ bountyId, profileAddr, onSelect, tabMode }: {
     args: [bountyId, profileAddr], chainId: CHAIN_ID,
   }) as { data: number | undefined }
 
-  if (!bounty) return (
-    <div className="border-[2px] border-[#111]/20 rounded-lg p-3 bg-[#FFFDF0]/50 animate-pulse h-14" />
-  )
+  if (!bounty) return <SkeletonBountyRow />
 
   const isOpen = !bounty.cancelled && Number(bounty.deadline) > Math.floor(_rowNowSec()) && Number(bounty.winnersApproved) < Number(bounty.maxWinners)
 

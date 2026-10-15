@@ -20,8 +20,8 @@ export const config = createConfig(
   getDefaultConfig({
     chains: [arc, arcTestnet, mainnet],
     transports: {
-      [arc.id]: http(),
-      [arcTestnet.id]: http(),
+      [arc.id]: http('https://rpc.mainnet.arc.io'),
+      [arcTestnet.id]: http('https://rpc.testnet.arc.io'),
       [mainnet.id]: http(),
     },
     walletConnectProjectId: (import.meta.env.VITE_WALLETCONNECT_PROJECT_ID as string) ?? '',
