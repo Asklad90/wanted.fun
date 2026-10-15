@@ -84,6 +84,16 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
     chainId: CHAIN_ID,
   }) as { data: number | undefined }
 
+  const { data: createdAtRaw } = useReadContract({
+    address: CONTRACT_ADDRESS, abi: BOUNTY_BOARD_ABI, functionName: 'createdAt',
+    args: [bountyId], chainId: CHAIN_ID,
+  }) as { data: bigint | undefined }
+
+  const { data: cancelWindowRaw } = useReadContract({
+    address: CONTRACT_ADDRESS, abi: BOUNTY_BOARD_ABI, functionName: 'CANCEL_WINDOW',
+    chainId: CHAIN_ID,
+  }) as { data: bigint | undefined }
+
   // Write: claim (pending payout)
   const { writeContract: claimReward, data: claimHash, isPending: claimPending, error: claimErr } = useWriteContract()
   const { isLoading: claimConfirming, isSuccess: claimSuccess } = useWaitForTransactionReceipt({ hash: claimHash })
@@ -467,11 +477,13 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
             </WindowCard>
           )}
 
-          {/* Cancel — only with 0 submissions */}
-          {offchainSubs.length === 0 && !bounty.cancelled && (
+          {/* Cancel — only within the cancel window after posting, with no submissions or winners */}
+          {offchainSubs.length === 0 && !bounty.cancelled && Number(bounty.winnersApproved) === 0 &&
+            createdAtRaw !== undefined && cancelWindowRaw !== undefined &&
+            Date.now() / 1000 <= Number(createdAtRaw) + Number(cancelWindowRaw) && (
             <WindowCard title="CANCEL_BOUNTY.EXE" titleBarColor="#CCCCCC">
               <div className="flex flex-col gap-3">
-                <div className="font-body text-[14px] text-[#111]">No submissions yet. You can cancel and get your full escrow back.</div>
+                <div className="font-body text-[14px] text-[#111]">No submissions yet. You can cancel and get your full escrow back during the first hour after posting.</div>
                 <TxStatus hash={cancelHash} isPending={cancelPending} isConfirming={cancelConfirming} isSuccess={cancelSuccess} isError={!!cancelErr} error={cancelErr ? parseOnchainError(cancelErr) : undefined} successMessage="Bounty cancelled, escrow refunded." />
                 {!cancelSuccess && <PillButton onClick={handleCancel} loading={cancelPending || cancelConfirming} variant="ink" showArrow={false}>Cancel bounty</PillButton>}
               </div>

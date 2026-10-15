@@ -15,6 +15,11 @@ export const BOUNTY_BOARD_ABI = [
   // ─── Immutables ───────────────────────────────────────────────────────────
   { type: 'function', name: 'usdc', inputs: [], outputs: [{ type: 'address' }], stateMutability: 'view' },
   { type: 'function', name: 'reviewWindow', inputs: [], outputs: [{ type: 'uint32' }], stateMutability: 'view' },
+  { type: 'function', name: 'CANCEL_WINDOW', inputs: [], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
+  { type: 'function', name: 'createdAt', inputs: [{ name: 'bountyId', type: 'uint256' }], outputs: [{ type: 'uint64' }], stateMutability: 'view' },
+  { type: 'error', name: 'CancelWindowClosed', inputs: [] },
+  { type: 'error', name: 'HasWinners', inputs: [] },
+  { type: 'error', name: 'NotAContract', inputs: [] },
 
   // ─── Write functions ──────────────────────────────────────────────────────
   {
