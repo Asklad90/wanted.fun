@@ -22,6 +22,11 @@ const AUTH_TTL_MS = 4 * 60 * 1000
 interface CachedAuth { address: string; timestamp: number; signature: string; expiresAt: number }
 const _authCache = new Map<string, CachedAuth>()
 
+// How long to wait for the wallet to answer a signature request before giving up
+const SIGN_TIMEOUT_MS = 90 * 1000
+// In-flight requests, so the pre-sign on mount and the click on Submit share ONE wallet prompt
+const _inflight = new Map<string, Promise<{ address: string; timestamp: number; signature: string } | null>>()
+
 async function signAuth(
   action: AuthAction,
   bountyId: string,
@@ -35,11 +40,30 @@ async function signAuth(
     if (cached && Date.now() < cached.expiresAt) {
       return { address: cached.address, timestamp: cached.timestamp, signature: cached.signature }
     }
-    const timestamp = Math.floor(Date.now() / 1000)
-    const message = buildAuthMessage(action, bountyId, timestamp)
-    const signature = await walletClient.signMessage({ message })
-    _authCache.set(cacheKey, { address, timestamp, signature, expiresAt: Date.now() + AUTH_TTL_MS })
-    return { address, timestamp, signature }
+    const pending = _inflight.get(cacheKey)
+    if (pending) return await pending
+
+    const request = (async () => {
+      const timestamp = Math.floor(Date.now() / 1000)
+      const message = buildAuthMessage(action, bountyId, timestamp)
+      const sigPromise = walletClient.signMessage({ message })
+      // If the user approves after the timeout, still keep the signature so the next tap works instantly
+      sigPromise
+        .then(sig => { _authCache.set(cacheKey, { address, timestamp, signature: sig, expiresAt: Date.now() + AUTH_TTL_MS }) })
+        .catch(() => { /* rejected or failed — handled by the race below */ })
+      const signature = await Promise.race([
+        sigPromise,
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('sign timeout')), SIGN_TIMEOUT_MS)),
+      ])
+      return { address, timestamp, signature }
+    })()
+
+    _inflight.set(cacheKey, request)
+    try {
+      return await request
+    } finally {
+      _inflight.delete(cacheKey)
+    }
   } catch {
     return null
   }
@@ -107,7 +131,7 @@ export async function postSubmission(
   content: string,
 ): Promise<{ ok: boolean; error?: string }> {
   const auth = await signAuth('submit', bountyId)
-  if (!auth) return { ok: false, error: 'Could not sign submission — please connect your wallet and try again.' }
+  if (!auth) return { ok: false, error: "Your wallet didn't confirm the signature. Open your wallet app, approve the signature request, then tap Submit again." }
 
   const res = await fetch(`/api/bounties/${bountyId}/submissions`, {
     method: 'POST',
