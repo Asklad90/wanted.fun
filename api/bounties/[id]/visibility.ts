@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { pool, ensureSchema } from '../../_db.js'
+import { ensurePoster } from '../../_poster.js'
 import { verifyAuth, type AuthPayload } from '../../_auth.js'
 import { createRateLimiter, getClientIp } from '../../_rate-limit.js'
 
@@ -42,8 +43,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ── Creator-only check ──────────────────────────────────────────────────
     // Look up the stored poster address; if no poster was ever recorded we trust
     // the first caller (backwards-compat with existing bounties).
-    const { rows } = await pool.sql`SELECT poster FROM bounties WHERE id = ${bountyId}`
-    const storedPoster = (rows[0] as { poster: string | null } | undefined)?.poster?.toLowerCase()
+    const storedPoster = (await ensurePoster(bountyId)) ?? undefined
 
     if (storedPoster && storedPoster !== auth.address) {
       return res.status(403).json({ error: 'Only the bounty creator can change visibility' })

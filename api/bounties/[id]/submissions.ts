@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { pool, ensureSchema } from '../../_db.js'
+import { ensurePoster } from '../../_poster.js'
 import { verifyAuth, type AuthPayload } from '../../_auth.js'
 import { createRateLimiter, getClientIp } from '../../_rate-limit.js'
 
@@ -94,22 +95,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       const viewer = ((req.query.viewer as string) ?? '').toLowerCase()
-      const poster = ((req.query.poster as string) ?? '').toLowerCase()
 
-      // Validate addresses if provided
+      // Validate address if provided
       if (viewer && !/^0x[0-9a-f]{40}$/.test(viewer))
         return res.status(400).json({ error: 'Invalid viewer address' })
-      if (poster && !/^0x[0-9a-f]{40}$/.test(poster))
-        return res.status(400).json({ error: 'Invalid poster address' })
 
       const { rows: bountyRows } = await pool.sql`
-        SELECT id, is_public, poster FROM bounties WHERE id = ${bountyId}
+        SELECT id, is_public FROM bounties WHERE id = ${bountyId}
       `
-      const bountyRow = bountyRows[0] as { id: string; is_public: boolean; poster: string | null } | undefined
-      const isPublic = bountyRow?.is_public === true
-      // Poster sees all — but we also cross-check that the poster param matches DB record
-      const dbPoster = (bountyRow?.poster ?? '').toLowerCase()
-      const callerIsPoster = !!poster && !!dbPoster && viewer === poster && poster === dbPoster
+      const isPublic = (bountyRows[0] as { is_public: boolean } | undefined)?.is_public === true
+
+      // The poster comes from the DB, filled in from the escrow contract if missing.
+      // The client's ?poster= value is never trusted.
+      const dbPoster = (await ensurePoster(bountyId)) ?? ''
+      const callerIsPoster = !!viewer && !!dbPoster && viewer === dbPoster
 
       if (isPublic || callerIsPoster) {
         const { rows: subs } = await pool.sql`
@@ -182,6 +181,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (hasDangerousLink(content))
           return res.status(400).json({ error: 'Content contains disallowed links' })
       }
+
+      // Posters can't submit to their own bounty
+      const bountyPoster = await ensurePoster(bountyId)
+      if (bountyPoster && bountyPoster === submitter)
+        return res.status(403).json({ error: "You can't submit to your own bounty" })
 
       // Ensure bounty row exists
       await pool.sql`

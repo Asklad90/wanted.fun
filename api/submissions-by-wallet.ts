@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { pool, ensureSchema } from './_db.js'
+import { ensurePoster } from './_poster.js'
 import { createRateLimiter, getClientIp } from './_rate-limit.js'
 
 const getLimiter = createRateLimiter({ windowMs: 60 * 1000, max: 60 })
@@ -19,12 +20,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await ensureSchema()
 
     const { rows } = await pool.sql`
-      SELECT DISTINCT bounty_id
-      FROM submissions
-      WHERE submitter = ${wallet}
-      ORDER BY bounty_id ASC
+      SELECT DISTINCT s.bounty_id, b.poster
+      FROM submissions s
+      LEFT JOIN bounties b ON b.id = s.bounty_id
+      WHERE s.submitter = ${wallet}
     `
-    const bountyIds = (rows as { bounty_id: string }[]).map(r => r.bounty_id)
+    const found = rows as { bounty_id: string; poster: string | null }[]
+
+    // Fill in any missing posters from the contract so we can drop the wallet's own bounties
+    const unknown = found.filter(r => !r.poster).slice(0, 25)
+    await Promise.all(
+      unknown.map(async r => { r.poster = await ensurePoster(r.bounty_id) }),
+    )
+
+    // "My submissions" = work sent to OTHER people's bounties, never your own
+    const bountyIds = found
+      .filter(r => (r.poster ?? '').toLowerCase() !== wallet)
+      .map(r => r.bounty_id)
+      .sort((a, b) => Number(a) - Number(b))
     return res.status(200).json({ bountyIds })
   } catch (e) {
     console.error('submissions-by-wallet error:', e)
