@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "NODE_OPTIONS=--max-old-space-size=4096 vite build",
     "server": "bun run server/index.ts",
     "start": "bun run server/index.ts & vite",
     "deploy:self": "bun run ./scripts/self-deploy.ts",
@@ -27,6 +27,8 @@
     "@circle-fin/w3s-pw-web-sdk": "^1.1.11",
     "@neondatabase/serverless": "^1.2.0",
     "@openzeppelin/contracts": "5.1.0",
+    "@privy-io/react-auth": "^3",
+    "@privy-io/wagmi": "^4",
     "@tanstack/react-query": "^5.104.2",
     "@vercel/postgres": "^0.10.0",
     "@web3icons/react": "^4.1.24",
