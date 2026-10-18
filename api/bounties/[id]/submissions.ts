@@ -70,6 +70,31 @@ function hasDangerousLink(text: string): boolean {
   return /javascript\s*:/i.test(text) || /data\s*:\s*text\/html/i.test(text)
 }
 
+/**
+ * The client sends text + file together as a JSON envelope: {"text": "...", "file": "data:..."}.
+ * The viewer treats ANY JSON object with a `text` or `file` field as such an envelope, so the
+ * server must validate exactly that shape:
+ *   - null      -> not an envelope (plain text, including text that merely starts with "{")
+ *   - 'invalid' -> looks like an envelope but has extra keys or non-string fields
+ *   - object    -> a well-formed envelope; its parts still need validating
+ */
+function parseEnvelope(content: string): { text?: string; file?: string } | 'invalid' | null {
+  if (!content.startsWith('{')) return null
+  let p: unknown
+  try {
+    p = JSON.parse(content)
+  } catch {
+    return null
+  }
+  if (!p || typeof p !== 'object' || Array.isArray(p)) return null
+  const obj = p as Record<string, unknown>
+  if (!('text' in obj) && !('file' in obj)) return null
+  if (Object.keys(obj).some(k => k !== 'text' && k !== 'file')) return 'invalid'
+  if ('text' in obj && typeof obj.text !== 'string') return 'invalid'
+  if ('file' in obj && typeof obj.file !== 'string') return 'invalid'
+  return { text: obj.text as string | undefined, file: obj.file as string | undefined }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     if (req.method === 'OPTIONS') return res.status(204).end()
@@ -168,13 +193,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!auth.ok) return res.status(auth.status).json({ error: auth.error })
 
       // ── Content validation ────────────────────────────────────────────────
-      const isDataUrl = content.startsWith('data:')
+      // Content arrives in one of three shapes:
+      //   1. plain text
+      //   2. a data: URL (file only)
+      //   3. JSON envelope {"text": "...", "file": "data:..."} (text + file together)
+      const FILE_ERR = 'File type not allowed. Use JPEG, PNG, GIF, WEBP, MP4, MOV, or WEBM.'
+      const envelope = parseEnvelope(content)
 
-      if (isDataUrl) {
+      if (envelope === 'invalid')
+        return res.status(400).json({ error: 'Invalid submission format' })
+
+      if (envelope) {
+        const text = (envelope.text ?? '').trim()
+        const file = envelope.file ?? ''
+        if (!text && !file)
+          return res.status(400).json({ error: 'Content is required' })
+        if (text.length > MAX_TEXT)
+          return res.status(400).json({ error: 'Content too long (max 1000 chars)' })
+        if (text && hasDangerousLink(text))
+          return res.status(400).json({ error: 'Content contains disallowed links' })
+        if (file) {
+          if (file.length > MAX_BYTES)
+            return res.status(400).json({ error: 'File too large (max 3 MB)' })
+          if (!file.startsWith('data:') || !validateDataUrlMime(file))
+            return res.status(400).json({ error: FILE_ERR })
+        }
+      } else if (content.startsWith('data:')) {
         if (content.length > MAX_BYTES)
           return res.status(400).json({ error: 'File too large (max 3 MB)' })
         if (!validateDataUrlMime(content))
-          return res.status(400).json({ error: 'File type not allowed. Use JPEG, PNG, GIF, WEBP, MP4, MOV, or WEBM.' })
+          return res.status(400).json({ error: FILE_ERR })
       } else {
         if (content.length > MAX_TEXT)
           return res.status(400).json({ error: 'Content too long (max 1000 chars)' })
