@@ -23,6 +23,7 @@ import {
   type OffchainSubmission,
   type BountyExample,
 } from '../lib/submissions-api'
+import { shouldPrimeSubmitAuth } from '../lib/submit-prime'
 
 // Snapshot current unix seconds — defined outside components to avoid purity lint
 const _getNowSec = (): number => Date.now() / 1000
@@ -51,6 +52,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
   const [offchainSubs, setOffchainSubs] = useState<OffchainSubmission[]>([])
   const [isPublic, setIsPublic] = useState(false)
   const [subsLoading, setSubsLoading] = useState(true)
+  const [subsLoadedFor, setSubsLoadedFor] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [examples, setExamples] = useState<BountyExample[]>([])
   const [showAttachments, setShowAttachments] = useState(false)
@@ -119,6 +121,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
     } catch {
       // silently ignore — the onchain path is the fallback
     } finally {
+      setSubsLoadedFor((address ?? '').toLowerCase())
       setSubsLoading(false)
     }
   }
@@ -140,14 +143,32 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bountyId, bounty?.poster, address])
 
-  // Pre-sign submit auth as soon as the form would be visible — eliminates wallet popup delay on submit
+  // Pre-sign submit auth so the wallet popup is ready — but ONLY when the submit form is actually
+  // showing (not creator, bounty open, not already submitted, not a winner). Waits for the
+  // submissions list so people who already submitted are never prompted again.
   useEffect(() => {
-    if (!bounty || !address) return
-    const isPoster = address.toLowerCase() === bounty.poster.toLowerCase()
-    if (isPoster) return
-    void primeSubmitAuth(bountyId.toString())
+    if (!bounty) return
+    const open =
+      bountyStatus({
+        winnersApproved: bounty.winnersApproved,
+        maxWinners: bounty.maxWinners,
+        deadline: bounty.deadline,
+        cancelled: bounty.cancelled,
+      }) === 'OPEN'
+    if (
+      shouldPrimeSubmitAuth({
+        address,
+        poster: bounty.poster,
+        subsLoadedFor,
+        open,
+        submitters: offchainSubs.map(s => s.submitter),
+        payoutStatus: userPayoutStatus === undefined ? undefined : Number(userPayoutStatus),
+      })
+    ) {
+      void primeSubmitAuth(bountyId.toString())
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bountyId, bounty?.poster, address])
+  }, [bountyId, bounty?.poster, address, subsLoadedFor, offchainSubs, userPayoutStatus])
 
   function refetchAll() {
     refetchBounty(); refetchPayoutStatus(); void loadSubs(); onDataChange?.()
