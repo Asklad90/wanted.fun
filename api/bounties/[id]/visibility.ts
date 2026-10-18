@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { pool, ensureSchema } from '../../_db.js'
-import { ensurePoster } from '../../_poster.js'
+import { ensurePoster, bountyKey } from '../../_poster.js'
 import { verifyAuth, type AuthPayload } from '../../_auth.js'
 import { createRateLimiter, getClientIp } from '../../_rate-limit.js'
 
@@ -40,20 +40,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const auth = await verifyAuth(authPayload, 'visibility', bountyId)
     if (!auth.ok) return res.status(auth.status).json({ error: auth.error })
 
-    // ── Creator-only check ──────────────────────────────────────────────────
-    // Look up the stored poster address; if no poster was ever recorded we trust
-    // the first caller (backwards-compat with existing bounties).
-    const storedPoster = (await ensurePoster(bountyId)) ?? undefined
-
-    if (storedPoster && storedPoster !== auth.address) {
+    // ── Creator-only check ─────────────────────────────────────────────
+    // The poster comes from the escrow contract. If it can't be read we refuse
+    // (fail closed) rather than let anyone flip visibility.
+    const poster = await ensurePoster(bountyId)
+    if (!poster)
+      return res.status(503).json({ error: "Couldn't verify the bounty creator right now. Please try again." })
+    if (poster !== auth.address)
       return res.status(403).json({ error: 'Only the bounty creator can change visibility' })
-    }
 
     const isPublic = body.is_public === true
 
     await pool.sql`
       INSERT INTO bounties (id, is_public, poster)
-      VALUES (${bountyId}, ${isPublic}, ${auth.address})
+      VALUES (${bountyKey(bountyId)}, ${isPublic}, ${auth.address})
       ON CONFLICT (id) DO UPDATE SET is_public = ${isPublic}
     `
     return res.status(200).json({ ok: true, is_public: isPublic })
