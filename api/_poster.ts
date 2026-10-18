@@ -77,22 +77,52 @@ export async function readOnchainPoster(bountyId: string): Promise<string | null
   }
 }
 
+// ── Bounty keys ─────────────────────────────────────────────────────────────
+// Bounty ids are only unique per contract (every deployment/chain starts again at 1).
+// Arc testnet keeps the original un-prefixed ids so existing rows stay as they were;
+// every other chain/contract gets its own namespace so ids can never collide.
+function namespace(): string {
+  const chainId = process.env.VITE_CHAIN_ID ?? '5042002'
+  if (chainId === '5042002') return ''
+  const contract = (process.env.VITE_CONTRACT_ADDRESS ?? '').toLowerCase().replace(/^0x/, '').slice(0, 6)
+  return `${chainId}-${contract}:`
+}
+
+/** Internal DB key for a bounty id as the client knows it. */
+export function bountyKey(id: string): string {
+  return namespace() + id
+}
+
+/** Inverse of bountyKey; null if the key belongs to another chain/contract. */
+export function fromBountyKey(key: string): string | null {
+  const ns = namespace()
+  if (ns) return key.startsWith(ns) ? key.slice(ns.length) : null
+  return key.includes(':') ? null : key
+}
+
+// ── Poster ──────────────────────────────────────────────────────────────────
+// A bounty's poster never changes, so a positive lookup is cached for this instance.
+const posterCache = new Map<string, string>()
+
 /**
- * Return the bounty's poster (lowercase), filling in bounties.poster from the
- * contract if the DB doesn't have it yet. Null only if it can't be determined.
+ * The bounty's poster (lowercase), taken from the escrow contract — the only source of truth.
+ * Never falls back to a stored value (it can be stale, e.g. an id reused on another chain):
+ * if the chain can't be read this returns null and the caller must fail closed.
+ * bounties.poster is kept in sync for reference only; access control never reads it.
  */
 export async function ensurePoster(bountyId: string): Promise<string | null> {
-  const { rows } = await pool.sql`SELECT poster FROM bounties WHERE id = ${bountyId}`
-  const stored = (rows[0] as { poster: string | null } | undefined)?.poster
-  if (stored) return stored.toLowerCase()
+  const key = bountyKey(bountyId)
+  const cached = posterCache.get(key)
+  if (cached) return cached
 
   const onchain = await readOnchainPoster(bountyId)
   if (!onchain) return null
+  posterCache.set(key, onchain)
 
   await pool.sql`
     INSERT INTO bounties (id, is_public, poster)
-    VALUES (${bountyId}, FALSE, ${onchain})
-    ON CONFLICT (id) DO UPDATE SET poster = COALESCE(bounties.poster, ${onchain})
+    VALUES (${key}, FALSE, ${onchain})
+    ON CONFLICT (id) DO UPDATE SET poster = ${onchain}
   `
   return onchain
 }

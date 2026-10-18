@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { pool, ensureSchema } from '../../_db.js'
+import { ensurePoster, bountyKey } from '../../_poster.js'
 import { verifyAuth, type AuthPayload } from '../../_auth.js'
 import { createRateLimiter, getClientIp } from '../../_rate-limit.js'
 
@@ -54,6 +55,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!bountyId || typeof bountyId !== 'string' || bountyId.length > 200)
       return res.status(400).json({ error: 'Missing or invalid bounty id' })
 
+    // DB rows are keyed per chain/contract (ids repeat across deployments); signatures use the raw id
+    const key = bountyKey(bountyId)
+
     await ensureSchema()
 
     const ip = getClientIp(req.headers as Record<string, string | string[] | undefined>)
@@ -64,7 +68,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const { rows } = await pool.sql`
         SELECT id, bounty_id, content, sort_order, created_at
         FROM bounty_examples
-        WHERE bounty_id = ${bountyId}
+        WHERE bounty_id = ${key}
         ORDER BY sort_order ASC, created_at ASC
       `
       return res.status(200).json({ examples: rows })
@@ -91,11 +95,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!auth.ok) return res.status(auth.status).json({ error: auth.error })
 
       // ── Creator-only check ────────────────────────────────────────────────
-      const { rows: bRows } = await pool.sql`SELECT poster FROM bounties WHERE id = ${bountyId}`
-      const storedPoster = (bRows[0] as { poster: string | null } | undefined)?.poster?.toLowerCase()
-      if (storedPoster && storedPoster !== auth.address) {
+      // Poster comes from the escrow contract; if it can't be read we refuse (fail closed).
+      const poster = await ensurePoster(bountyId)
+      if (!poster)
+        return res.status(503).json({ error: "Couldn't verify the bounty creator right now. Please try again." })
+      if (poster !== auth.address)
         return res.status(403).json({ error: 'Only the bounty creator can update examples' })
-      }
 
       const examples = body.examples ?? []
       if (!Array.isArray(examples))
@@ -113,11 +118,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       // Replace — delete existing then insert new
-      await pool.sql`DELETE FROM bounty_examples WHERE bounty_id = ${bountyId}`
+      await pool.sql`DELETE FROM bounty_examples WHERE bounty_id = ${key}`
       for (let i = 0; i < examples.length; i++) {
         await pool.sql`
           INSERT INTO bounty_examples (bounty_id, content, sort_order)
-          VALUES (${bountyId}, ${examples[i]}, ${i})
+          VALUES (${key}, ${examples[i]}, ${i})
         `
       }
       return res.status(200).json({ ok: true })

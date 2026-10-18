@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { pool, ensureSchema } from '../../_db.js'
-import { ensurePoster } from '../../_poster.js'
+import { ensurePoster, bountyKey } from '../../_poster.js'
 import { verifyAuth, type AuthPayload } from '../../_auth.js'
 import { createRateLimiter, getClientIp } from '../../_rate-limit.js'
 
@@ -103,6 +103,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!bountyId || typeof bountyId !== 'string' || bountyId.length > 200)
       return res.status(400).json({ error: 'Missing or invalid bounty id' })
 
+    // DB rows are keyed per chain/contract (ids repeat across deployments); the client/signature use the raw id
+    const key = bountyKey(bountyId)
+
     await ensureSchema()
 
     // ── GET — fetch submissions (or just count) ────────────────────────────
@@ -113,7 +116,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // ?count=1 — always-public total count, no content exposed
       if (req.query.count === '1') {
         const { rows } = await pool.sql`
-          SELECT COUNT(*)::int AS count FROM submissions WHERE bounty_id = ${bountyId}
+          SELECT COUNT(*)::int AS count FROM submissions WHERE bounty_id = ${key}
         `
         const count = (rows[0] as { count: number } | undefined)?.count ?? 0
         return res.status(200).json({ count })
@@ -126,7 +129,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'Invalid viewer address' })
 
       const { rows: bountyRows } = await pool.sql`
-        SELECT id, is_public FROM bounties WHERE id = ${bountyId}
+        SELECT id, is_public FROM bounties WHERE id = ${key}
       `
       const isPublic = (bountyRows[0] as { is_public: boolean } | undefined)?.is_public === true
 
@@ -139,7 +142,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const { rows: subs } = await pool.sql`
           SELECT id, bounty_id, submitter, content, created_at
           FROM submissions
-          WHERE bounty_id = ${bountyId}
+          WHERE bounty_id = ${key}
           ORDER BY created_at ASC
         `
         return res.status(200).json({ submissions: subs, is_public: isPublic })
@@ -150,7 +153,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const { rows: subs } = await pool.sql`
           SELECT id, bounty_id, submitter, content, created_at
           FROM submissions
-          WHERE bounty_id = ${bountyId} AND submitter = ${viewer}
+          WHERE bounty_id = ${key} AND submitter = ${viewer}
         `
         return res.status(200).json({ submissions: subs, is_public: false })
       }
@@ -238,21 +241,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Ensure bounty row exists
       await pool.sql`
         INSERT INTO bounties (id, is_public)
-        VALUES (${bountyId}, FALSE)
+        VALUES (${key}, FALSE)
         ON CONFLICT (id) DO NOTHING
       `
 
       // Check duplicate
       const { rows: existing } = await pool.sql`
         SELECT id FROM submissions
-        WHERE bounty_id = ${bountyId} AND submitter = ${submitter}
+        WHERE bounty_id = ${key} AND submitter = ${submitter}
       `
       if (existing.length > 0)
         return res.status(409).json({ error: 'Already submitted to this bounty' })
 
       await pool.sql`
         INSERT INTO submissions (bounty_id, submitter, content)
-        VALUES (${bountyId}, ${submitter}, ${content})
+        VALUES (${key}, ${submitter}, ${content})
       `
       return res.status(201).json({ ok: true })
     }
