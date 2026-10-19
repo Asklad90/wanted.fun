@@ -25,6 +25,11 @@ import {
 } from '../lib/submissions-api'
 import { shouldPrimeSubmitAuth } from '../lib/submit-prime'
 
+// Confetti is drawn on the main thread on purpose. The default `confetti()` renders inside a
+// blob: Web Worker, which our Content-Security-Policy blocks (no worker-src / blob:), so it
+// silently showed nothing. useWorker:false needs no policy changes.
+const fireBurst = confetti.create(undefined, { resize: true, useWorker: false })
+
 // Snapshot current unix seconds — defined outside components to avoid purity lint
 const _getNowSec = (): number => Date.now() / 1000
 
@@ -64,10 +69,10 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
     if (confettiFired.current) return
     confettiFired.current = true
     const colors = ['#FF3E9A', '#FFE600', '#A78BFA', '#C6F23A', '#7FF3F0', '#FF6B57']
-    void confetti({ particleCount: 120, spread: 80, origin: { y: 0.55 }, colors, scalar: 1.1 })
-    setTimeout(() => { void confetti({ particleCount: 60, spread: 120, origin: { y: 0.4 }, colors, scalar: 0.9 }) }, 200)
-    setTimeout(() => { void confetti({ particleCount: 40, angle: 60, spread: 60, origin: { x: 0, y: 0.6 }, colors }) }, 350)
-    setTimeout(() => { void confetti({ particleCount: 40, angle: 120, spread: 60, origin: { x: 1, y: 0.6 }, colors }) }, 350)
+    void fireBurst({ particleCount: 120, spread: 80, origin: { y: 0.55 }, colors, scalar: 1.1 })
+    setTimeout(() => { void fireBurst({ particleCount: 60, spread: 120, origin: { y: 0.4 }, colors, scalar: 0.9 }) }, 200)
+    setTimeout(() => { void fireBurst({ particleCount: 40, angle: 60, spread: 60, origin: { x: 0, y: 0.6 }, colors }) }, 350)
+    setTimeout(() => { void fireBurst({ particleCount: 40, angle: 120, spread: 60, origin: { x: 1, y: 0.6 }, colors }) }, 350)
   }, [])
 
   const { data: bounty, refetch: refetchBounty } = useReadContract({
