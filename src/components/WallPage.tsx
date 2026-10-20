@@ -85,11 +85,20 @@ function BountyItem({ bountyId, index, onSelect }: { bountyId: bigint; index: nu
   )
 }
 
-function BountyGrid({ total, onSelectBounty }: { total: number; onSelectBounty: (id: bigint) => void }) {
+function BountyGrid({ total, onSelectBounty, onCreateBounty }: { total: number; onSelectBounty: (id: bigint) => void; onCreateBounty: () => void }) {
   const ids = Array.from({ length: Math.min(total, 24) }, (_, i) => BigInt(total - i))
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {ids.map((id, i) => <BountyItem key={id.toString()} bountyId={id} index={i} onSelect={onSelectBounty} />)}
+      <button
+        type="button"
+        onClick={onCreateBounty}
+        className="hidden sm:flex flex-col items-center justify-center gap-3 min-h-[240px] rounded-lg border-[3px] border-dashed border-[#111] bg-[#FFFDF0]/70 hover:bg-[#FFE600] transition-all hover:-translate-y-[3px] hover:shadow-hard"
+      >
+        <span className="w-14 h-14 rounded-full border-[3px] border-[#111] bg-[#FF3E9A] flex items-center justify-center font-heading text-[30px] leading-none text-[#111] shadow-hard-sm">+</span>
+        <span className="font-mono-bold text-[12px] uppercase tracking-widest text-[#111]">Post a bounty</span>
+        <span className="font-body text-[13px] text-[#111]/60">Lock the prize. Let people compete.</span>
+      </button>
     </div>
   )
 }
@@ -124,8 +133,9 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
         >
-        <div className="bg-[#FFFDF0]/92 px-6 py-10 flex flex-col gap-5">
-          <h1 className="font-heading text-[44px] sm:text-[58px] font-extrabold leading-[1.05] text-[#111] text-balance" style={{ letterSpacing: '-0.02em' }}>
+        <div className="bg-[#FFFDF0]/92 px-6 py-10 desk:px-12 desk:py-14 desk:grid desk:grid-cols-[1.1fr_0.9fr] desk:gap-12 desk:items-center">
+          <div className="flex flex-col gap-5">
+          <h1 className="font-heading text-[44px] sm:text-[58px] desk:text-[64px] font-extrabold leading-[1.05] text-[#111] text-balance" style={{ letterSpacing: '-0.02em' }}>
             Post a bounty.<br />Get it done.
           </h1>
           <p className="font-heading text-[18px] font-bold text-[#111] max-w-md leading-relaxed">
@@ -135,15 +145,26 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
             <PillButton onClick={onCreateBounty} variant="yellow" size="lg">Post a bounty →</PillButton>
           </div>
           {CONTRACT_DEPLOYED && (
-            <div className="flex gap-8 flex-wrap pt-4 mt-1 border-t-[3px] border-[#111]">
+            <div className="flex gap-8 flex-wrap pt-4 mt-1 border-t-[3px] border-[#111] desk:hidden">
               <Stat value={totalBounties.toString()} label="Bounties" />
               <Stat value={`$${formatUsdc(totalEscrowed)}`} label="In escrow" />
               <Stat value={`$${formatUsdc(totalPaid)}`} label="Paid out" icon={<CoinIcon size={28} />} />
             </div>
           )}
+          </div>
+          <HowItWorks />
         </div>
       </motion.section>
       </div>
+
+      {/* Stats strip — desktop only (mobile keeps the stats inside the hero) */}
+      {CONTRACT_DEPLOYED && (
+        <div className="hidden desk:grid grid-cols-3 gap-5 -mt-2">
+          <StatTile bg="#FFE600" value={totalBounties.toString()} label="Bounties" />
+          <StatTile bg="#C6F23A" value={`$${formatUsdc(totalEscrowed)}`} label="In escrow" />
+          <StatTile bg="#FF3E9A" value={`$${formatUsdc(totalPaid)}`} label="Paid out" icon={<CoinIcon size={32} />} />
+        </div>
+      )}
 
       {/* Tab strip */}
       <motion.div
@@ -196,7 +217,7 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
             <div className="flex items-center justify-between">
               <h2 className="font-heading text-[20px] font-bold text-[#111]">All Bounties ({totalBounties})</h2>
             </div>
-            <BountyGrid total={totalBounties} onSelectBounty={onSelectBounty} />
+            <BountyGrid total={totalBounties} onSelectBounty={onSelectBounty} onCreateBounty={onCreateBounty} />
           </div>
         )
       )}
@@ -212,6 +233,51 @@ function Stat({ value, label, icon }: { value: string; label: string; icon?: Rea
         {icon}
       </div>
       <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/70">{label}</span>
+    </div>
+  )
+}
+
+function StatTile({ value, label, bg, icon }: { value: string; label: string; bg: string; icon?: React.ReactNode }) {
+  return (
+    <div
+      className="border-[3px] border-[#111] rounded-xl shadow-hard-sm px-5 py-4 flex items-center justify-between gap-3"
+      style={{ backgroundColor: bg }}
+    >
+      <div className="flex flex-col gap-1 min-w-0">
+        <span className="font-heading text-[34px] font-extrabold tabular-nums text-[#111] leading-none truncate" style={{ letterSpacing: '-0.02em' }}>{value}</span>
+        <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/70">{label}</span>
+      </div>
+      {icon}
+    </div>
+  )
+}
+
+const HOW_STEPS: { n: number; title: string; text: string; color: string }[] = [
+  { n: 1, title: 'Post',     text: 'Set the task, the prize and the deadline.',     color: '#FFE600' },
+  { n: 2, title: 'Lock',     text: 'The full prize is escrowed in USDC up front.',  color: '#C6F23A' },
+  { n: 3, title: 'Submit',   text: 'Workers send in their work, no gas needed.',    color: '#7FF3F0' },
+  { n: 4, title: 'Get paid', text: 'You approve the winners and escrow pays out.',  color: '#FF3E9A' },
+]
+
+function HowItWorks() {
+  return (
+    <div className="hidden desk:block desk:rotate-[1.5deg]">
+      <WindowCard title="HOW_IT_WORKS.EXE" titleBarColor="#FF3E9A" bodyClassName="flex flex-col gap-4 p-5">
+        {HOW_STEPS.map(s => (
+          <div key={s.n} className="flex items-start gap-3">
+            <span
+              className="shrink-0 w-8 h-8 rounded-full border-[3px] border-[#111] flex items-center justify-center font-mono-bold text-[13px] text-[#111]"
+              style={{ backgroundColor: s.color }}
+            >
+              {s.n}
+            </span>
+            <div className="min-w-0">
+              <div className="font-heading text-[17px] font-extrabold text-[#111] leading-tight">{s.title}</div>
+              <div className="font-body text-[13px] text-[#111]/70 leading-snug">{s.text}</div>
+            </div>
+          </div>
+        ))}
+      </WindowCard>
     </div>
   )
 }

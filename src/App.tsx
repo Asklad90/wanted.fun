@@ -6,6 +6,7 @@ import { WallPage } from './components/WallPage'
 import { BountyPage } from './components/BountyPage'
 import { CreateBountyForm } from './components/CreateBountyForm'
 import { ProfilePage } from './components/ProfilePage'
+import { Doodles } from './components/Doodles'
 import { CHAIN_NAME, CONTRACT_ADDRESS, CONTRACT_DEPLOYED, getAddressUrl } from './bounty-config'
 
 type View = 'wall' | 'bounty' | 'create' | 'profile'
@@ -16,10 +17,10 @@ const pageVariants = {
   exit:    { opacity: 0, y: -8, transition: { duration: 0.15, ease: 'easeIn' } },
 }
 
-function PageView({ children }: { children: React.ReactNode }) {
+function PageView({ children, narrow = false }: { children: React.ReactNode; narrow?: boolean }) {
   return (
     <motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit">
-      {children}
+      {narrow ? <div className="max-w-[992px] mx-auto w-full">{children}</div> : children}
     </motion.div>
   )
 }
@@ -39,10 +40,11 @@ export default function App() {
 
   return (
     <div className="min-h-dvh flex flex-col">
+      <Doodles />
       {/* ─── Header ───────────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 border-b-[3px] border-[#111] bg-[#111] px-4 py-3 relative">
         {/* Logo + buttons */}
-        <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
+        <div className="max-w-[1280px] mx-auto flex items-center justify-between gap-3">
           {/* Logo */}
           <button
             onClick={() => { setView('wall') }}
@@ -148,18 +150,18 @@ export default function App() {
       </header>
 
       {/* ─── Main ─────────────────────────────────────────────────────────────── */}
-      <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-6">
+      <main className="flex-1 max-w-[1280px] mx-auto w-full px-4 py-6">
         <AnimatePresence mode="wait">
           {view === 'profile' && activeProfileAddr ? (
-            <PageView key="profile">
+            <PageView key="profile" narrow>
               <ProfilePage address={activeProfileAddr} onBack={goBack} onSelectBounty={openBounty} />
             </PageView>
           ) : view === 'bounty' && activeBountyId !== null ? (
-            <PageView key={`bounty-${activeBountyId}`}>
+            <PageView key={`bounty-${activeBountyId}`} narrow>
               <BountyPage bountyId={activeBountyId} onBack={goBack} onDataChange={() => setRefreshKey(k => k + 1)} />
             </PageView>
           ) : view === 'create' ? (
-            <PageView key="create">
+            <PageView key="create" narrow>
               <div className="max-w-lg mx-auto">
                 <CreateBountyForm onClose={() => setView('wall')} onSuccess={onCreated} />
               </div>
@@ -174,7 +176,7 @@ export default function App() {
 
       {/* ─── Footer ───────────────────────────────────────────────────────────── */}
       <footer className="border-t-[3px] border-[#111] bg-[#111] px-4 py-4 mt-auto">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
+        <div className="max-w-[1280px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
           <span className="font-mono-ui text-[11px] text-[#FFFDF0]/50 uppercase tracking-wider">
             Text posted onchain is permanent and public. Review before submitting.
           </span>
