@@ -88,7 +88,7 @@ function BountyItem({ bountyId, index, onSelect }: { bountyId: bigint; index: nu
 function BountyGrid({ total, onSelectBounty }: { total: number; onSelectBounty: (id: bigint) => void }) {
   const ids = Array.from({ length: Math.min(total, 24) }, (_, i) => BigInt(total - i))
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 min-[900px]:grid-cols-3 gap-4">
       {ids.map((id, i) => <BountyItem key={id.toString()} bountyId={id} index={i} onSelect={onSelectBounty} />)}
     </div>
   )
@@ -124,7 +124,8 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
         >
-        <div className="bg-[#FFFDF0]/92 px-6 py-10 flex flex-col gap-5">
+        <div className="bg-[#FFFDF0]/92 px-6 py-10 md:px-10 md:py-12 grid md:grid-cols-[1.15fr_1fr] gap-8 items-center">
+          <div className="flex flex-col gap-5">
           <h1 className="font-heading text-[44px] sm:text-[58px] font-extrabold leading-[1.05] text-[#111] text-balance" style={{ letterSpacing: '-0.02em' }}>
             Post a bounty.<br />Get it done.
           </h1>
@@ -141,6 +142,8 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
               <Stat value={`$${formatUsdc(totalPaid)}`} label="Paid out" icon={<CoinIcon size={28} />} />
             </div>
           )}
+          </div>
+          <HowItWorks />
         </div>
       </motion.section>
       </div>
@@ -201,6 +204,35 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
         )
       )}
     </div>
+  )
+}
+
+const HOW_STEPS = [
+  { n: '01', title: 'Post',     text: 'Lock the full USDC prize in escrow.',        color: '#FFE600' },
+  { n: '02', title: 'Submit',   text: 'Workers send their work. No gas needed.',    color: '#FF3E9A' },
+  { n: '03', title: 'Approve',  text: 'Review every submission, pick the winners.', color: '#8B5CF6' },
+  { n: '04', title: 'Get paid', text: 'Escrow pays the winners in USDC.',           color: '#C6F23A' },
+]
+
+function HowItWorks() {
+  return (
+    <WindowCard title="HOW_IT_WORKS.EXE" titleBarColor="#7FF3F0" className="hidden md:block">
+      <ol className="flex flex-col gap-3">
+        {HOW_STEPS.map(s => (
+          <li
+            key={s.n}
+            className="flex items-center gap-3 border-[3px] border-[#111] rounded-lg px-3 py-2.5 shadow-hard-sm"
+            style={{ backgroundColor: s.color }}
+          >
+            <span className="font-mono-bold text-[13px] text-[#111] shrink-0">{s.n}</span>
+            <div className="flex flex-col">
+              <span className="font-heading text-[16px] font-extrabold leading-tight text-[#111]">{s.title}</span>
+              <span className="font-mono-ui text-[11px] leading-snug text-[#111]/80">{s.text}</span>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </WindowCard>
   )
 }
 
