@@ -37,6 +37,14 @@ export default function App() {
   function goBack() { setView('wall'); setActiveBountyId(null); setActiveProfileAddr(null) }
   function openCreate() { setView('create') }
   function onCreated() { setRefreshKey(k => k + 1); setView('wall') }
+  function goTo(id: string) {
+    const wasWall = view === 'wall'
+    setView('wall'); setActiveBountyId(null); setActiveProfileAddr(null)
+    window.setTimeout(
+      () => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+      wasWall ? 0 : 450,
+    )
+  }
 
   return (
     <div className="min-h-dvh flex flex-col">
@@ -82,6 +90,22 @@ export default function App() {
               .fun
             </span>
           </button>
+
+          {/* Nav (desktop) */}
+          <nav className="hidden desk:flex items-center gap-8" aria-label="Main">
+            <button
+              onClick={() => goTo('wall')}
+              className={`font-mono-bold text-[13px] pb-0.5 border-b-[3px] transition-colors ${view === 'wall' ? 'text-[#FFFDF0] border-[#FFE600]' : 'text-[#FFFDF0]/70 border-transparent hover:text-[#FFE600]'}`}
+            >
+              Bounty Wall
+            </button>
+            <button
+              onClick={() => goTo('how-it-works')}
+              className="font-mono-bold text-[13px] pb-0.5 border-b-[3px] border-transparent text-[#FFFDF0]/70 hover:text-[#FFE600] transition-colors"
+            >
+              How it works
+            </button>
+          </nav>
 
           {/* Right: my profile + connect */}
           <div className="flex items-center gap-2 min-w-0 shrink-0">
