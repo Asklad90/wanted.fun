@@ -163,7 +163,7 @@ export function CreateBountyForm({ onClose, onSuccess }: CreateBountyFormProps) 
             Prize is locked in escrow. Workers can now submit.
           </div>
           <TxStatus hash={createHash} isPending={false} isConfirming={false} isSuccess isError={false} successMessage="Prize locked!" />
-          <PillButton variant="lime" onClick={() => { onSuccess?.(); onClose?.() }}>View wall →</PillButton>
+          <PillButton variant="lime" onClick={() => { onSuccess?.(); onClose?.() }}>View wall</PillButton>
         </div>
       </WindowCard>
     )

@@ -59,29 +59,26 @@ export default function App() {
             className="flex items-center gap-1 select-none"
             aria-label="Want.fun home"
           >
-            <span style={{
+            <span className="px-[10px] py-[5px] desk:px-[14px] desk:py-[7px] text-[18px] desk:text-[26px] desk:[-webkit-text-stroke:1.2px_#000]" style={{
               display: 'inline-block',
               color: '#000000',
               backgroundColor: '#FF3E9A',
               border: '3px solid white',
               borderRadius: '8px',
-              padding: '5px 10px',
               letterSpacing: '0.08em',
               lineHeight: 1,
               transform: 'rotate(-8deg)',
               boxShadow: '3px 3px 0 white, 5px 5px 0 #FF3E9A',
               fontFamily: '"Space Mono", monospace',
               fontWeight: 900,
-              fontSize: '18px',
               textTransform: 'uppercase',
             }}>
               WANT
             </span>
-            <span style={{
+            <span className="text-[34px] desk:text-[44px]" style={{
               color: '#A78BFA',
               letterSpacing: 0,
               fontFamily: '"Fredoka One", cursive',
-              fontSize: '34px',
               lineHeight: 1,
               marginLeft: '4px',
               WebkitTextStroke: '3px #111',
@@ -104,6 +101,12 @@ export default function App() {
               className="font-mono-bold text-[13px] pb-0.5 border-b-[3px] border-transparent text-[#FFFDF0]/70 hover:text-[#FFE600] transition-colors"
             >
               How it works
+            </button>
+            <button
+              onClick={() => goTo('for-workers')}
+              className="font-mono-bold text-[13px] pb-0.5 border-b-[3px] border-transparent text-[#FFFDF0]/70 hover:text-[#FFE600] transition-colors"
+            >
+              For workers
             </button>
           </nav>
 

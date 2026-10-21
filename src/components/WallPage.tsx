@@ -7,7 +7,8 @@ import { WindowCard } from './WindowCard'
 import { PillButton } from './PillButton'
 import { StatusTag } from './StatusTag'
 import { PixelAvatar } from './PixelAvatar'
-import { TrophyIcon, CoinIcon, FolderIcon, ClockIcon, ArrowRightIcon } from './Icons'
+import { TrophyIcon, CoinIcon, ClockIcon, ArrowRightIcon } from './Icons'
+import { NotepadIcon, UsdcCoinIcon, TrophyBigIcon } from './StatIcons'
 import { MyBounties, MySubmissions } from './MyBounties'
 import { BOUNTY_BOARD_ABI } from '../bounty-abi'
 import { CHAIN_ID, CONTRACT_ADDRESS, CONTRACT_DEPLOYED } from '../bounty-config'
@@ -121,7 +122,7 @@ function WallBountyCard({ bounty, onClick }: { bounty: BountyData; onClick: () =
 
       <div className="mt-auto flex flex-col gap-3 pt-1">
         <div className="flex items-center gap-1.5">
-          <CoinIcon size={16} />
+          <UsdcCoinIcon size={20} />
           <span className="font-heading text-[17px] font-extrabold tabular-nums text-[#111]">{formatUsdc(bounty.rewardPerWinner)} USDC</span>
           <span className="font-mono-bold text-[9px] uppercase tracking-wider text-[#111]/50">/ winner</span>
         </div>
@@ -282,15 +283,8 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
               <p className="font-heading text-[18px] font-bold text-[#111] max-w-md leading-relaxed">
                 Lock USDC in escrow, get work done onchain. The prize is guaranteed before a single worker types a word.
               </p>
-              <div className="flex items-center gap-6 flex-wrap">
-                <PillButton onClick={onCreateBounty} variant="yellow" size="lg">Post a bounty →</PillButton>
-                <button
-                  type="button"
-                  onClick={() => { setTab('wall'); scrollToId('wall') }}
-                  className="hidden desk:inline font-mono-bold text-[13px] text-[#111] underline underline-offset-4 decoration-2 hover:text-[#FF3E9A] transition-colors"
-                >
-                  Explore open bounties
-                </button>
+              <div>
+                <PillButton onClick={onCreateBounty} variant="yellow" size="lg">Post a bounty</PillButton>
               </div>
               {CONTRACT_DEPLOYED && (
                 <div className="flex gap-8 flex-wrap pt-4 mt-1 border-t-[3px] border-[#111] desk:hidden">
@@ -308,11 +302,11 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
       {/* Stats row — desktop only (mobile keeps the stats inside the hero) */}
       {CONTRACT_DEPLOYED && (
         <div className="hidden desk:flex items-center justify-between w-full max-w-[1040px] mx-auto px-6">
-          <StatItem icon={<FolderIcon size={48} />} value={totalBounties.toString()} label="Bounties" />
+          <StatItem icon={<NotepadIcon size={54} />} value={totalBounties.toString()} label="Bounties" />
           <span className="h-14 w-px bg-[#111]/30" />
-          <StatItem icon={<CoinIcon size={48} />} value={`$${formatUsdc(totalEscrowed)}`} label="In escrow" />
+          <StatItem icon={<UsdcCoinIcon size={54} />} value={`$${formatUsdc(totalEscrowed)}`} label="In escrow" />
           <span className="h-14 w-px bg-[#111]/30" />
-          <StatItem icon={<TrophyIcon size={48} />} value={`$${formatUsdc(totalPaid)}`} label="Paid out" />
+          <StatItem icon={<TrophyBigIcon size={54} />} value={`$${formatUsdc(totalPaid)}`} label="Paid out" />
         </div>
       )}
 
@@ -361,7 +355,7 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
                 <div className="font-mono-bold text-[12px] uppercase tracking-widest text-[#111]/60 text-center max-w-xs">
                   No bounties yet. Be the first to post one!
                 </div>
-                <PillButton onClick={onCreateBounty} variant="pink">Post first bounty →</PillButton>
+                <PillButton onClick={onCreateBounty} variant="pink">Post first bounty</PillButton>
               </div>
             </WindowCard>
           ) : (
@@ -422,7 +416,7 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
                     query={query}
                   />
                   <aside className="hidden desk:flex flex-col items-center text-center gap-3 rounded-lg border-[2px] border-[#111] bg-[#A78BFA]/20 p-5">
-                    <TrophyIcon size={52} />
+                    <TrophyBigIcon size={64} />
                     <h3 className="font-heading text-[20px] font-extrabold text-[#111] leading-tight">Need something done?</h3>
                     <p className="font-mono-ui text-[12px] leading-snug text-[#111]/70">
                       Lock a USDC prize, let people compete, and pay only the winners you pick.
@@ -435,6 +429,8 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
           )
         )}
       </div>
+
+      <HowItWorksSection onCreateBounty={onCreateBounty} onBrowse={() => { setTab('wall'); scrollToId('wall') }} />
     </div>
   )
 }
@@ -464,15 +460,15 @@ function StatItem({ icon, value, label }: { icon: React.ReactNode; value: string
 }
 
 const HOW_STEPS: { n: string; title: string; text: string; color: string }[] = [
-  { n: '01', title: 'Post',     text: 'Lock the full USDC prize in escrow.',          color: '#FFE600' },
-  { n: '02', title: 'Submit',   text: 'Workers send their work. No gas needed.',      color: '#FF3E9A' },
-  { n: '03', title: 'Approve',  text: 'Review every submission, pick the winners.',   color: '#A78BFA' },
-  { n: '04', title: 'Get paid', text: 'Escrow pays the winners in USDC.',             color: '#C6F23A' },
+  { n: '01', title: 'Post',     text: 'Poster locks the full USDC prize in escrow.',          color: '#FFE600' },
+  { n: '02', title: 'Submit',   text: 'Workers send in their work. No gas needed.',      color: '#FF3E9A' },
+  { n: '03', title: 'Approve',  text: 'Poster reviews every submission and picks the winners.',   color: '#A78BFA' },
+  { n: '04', title: 'Get paid', text: 'Winners get their USDC straight from escrow.',             color: '#C6F23A' },
 ]
 
 function HowItWorks() {
   return (
-    <div id="how-it-works" className="hidden desk:block scroll-mt-24">
+    <div className="hidden desk:block">
       <WindowCard title="HOW_IT_WORKS.EXE" titleBarColor="#7FF3F0" bodyClassName="flex flex-col gap-3 p-4">
         {HOW_STEPS.map(s => (
           <div
@@ -489,5 +485,86 @@ function HowItWorks() {
         ))}
       </WindowCard>
     </div>
+  )
+}
+
+interface GuideStepData { n: number; title: string; text: string; color: string }
+
+const POSTER_STEPS: GuideStepData[] = [
+  { n: 1, title: 'Sign in',      text: 'Use Google or connect a wallet. Keep some USDC handy for the prize.', color: '#FFE600' },
+  { n: 2, title: 'Post & fund',  text: 'Add a title, the task, the prize per winner, how many winners and a deadline. The full prize is locked in escrow before your bounty goes live.', color: '#FF3E9A' },
+  { n: 3, title: 'Review',       text: 'Open every submission privately (links, images, videos) before you decide.', color: '#A78BFA' },
+  { n: 4, title: 'Pick winners', text: 'Approve your winners and the USDC is sent straight from escrow. Any unused prize comes back to you after the review window.', color: '#C6F23A' },
+]
+
+const WORKER_STEPS: GuideStepData[] = [
+  { n: 1, title: 'Find a bounty',    text: 'Browse the wall. The prize is already locked in escrow, so you know it is real.', color: '#FFE600' },
+  { n: 2, title: 'Sign in',          text: 'Use Google or connect a wallet. Submitting costs no gas.', color: '#FF3E9A' },
+  { n: 3, title: 'Submit your work', text: 'Send text, links, images or videos. Only you and the poster can see it.', color: '#A78BFA' },
+  { n: 4, title: 'Get paid',         text: 'If the poster picks you, the USDC lands in your wallet. If a payout is ever pending, claim it on the bounty page.', color: '#C6F23A' },
+]
+
+function GuideCard({ title, color, steps, note, action }: {
+  title: string
+  color: string
+  steps: GuideStepData[]
+  note?: string
+  action: React.ReactNode
+}) {
+  return (
+    <WindowCard title={title} titleBarColor={color} className="h-full flex flex-col" bodyClassName="flex flex-col gap-4 p-5 flex-1">
+      {steps.map(s => (
+        <div key={s.n} className="flex items-start gap-3">
+          <span
+            className="shrink-0 w-9 h-9 rounded-full border-[3px] border-[#111] flex items-center justify-center font-heading text-[15px] font-extrabold text-[#111]"
+            style={{ backgroundColor: s.color }}
+          >
+            {s.n}
+          </span>
+          <div className="min-w-0">
+            <div className="font-heading text-[18px] font-extrabold text-[#111] leading-tight">{s.title}</div>
+            <div className="font-mono-ui text-[13px] leading-snug text-[#111]/75 mt-0.5">{s.text}</div>
+          </div>
+        </div>
+      ))}
+      {note && (
+        <p className="font-mono-ui text-[12px] leading-snug text-[#111]/70 border-2 border-dashed border-[#111]/40 rounded-lg px-3 py-2">
+          {note}
+        </p>
+      )}
+      <div className="mt-auto pt-1">{action}</div>
+    </WindowCard>
+  )
+}
+
+function HowItWorksSection({ onCreateBounty, onBrowse }: { onCreateBounty: () => void; onBrowse: () => void }) {
+  return (
+    <section id="how-it-works" className="scroll-mt-24 flex flex-col gap-5">
+      <div className="flex items-center gap-4 flex-wrap">
+        <span className="font-heading text-[20px] font-extrabold uppercase tracking-wide text-[#111] bg-[#7FF3F0] border-[3px] border-[#111] shadow-hard-sm rounded-md px-4 py-1.5">
+          How it works
+        </span>
+        <span className="font-mono-ui text-[13px] text-[#111]/70">
+          The prize is locked up front, so nobody has to trust anybody.
+        </span>
+      </div>
+      <div className="grid grid-cols-1 desk:grid-cols-2 gap-6 items-stretch">
+        <GuideCard
+          title="FOR_POSTERS.EXE"
+          color="#FF3E9A"
+          steps={POSTER_STEPS}
+          note="Changed your mind? You can cancel for a full refund within 1 hour of posting, as long as no winner has been picked."
+          action={<PillButton onClick={onCreateBounty} variant="yellow">Post a bounty</PillButton>}
+        />
+        <div id="for-workers" className="scroll-mt-24 h-full">
+          <GuideCard
+            title="FOR_WORKERS.EXE"
+            color="#C6F23A"
+            steps={WORKER_STEPS}
+            action={<PillButton onClick={onBrowse} variant="lime">Browse bounties</PillButton>}
+          />
+        </div>
+      </div>
+    </section>
   )
 }
