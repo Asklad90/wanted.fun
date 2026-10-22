@@ -6,10 +6,11 @@ import { WallPage } from './components/WallPage'
 import { BountyPage } from './components/BountyPage'
 import { CreateBountyForm } from './components/CreateBountyForm'
 import { ProfilePage } from './components/ProfilePage'
+import { HowItWorksPage } from './components/HowItWorksPage'
 import { Doodles } from './components/Doodles'
 import { CHAIN_NAME, CONTRACT_ADDRESS, CONTRACT_DEPLOYED, getAddressUrl } from './bounty-config'
 
-type View = 'wall' | 'bounty' | 'create' | 'profile'
+type View = 'wall' | 'bounty' | 'create' | 'profile' | 'how-it-works'
 
 const pageVariants = {
   initial: { opacity: 0, y: 12 },
@@ -45,6 +46,12 @@ export default function App() {
       wasWall ? 0 : 450,
     )
   }
+  function openGuide(scrollId?: string) {
+    setView('how-it-works'); setActiveBountyId(null); setActiveProfileAddr(null)
+    if (scrollId) {
+      window.setTimeout(() => document.getElementById(scrollId)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
+    }
+  }
 
   return (
     <div className="min-h-dvh flex flex-col">
@@ -59,7 +66,7 @@ export default function App() {
             className="flex items-center gap-1 select-none"
             aria-label="Want.fun home"
           >
-            <span className="px-[10px] py-[5px] desk:px-[14px] desk:py-[7px] text-[18px] desk:text-[26px] desk:[-webkit-text-stroke:1.2px_#000]" style={{
+            <span className="px-[10px] py-[5px] desk:px-[14px] desk:py-[7px] text-[18px] desk:text-[26px]" style={{
               display: 'inline-block',
               color: '#000000',
               backgroundColor: '#FF3E9A',
@@ -97,13 +104,13 @@ export default function App() {
               Bounty Wall
             </button>
             <button
-              onClick={() => goTo('how-it-works')}
-              className="font-mono-bold text-[13px] pb-0.5 border-b-[3px] border-transparent text-[#FFFDF0]/70 hover:text-[#FFE600] transition-colors"
+              onClick={() => openGuide()}
+              className={`font-mono-bold text-[13px] pb-0.5 border-b-[3px] transition-colors ${view === 'how-it-works' ? 'text-[#FFFDF0] border-[#FFE600]' : 'text-[#FFFDF0]/70 border-transparent hover:text-[#FFE600]'}`}
             >
               How it works
             </button>
             <button
-              onClick={() => goTo('for-workers')}
+              onClick={() => openGuide('for-workers')}
               className="font-mono-bold text-[13px] pb-0.5 border-b-[3px] border-transparent text-[#FFFDF0]/70 hover:text-[#FFE600] transition-colors"
             >
               For workers
@@ -192,6 +199,10 @@ export default function App() {
               <div className="max-w-lg mx-auto">
                 <CreateBountyForm onClose={() => setView('wall')} onSuccess={onCreated} />
               </div>
+            </PageView>
+          ) : view === 'how-it-works' ? (
+            <PageView key="how-it-works" narrow>
+              <HowItWorksPage onCreateBounty={openCreate} onBrowse={() => goTo('wall')} />
             </PageView>
           ) : (
             <PageView key="wall">

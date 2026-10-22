@@ -21,24 +21,23 @@ export function NotepadIcon({ size = 48, className = '' }: IconProps) {
   )
 }
 
+// Real USDC mark: a flat #2775CA disc with a white "$" — matches Circle's official USDC token icon.
 export function UsdcCoinIcon({ size = 48, className = '' }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" fill="none" className={className} aria-hidden="true">
-      {/* hard shadow */}
+      {/* hard shadow, consistent with the rest of the site's icon set */}
       <circle cx="34" cy="34" r="25" fill="#111" />
       {/* coin */}
       <circle cx="30" cy="30" r="25" fill="#2775CA" stroke="#111" strokeWidth="3" />
-      {/* stitched inner ring */}
-      <circle cx="30" cy="30" r="18" fill="none" stroke="#FFFDF0" strokeWidth="2" strokeDasharray="3 3" />
-      {/* dollar sign */}
-      <text
-        x="30" y="40" textAnchor="middle" fontSize="26" fontWeight="800"
-        fontFamily="'Space Grotesk', sans-serif" fill="#FFFDF0"
-      >
-        $
-      </text>
-      {/* shine */}
-      <path d="M12 21 A20 20 0 0 1 22 11" stroke="#fff" strokeOpacity="0.6" strokeWidth="3" strokeLinecap="round" />
+      {/* dollar sign with the flared top/bottom strokes from the real USDC mark */}
+      <path
+        d="M30 13.5 V46.5"
+        stroke="#FFFDF0" strokeWidth="3.4" strokeLinecap="round"
+      />
+      <path
+        d="M23 36.5 C23 40.5 26.5 42.5 30.5 42.5 C35 42.5 38 40.3 38 37 C38 33.7 35 32.3 30 31 C25 29.7 22.5 28 22.5 24.8 C22.5 21.6 25.5 19.3 30 19.3 C33.7 19.3 36.8 21 37.5 24.3"
+        stroke="#FFFDF0" strokeWidth="3.4" strokeLinecap="round" fill="none"
+      />
     </svg>
   )
 }
