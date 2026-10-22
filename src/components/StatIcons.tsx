@@ -21,22 +21,28 @@ export function NotepadIcon({ size = 48, className = '' }: IconProps) {
   )
 }
 
-// Real USDC mark: a flat #2775CA disc with a white "$" — matches Circle's official USDC token icon.
+// Real USDC mark: a flat #2775CA disc with the two open rings flanking a "$" — matches Circle's official USDC token icon.
 export function UsdcCoinIcon({ size = 48, className = '' }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" fill="none" className={className} aria-hidden="true">
       {/* hard shadow, consistent with the rest of the site's icon set */}
-      <circle cx="34" cy="34" r="25" fill="#111" />
+      <circle cx="35" cy="35" r="27" fill="#111" />
       {/* coin */}
-      <circle cx="30" cy="30" r="25" fill="#2775CA" stroke="#111" strokeWidth="3" />
-      {/* dollar sign with the flared top/bottom strokes from the real USDC mark */}
+      <circle cx="32" cy="32" r="27" fill="#2775CA" stroke="#111" strokeWidth="3" />
+      {/* two open rings flanking the dollar sign */}
       <path
-        d="M30 13.5 V46.5"
-        stroke="#FFFDF0" strokeWidth="3.4" strokeLinecap="round"
+        d="M29.22 16.24 C21.58 17.59 16 24.24 16 32 C16 39.76 21.58 46.41 29.22 47.76"
+        stroke="#FFFDF0" strokeWidth="4.3" strokeLinecap="round" fill="none"
       />
       <path
-        d="M23 36.5 C23 40.5 26.5 42.5 30.5 42.5 C35 42.5 38 40.3 38 37 C38 33.7 35 32.3 30 31 C25 29.7 22.5 28 22.5 24.8 C22.5 21.6 25.5 19.3 30 19.3 C33.7 19.3 36.8 21 37.5 24.3"
-        stroke="#FFFDF0" strokeWidth="3.4" strokeLinecap="round" fill="none"
+        d="M34.78 16.24 C42.42 17.59 48 24.24 48 32 C48 39.76 42.42 46.41 34.78 47.76"
+        stroke="#FFFDF0" strokeWidth="4.3" strokeLinecap="round" fill="none"
+      />
+      {/* dollar sign */}
+      <path d="M32 14 V50" stroke="#FFFDF0" strokeWidth="4" strokeLinecap="round" />
+      <path
+        d="M39 25 C39 20.5 35.8 18 32 18 C27.5 18 24 20.3 24 24.3 C24 28.3 27.8 29.8 32 31 C36.2 32.2 40 33.8 40 38.3 C40 42.8 36.2 46 32 46 C27.8 46 24.5 43.3 24.5 39"
+        stroke="#FFFDF0" strokeWidth="4" strokeLinecap="round" fill="none"
       />
     </svg>
   )

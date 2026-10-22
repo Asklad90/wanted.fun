@@ -109,12 +109,6 @@ export default function App() {
             >
               How it works
             </button>
-            <button
-              onClick={() => openGuide('for-workers')}
-              className="font-mono-bold text-[13px] pb-0.5 border-b-[3px] border-transparent text-[#FFFDF0]/70 hover:text-[#FFE600] transition-colors"
-            >
-              For workers
-            </button>
           </nav>
 
           {/* Right: my profile + connect */}
