@@ -48,7 +48,7 @@ export function MyBounties({ onSelectBounty, onCreateBounty }: MyBountiesProps) 
       <div className="checkerboard rounded-lg py-12 flex flex-col items-center gap-4">
         <TrophyIcon size={40} />
         <div className="font-mono-bold text-[12px] uppercase tracking-widest text-[#111]/60">You haven't posted any bounties yet</div>
-        <PillButton onClick={onCreateBounty} variant="yellow">Post a bounty →</PillButton>
+        <PillButton onClick={onCreateBounty} variant="yellow">Post a bounty</PillButton>
       </div>
     </WindowCard>
   )

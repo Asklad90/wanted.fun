@@ -6,7 +6,10 @@ export default {
   ],
   theme: {
     extend: {
-      // Add your custom colors, fonts, etc. here
+      screens: {
+        // Desktop layout starts at 900px so Chrome's desktop mode on phones (980px) gets it too
+        desk: '900px',
+      },
     },
   },
   plugins: [],

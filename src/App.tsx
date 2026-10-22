@@ -6,9 +6,11 @@ import { WallPage } from './components/WallPage'
 import { BountyPage } from './components/BountyPage'
 import { CreateBountyForm } from './components/CreateBountyForm'
 import { ProfilePage } from './components/ProfilePage'
+import { HowItWorksPage } from './components/HowItWorksPage'
+import { Doodles } from './components/Doodles'
 import { CHAIN_NAME, CONTRACT_ADDRESS, CONTRACT_DEPLOYED, getAddressUrl } from './bounty-config'
 
-type View = 'wall' | 'bounty' | 'create' | 'profile'
+type View = 'wall' | 'bounty' | 'create' | 'profile' | 'how-it-works'
 
 const pageVariants = {
   initial: { opacity: 0, y: 12 },
@@ -16,10 +18,10 @@ const pageVariants = {
   exit:    { opacity: 0, y: -8, transition: { duration: 0.15, ease: 'easeIn' } },
 }
 
-function PageView({ children }: { children: React.ReactNode }) {
+function PageView({ children, narrow = false }: { children: React.ReactNode; narrow?: boolean }) {
   return (
     <motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit">
-      {children}
+      {narrow ? <div className="max-w-[992px] mx-auto w-full">{children}</div> : children}
     </motion.div>
   )
 }
@@ -36,42 +38,54 @@ export default function App() {
   function goBack() { setView('wall'); setActiveBountyId(null); setActiveProfileAddr(null) }
   function openCreate() { setView('create') }
   function onCreated() { setRefreshKey(k => k + 1); setView('wall') }
+  function goTo(id: string) {
+    const wasWall = view === 'wall'
+    setView('wall'); setActiveBountyId(null); setActiveProfileAddr(null)
+    window.setTimeout(
+      () => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+      wasWall ? 0 : 450,
+    )
+  }
+  function openGuide(scrollId?: string) {
+    setView('how-it-works'); setActiveBountyId(null); setActiveProfileAddr(null)
+    if (scrollId) {
+      window.setTimeout(() => document.getElementById(scrollId)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
+    }
+  }
 
   return (
     <div className="min-h-dvh flex flex-col">
+      <Doodles />
       {/* ─── Header ───────────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 border-b-[3px] border-[#111] bg-[#111] px-4 py-3 relative">
         {/* Logo + buttons */}
-        <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
+        <div className="max-w-[1280px] mx-auto flex items-center justify-between gap-3">
           {/* Logo */}
           <button
             onClick={() => { setView('wall') }}
             className="flex items-center gap-1 select-none"
             aria-label="Want.fun home"
           >
-            <span style={{
+            <span className="px-[10px] py-[5px] desk:px-[14px] desk:py-[7px] text-[18px] desk:text-[26px]" style={{
               display: 'inline-block',
               color: '#000000',
               backgroundColor: '#FF3E9A',
               border: '3px solid white',
               borderRadius: '8px',
-              padding: '5px 10px',
               letterSpacing: '0.08em',
               lineHeight: 1,
               transform: 'rotate(-8deg)',
               boxShadow: '3px 3px 0 white, 5px 5px 0 #FF3E9A',
               fontFamily: '"Space Mono", monospace',
               fontWeight: 900,
-              fontSize: '18px',
               textTransform: 'uppercase',
             }}>
               WANT
             </span>
-            <span style={{
+            <span className="text-[34px] desk:text-[44px]" style={{
               color: '#A78BFA',
               letterSpacing: 0,
               fontFamily: '"Fredoka One", cursive',
-              fontSize: '34px',
               lineHeight: 1,
               marginLeft: '4px',
               WebkitTextStroke: '3px #111',
@@ -80,6 +94,22 @@ export default function App() {
               .fun
             </span>
           </button>
+
+          {/* Nav (desktop) */}
+          <nav className="hidden desk:flex items-center gap-8" aria-label="Main">
+            <button
+              onClick={() => goTo('wall')}
+              className={`font-mono-bold text-[13px] pb-0.5 border-b-[3px] transition-colors ${view === 'wall' ? 'text-[#FFFDF0] border-[#FFE600]' : 'text-[#FFFDF0]/70 border-transparent hover:text-[#FFE600]'}`}
+            >
+              Bounty Wall
+            </button>
+            <button
+              onClick={() => openGuide()}
+              className={`font-mono-bold text-[13px] pb-0.5 border-b-[3px] transition-colors ${view === 'how-it-works' ? 'text-[#FFFDF0] border-[#FFE600]' : 'text-[#FFFDF0]/70 border-transparent hover:text-[#FFE600]'}`}
+            >
+              How it works
+            </button>
+          </nav>
 
           {/* Right: my profile + connect */}
           <div className="flex items-center gap-2 min-w-0 shrink-0">
@@ -148,21 +178,25 @@ export default function App() {
       </header>
 
       {/* ─── Main ─────────────────────────────────────────────────────────────── */}
-      <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-6">
+      <main className="flex-1 max-w-[1280px] mx-auto w-full px-4 py-6">
         <AnimatePresence mode="wait">
           {view === 'profile' && activeProfileAddr ? (
-            <PageView key="profile">
+            <PageView key="profile" narrow>
               <ProfilePage address={activeProfileAddr} onBack={goBack} onSelectBounty={openBounty} />
             </PageView>
           ) : view === 'bounty' && activeBountyId !== null ? (
-            <PageView key={`bounty-${activeBountyId}`}>
+            <PageView key={`bounty-${activeBountyId}`} narrow>
               <BountyPage bountyId={activeBountyId} onBack={goBack} onDataChange={() => setRefreshKey(k => k + 1)} />
             </PageView>
           ) : view === 'create' ? (
-            <PageView key="create">
+            <PageView key="create" narrow>
               <div className="max-w-lg mx-auto">
                 <CreateBountyForm onClose={() => setView('wall')} onSuccess={onCreated} />
               </div>
+            </PageView>
+          ) : view === 'how-it-works' ? (
+            <PageView key="how-it-works" narrow>
+              <HowItWorksPage onCreateBounty={openCreate} onBrowse={() => goTo('wall')} />
             </PageView>
           ) : (
             <PageView key="wall">
@@ -174,7 +208,7 @@ export default function App() {
 
       {/* ─── Footer ───────────────────────────────────────────────────────────── */}
       <footer className="border-t-[3px] border-[#111] bg-[#111] px-4 py-4 mt-auto">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
+        <div className="max-w-[1280px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
           <span className="font-mono-ui text-[11px] text-[#FFFDF0]/50 uppercase tracking-wider">
             Text posted onchain is permanent and public. Review before submitting.
           </span>

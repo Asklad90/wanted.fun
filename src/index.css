@@ -124,3 +124,13 @@ body::before {
   color: #111111 !important;
   font-family: 'Space Mono', monospace !important;
 }
+
+/* ── Floating doodles (desktop background stickers) ── */
+@keyframes floaty {
+  0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); }
+  50%      { transform: translateY(-10px) rotate(var(--r, 0deg)); }
+}
+.animate-floaty { animation: floaty 6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .animate-floaty { animation: none; transform: rotate(var(--r, 0deg)); }
+}
