@@ -6,22 +6,29 @@
 interface PixelAvatarProps {
   address: string
   size?: number
+  /** 0–11. Picks a different look for the same address — lets someone "customize" their avatar without an upload. */
+  variant?: number
 }
 
-function hashAddress(addr: string): number[] {
-  // Produce 32 pseudo-random bytes from the address hex chars
+/** How many distinct looks a single address can produce. Keep in sync with the server's MAX_AVATAR_VARIANT. */
+export const AVATAR_VARIANT_COUNT = 12
+
+function hashAddress(addr: string, variant: number): number[] {
+  // Produce 32 pseudo-random bytes from the address hex chars, salted by variant
+  // so each variant gives the same address a different (but still deterministic) look.
   const hex = addr.toLowerCase().replace('0x', '').padEnd(64, '0')
   const bytes: number[] = []
   for (let i = 0; i < 32; i++) {
-    bytes.push(parseInt(hex.slice(i * 2, i * 2 + 2), 16) || 0)
+    const byte = parseInt(hex.slice(i * 2, i * 2 + 2), 16) || 0
+    bytes.push((byte + variant * 37) % 256)
   }
   return bytes
 }
 
 const PALETTE = ['#FF3E9A', '#7FF3F0', '#C6F23A', '#FFE600', '#8B5CF6', '#FF6B57', '#1A1AE6', '#1FB5A5']
 
-export function PixelAvatar({ address, size = 48 }: PixelAvatarProps) {
-  const bytes = hashAddress(address)
+export function PixelAvatar({ address, size = 48, variant = 0 }: PixelAvatarProps) {
+  const bytes = hashAddress(address, variant)
   const GRID = 5 // 5×5 mirrored grid
   const cellSize = size / GRID
 

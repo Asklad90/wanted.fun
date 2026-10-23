@@ -91,6 +91,15 @@ export function WalletIcon({ size = 20, className = '' }: IconProps) {
   )
 }
 
+export function CheckCircleIcon({ size = 20, className = '' }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="none" className={className}>
+      <circle cx="10" cy="10" r="8" fill="#7FF3F0" stroke="#111" strokeWidth="1.5"/>
+      <path d="M6.5 10.3l2.2 2.2 4.8-4.8" stroke="#111" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
 export function ArrowRightIcon({ size = 16, className = '' }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" fill="none" className={className}>
