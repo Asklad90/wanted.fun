@@ -97,6 +97,14 @@ export function ensureSchema(): Promise<void> {
       await pool.sql`
         ALTER TABLE bounties ADD COLUMN IF NOT EXISTS poster TEXT
       `
+      await pool.sql`
+        CREATE TABLE IF NOT EXISTS profiles (
+          address TEXT PRIMARY KEY,
+          bio TEXT,
+          avatar_variant INTEGER NOT NULL DEFAULT 0,
+          updated_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM NOW())::BIGINT
+        )
+      `
     })().catch((e) => {
       schemaReady = null // allow retry on next request
       throw e

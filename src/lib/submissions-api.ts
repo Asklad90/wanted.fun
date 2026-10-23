@@ -11,7 +11,7 @@ import { config } from '../config'
 
 // ── Auth helpers ─────────────────────────────────────────────────────────────
 
-type AuthAction = 'submit' | 'visibility' | 'examples' | 'register'
+type AuthAction = 'submit' | 'visibility' | 'examples' | 'register' | 'profile'
 
 function buildAuthMessage(action: AuthAction, bountyId: string, timestamp: number): string {
   return `want.fun:${action}:${bountyId}:${timestamp}`
@@ -227,4 +227,55 @@ export async function setVisibility(
       signature: auth.signature,
     }),
   })
+}
+
+// ── Profile (off-chain bio + avatar) ────────────────────────────────────────
+
+export interface OffchainProfile {
+  bio: string
+  avatar_variant: number
+}
+
+const PROFILE_DEFAULT: OffchainProfile = { bio: '', avatar_variant: 0 }
+
+/** Public — no auth needed. Returns defaults if the wallet has never saved a profile. */
+export async function fetchProfile(address: string): Promise<OffchainProfile> {
+  try {
+    const res = await fetch(`/api/profiles/${address.toLowerCase()}`)
+    if (!res.ok) return PROFILE_DEFAULT
+    const data = await res.json() as Partial<OffchainProfile>
+    return { bio: data.bio ?? '', avatar_variant: data.avatar_variant ?? 0 }
+  } catch {
+    return PROFILE_DEFAULT
+  }
+}
+
+/**
+ * Save your own bio and/or avatar variant.
+ * Signs a message with the connected wallet to prove you own this address.
+ */
+export async function saveProfile(
+  address: string,
+  bio: string,
+  avatarVariant: number,
+): Promise<{ ok: boolean; error?: string }> {
+  const auth = await signAuth('profile', 'profile')
+  if (!auth) return { ok: false, error: "Your wallet didn't confirm the signature. Please try again." }
+
+  const res = await fetch(`/api/profiles/${address.toLowerCase()}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      bio,
+      avatar_variant: avatarVariant,
+      address: auth.address,
+      timestamp: auth.timestamp,
+      signature: auth.signature,
+    }),
+  })
+  const text = await res.text()
+  let data: { ok?: boolean; error?: string } = {}
+  try { data = JSON.parse(text) as typeof data } catch { /* non-JSON response */ }
+  if (!res.ok) return { ok: false, error: data.error ?? `Server error (${res.status}). Please try again.` }
+  return { ok: true }
 }

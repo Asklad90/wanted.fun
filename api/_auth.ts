@@ -16,6 +16,9 @@
  * e.g. want.fun:submit:42:1715000000
  *      want.fun:visibility:42:1715000000
  *      want.fun:examples:42:1715000000
+ *
+ * The 'profile' action is not bounty-scoped — callers pass the literal
+ * string 'profile' as bountyId so it fits the same message shape.
  */
 
 import { verifyMessage } from 'viem'
@@ -23,7 +26,7 @@ import { verifyMessage } from 'viem'
 /** Max age of a signed auth message before it is rejected (5 minutes). */
 const AUTH_MAX_AGE_S = 5 * 60
 
-export type AuthAction = 'submit' | 'visibility' | 'examples' | 'register'
+export type AuthAction = 'submit' | 'visibility' | 'examples' | 'register' | 'profile'
 
 /** Build the canonical message a wallet must sign. */
 export function buildAuthMessage(
