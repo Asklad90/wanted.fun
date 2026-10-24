@@ -14,33 +14,15 @@ export function FolderIcon({ size = 20, className = '' }: IconProps) {
 }
 
 export function CoinIcon({ size = 20, className = '' }: IconProps) {
-  // Official USDC logo: blue circle, two arc brackets, white $ with vertical stem
+  // Official USDC mark, measured from Circle's real asset (bracket arcs are exactly
+  // 147° with 33° gaps, ring sits at ~0.70 of the circle's radius) — flat, no outline.
   return (
-    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" className={className}>
-      {/* Background circle */}
-      <circle cx="50" cy="50" r="50" fill="#2775CA"/>
-      {/* Left arc bracket */}
-      <path
-        d="M34 26 A28 28 0 0 0 34 74"
-        stroke="white" strokeWidth="8" strokeLinecap="round" fill="none"
-      />
-      {/* Right arc bracket */}
-      <path
-        d="M66 26 A28 28 0 0 1 66 74"
-        stroke="white" strokeWidth="8" strokeLinecap="round" fill="none"
-      />
-      {/* $ symbol */}
-      <text
-        x="50" y="67"
-        textAnchor="middle"
-        fontSize="46"
-        fill="white"
-        fontWeight="bold"
-        fontFamily="Arial, Helvetica, sans-serif"
-      >$</text>
-      {/* Vertical stem of $ */}
-      <rect x="47" y="18" width="6" height="10" rx="3" fill="white"/>
-      <rect x="47" y="72" width="6" height="10" rx="3" fill="white"/>
+    <svg width={size} height={size} viewBox="0 0 64 64" fill="none" className={className} aria-hidden="true">
+      <circle cx="32" cy="32" r="27" fill="#2775CA" />
+      <path d="M37.40 13.78 C45.46 16.17 51 23.59 51 32 C51 40.41 45.46 47.83 37.40 50.22" stroke="#FFFDF0" strokeWidth="3" strokeLinecap="round" fill="none" />
+      <path d="M26.60 13.78 C18.54 16.17 13 23.59 13 32 C13 40.41 18.54 47.83 26.60 50.22" stroke="#FFFDF0" strokeWidth="3" strokeLinecap="round" fill="none" />
+      <path d="M32 19 V45" stroke="#FFFDF0" strokeWidth="3" strokeLinecap="round" />
+      <path d="M37.5 26.8 C37.5 24.6 35.3 23.2 32 23.2 C29.2 23.2 27 24.4 27 26.6 C27 28.8 29.3 29.7 32 30.4 C34.7 31.1 37 32 37 34.4 C37 36.8 34.7 38.8 32 38.8 C29.3 38.8 27.2 37.3 27 35.1" stroke="#FFFDF0" strokeWidth="3" strokeLinecap="round" fill="none" />
     </svg>
   )
 }

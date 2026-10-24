@@ -8,7 +8,9 @@ import { StatusTag } from './StatusTag'
 import { LoadingBar } from './LoadingBar'
 import { TxStatus } from './TxStatus'
 import { SubmissionViewer } from './SubmissionViewer'
-import { ClockIcon, TrophyIcon, LockIcon, CoinIcon, FolderIcon } from './Icons'
+import { ClockIcon, LockIcon, CoinIcon, FolderIcon, CheckCircleIcon } from './Icons'
+import { PixelAvatar } from './PixelAvatar'
+import { fetchProfile, type OffchainProfile } from '../lib/submissions-api'
 import { BOUNTY_BOARD_ABI } from '../bounty-abi'
 import { CHAIN_ID, CONTRACT_ADDRESS } from '../bounty-config'
 import { barColor, formatUsdc, formatAddress, timeLeft, bountyStatus, parseOnchainError } from '../lib/utils'
@@ -312,8 +314,11 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
   const alreadySubmitted = !!offchainSubs.find(s => s.submitter.toLowerCase() === address?.toLowerCase())
 
   return (
-    <div className="flex flex-col gap-5 max-w-2xl mx-auto">
+    <div className="flex flex-col gap-5 max-w-2xl desk:max-w-[1120px] mx-auto">
       <button onClick={onBack} className="font-mono-bold text-[12px] uppercase tracking-widest text-[#1A1AE6] hover:underline self-start">← Back to wall</button>
+
+      <div className="flex flex-col gap-5 desk:grid desk:grid-cols-[1fr_320px] desk:gap-6 desk:items-start">
+      <div className="flex flex-col gap-5 min-w-0">
 
       {/* Main bounty window */}
       <WindowCard title={`BOUNTY_${String(idNum).padStart(3, '0')}.EXE`} titleBarColor={barColor(idNum)} bodyClassName="flex flex-col gap-4">
@@ -328,34 +333,57 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
         <h1 className="font-heading text-[26px] font-extrabold leading-tight text-[#111]">{titleStr}</h1>
         <p className="font-body text-[14px] leading-relaxed text-[#111]/80 whitespace-pre-wrap">{descStr}</p>
 
-        {/* View attachments button — opens inline modal */}
+        {/* Inline preview of the first attachment, with a button to view them all */}
         {examples.length > 0 && (
-          <button
-            type="button"
-            onClick={() => setShowAttachments(true)}
-            className="self-start flex items-center gap-1.5 border-[2px] border-[#111] rounded-full px-3 py-1.5 bg-[#FFFDF0] hover:bg-[#A78BFA]/20 transition-colors font-mono-bold text-[10px] uppercase tracking-widest text-[#111] btn-press"
-          >
-            <AttachmentIcon />
-            View attachment{examples.length > 1 ? `s (${examples.length})` : ''}
-          </button>
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => setShowAttachments(true)}
+              className="relative self-start border-[3px] border-[#111] rounded-lg overflow-hidden shadow-hard-sm btn-press"
+            >
+              {examples[0].content.startsWith('data:video') ? (
+                // eslint-disable-next-line jsx-a11y/media-has-caption
+                <video src={examples[0].content} className="w-full max-w-sm max-h-56 object-cover bg-black" muted />
+              ) : (
+                <img src={examples[0].content} alt="Bounty attachment preview" className="w-full max-w-sm max-h-56 object-cover" />
+              )}
+              <span className="absolute top-2 right-2 w-6 h-6 rounded-md border-2 border-[#111] bg-white/90 flex items-center justify-center">
+                <AttachmentIcon />
+              </span>
+            </button>
+            {examples.length > 1 && (
+              <button
+                type="button"
+                onClick={() => setShowAttachments(true)}
+                className="self-start font-mono-bold text-[10px] uppercase tracking-widest text-[#1A1AE6] underline"
+              >
+                View all {examples.length} attachments →
+              </button>
+            )}
+          </div>
         )}
 
         {/* Stats grid */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="border-[3px] border-[#111] rounded-lg p-3 bg-[#FFE600]/30 flex flex-col gap-1">
             <CoinIcon size={14} />
             <div className="font-heading text-[20px] font-extrabold tabular-nums">{formatUsdc(bounty.rewardPerWinner)}</div>
             <div className="font-mono-ui text-[10px] uppercase tracking-wider text-[#111]/60">USDC / winner</div>
           </div>
-          <div className="border-[3px] border-[#111] rounded-lg p-3 bg-[#7FF3F0]/30 flex flex-col gap-1">
-            <TrophyIcon size={14} />
-            <div className="font-heading text-[20px] font-extrabold tabular-nums">{bounty.winnersApproved.toString()}/{bounty.maxWinners.toString()}</div>
-            <div className="font-mono-ui text-[10px] uppercase tracking-wider text-[#111]/60">Winners</div>
+          <div className="border-[3px] border-[#111] rounded-lg p-3 bg-[#A78BFA]/30 flex flex-col gap-1">
+            <ClockIcon size={14} />
+            <div className="font-heading text-[18px] font-extrabold">{timeLeft(bounty.deadline)}</div>
+            <div className="font-mono-ui text-[10px] uppercase tracking-wider text-[#111]/60">Deadline</div>
           </div>
           <div className="border-[3px] border-[#111] rounded-lg p-3 bg-[#C6F23A]/30 flex flex-col gap-1">
             <FolderIcon size={14} />
             <div className="font-heading text-[20px] font-extrabold tabular-nums">{offchainSubs.length}</div>
             <div className="font-mono-ui text-[10px] uppercase tracking-wider text-[#111]/60">Submissions</div>
+          </div>
+          <div className="border-[3px] border-[#111] rounded-lg p-3 bg-[#7FF3F0]/30 flex flex-col gap-1">
+            <LockIcon size={14} />
+            <div className="font-heading text-[15px] font-extrabold leading-tight">{bounty.escrowRemaining > 0n ? 'In escrow' : 'Paid out'}</div>
+            <div className="font-mono-ui text-[10px] uppercase tracking-wider text-[#111]/60">Payment</div>
           </div>
         </div>
 
@@ -384,6 +412,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
         </div>
       </WindowCard>
 
+      <div id="work-area" className="flex flex-col gap-5 scroll-mt-24">
       {/* Pending payout — winner can claim */}
       {userPayoutStatus === PAYOUT_PENDING && (
         <WindowCard title="CLAIM_REWARD.EXE" titleBarColor="#C6F23A">
@@ -489,6 +518,8 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
         </WindowCard>
       )}
 
+      </div>
+
       {/* Poster actions */}
       {isPoster && (
         <>
@@ -519,6 +550,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
       )}
 
       {/* Submissions list */}
+      <div id="submissions-list" className="scroll-mt-24">
       <OffchainSubmissionList
         submissions={offchainSubs}
         bountyId={bountyId}
@@ -531,6 +563,59 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
         onApproved={refetchAll}
         onToggleVisibility={isPoster ? () => { void handleToggleVisibility() } : undefined}
       />
+      </div>
+
+      </div>
+
+      {/* ── Sidebar (desktop) ──────────────────────────────────────────────── */}
+      <div className="flex flex-col gap-5">
+        {/* Reward card */}
+        <WindowCard title="REWARD.EXE" titleBarColor="#A78BFA" bodyClassName="flex flex-col gap-3">
+          <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/50">Reward</span>
+          <div className="flex items-center gap-2">
+            <CoinIcon size={30} />
+            <span className="font-heading text-[26px] font-extrabold tabular-nums text-[#111]">{formatUsdc(bounty.rewardPerWinner)} USDC</span>
+          </div>
+          <span className="font-mono-ui text-[11px] text-[#111]/50">Fixed payment, per winner</span>
+
+          {isPoster ? (
+            <PillButton onClick={() => document.getElementById('submissions-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} variant="lime">
+              View submissions →
+            </PillButton>
+          ) : status === 'OPEN' ? (
+            <PillButton onClick={() => document.getElementById('work-area')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} variant="yellow">
+              Start working →
+            </PillButton>
+          ) : null}
+
+          <div className="flex items-start gap-2 border-[2px] border-[#111] rounded-lg p-2.5 bg-[#C6F23A]/20">
+            <LockIcon size={16} className="shrink-0 mt-0.5" />
+            <p className="font-mono-ui text-[11px] leading-snug text-[#111]/70">
+              <strong className="text-[#111]">Funds are held in escrow.</strong> You'll get paid once your submission is approved.
+            </p>
+          </div>
+        </WindowCard>
+
+        {/* Posted by card */}
+        <PosterCard poster={bounty.poster} />
+
+        {/* Requirements card — platform rules that apply to every bounty */}
+        <WindowCard title="REQUIREMENTS.EXE" titleBarColor="#7FF3F0" bodyClassName="flex flex-col gap-2.5">
+          <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/50">How this bounty is run</span>
+          {[
+            'The full USDC prize was locked in escrow before this bounty went live',
+            'Your submission is reviewed privately by the poster',
+            'No gas is required to submit your work',
+            'Winners are paid automatically, straight from escrow',
+          ].map((text, i) => (
+            <div key={i} className="flex items-start gap-2">
+              <CheckCircleIcon size={16} className="shrink-0 mt-0.5" />
+              <p className="font-mono-ui text-[11px] leading-snug text-[#111]/70">{text}</p>
+            </div>
+          ))}
+        </WindowCard>
+      </div>
+      </div>
 
       {/* Attachments modal */}
       {showAttachments && (
@@ -805,6 +890,42 @@ function SingleOffchainSubmission({ sub, bountyId, isPoster, rewardPerWinner, ca
         </div>
       )}
     </>
+  )
+}
+
+// ── Posted-by sidebar card ──────────────────────────────────────────────────
+function PosterCard({ poster }: { poster: string }) {
+  const [profile, setProfile] = useState<OffchainProfile>({ bio: '', avatar_variant: 0 })
+
+  useEffect(() => {
+    let cancelled = false
+    fetchProfile(poster).then(p => { if (!cancelled) setProfile(p) })
+    return () => { cancelled = true }
+  }, [poster])
+
+  const { data: postedIds } = useReadContract({
+    address: CONTRACT_ADDRESS, abi: BOUNTY_BOARD_ABI, functionName: 'getBountiesByPoster',
+    args: [poster as `0x${string}`], chainId: CHAIN_ID,
+  }) as { data: readonly bigint[] | undefined }
+
+  const shortAddr = `${poster.slice(0, 6)}…${poster.slice(-4)}`
+
+  return (
+    <WindowCard title="POSTED_BY.EXE" titleBarColor="#FF3E9A" bodyClassName="flex flex-col gap-3">
+      <div className="flex items-center gap-3">
+        <div className="border-[2px] border-[#111] rounded-lg overflow-hidden shrink-0">
+          <PixelAvatar address={poster} size={44} variant={profile.avatar_variant} />
+        </div>
+        <div className="flex flex-col min-w-0">
+          <span className="font-heading text-[14px] font-extrabold text-[#111] truncate">{shortAddr}</span>
+          <span className="font-mono-ui text-[10px] text-[#111]/50">{(postedIds?.length ?? 0)} bount{(postedIds?.length ?? 0) === 1 ? 'y' : 'ies'} posted</span>
+        </div>
+      </div>
+      {profile.bio && (
+        <p className="font-mono-ui text-[11px] font-bold text-[#111] bg-[#FFFDF0] border-[2px] border-[#111]/15 rounded-md px-2.5 py-1.5 leading-snug">{profile.bio}</p>
+      )}
+      <span className="self-start font-mono-bold text-[9px] uppercase tracking-widest border-[2px] border-[#111] rounded-full px-2 py-0.5 bg-[#A78BFA] text-[#111] shadow-hard-sm w-fit">WANT CREATOR</span>
+    </WindowCard>
   )
 }
 
