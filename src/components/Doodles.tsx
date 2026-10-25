@@ -20,11 +20,16 @@ const MARGIN_DOODLES: Doodle[] = [
   { position: 'right-[1.2%] top-[82%]', size: 46, bg: '#FF3E9A', rotate: 14,  delay: '3s',   shape: 'pill',   label: 'WANT' },
 ]
 
-// A couple of small corner stickers that work at any viewport width, mobile included —
-// kept to just two so they stay a light touch rather than clutter.
-const CORNER_DOODLES: Doodle[] = [
-  { position: 'left-[-10px] bottom-[18%] sm:bottom-[14%]',  size: 34, bg: '#FFE600', rotate: -10, delay: '0.4s', shape: 'square', label: '★' },
-  { position: 'right-[-10px] bottom-[10%] sm:bottom-[8%]',  size: 38, bg: '#7FF3F0', rotate: 8,   delay: '1.6s', shape: 'circle', label: '$' },
+// Smaller stickers spread down both edges — these work at any viewport width, phones
+// included, so the page doesn't feel empty when the wide-margin set above has no room.
+// Kept small and off to the side so they never compete with real content.
+const EDGE_DOODLES: Doodle[] = [
+  { position: 'left-[-8px] top-[16%]',   size: 30, bg: '#FFE600', rotate: -10, delay: '0s',   shape: 'square', label: '★' },
+  { position: 'right-[-8px] top-[26%]',  size: 32, bg: '#7FF3F0', rotate: 9,   delay: '0.8s', shape: 'circle', label: '$' },
+  { position: 'left-[-10px] top-[48%]',  size: 28, bg: '#C6F23A', rotate: 12,  delay: '1.6s', shape: 'square' },
+  { position: 'right-[-10px] top-[60%]', size: 34, bg: '#A78BFA', rotate: -8,  delay: '2.2s', shape: 'circle' },
+  { position: 'left-[-8px] bottom-[14%]',  size: 32, bg: '#FF3E9A', rotate: -10, delay: '0.4s', shape: 'circle', label: '$' },
+  { position: 'right-[-8px] bottom-[8%]',  size: 34, bg: '#FFE600', rotate: 8,   delay: '1.2s', shape: 'square', label: '★' },
 ]
 
 function DoodleShape({ d }: { d: Doodle }) {
@@ -58,9 +63,9 @@ export function Doodles() {
         {MARGIN_DOODLES.map((d, i) => <DoodleShape key={`margin-${i}`} d={d} />)}
       </div>
 
-      {/* A light touch of the same stickers, tucked in the corners — every screen size, phones included */}
+      {/* Smaller stickers spread down both edges — every screen size, phones included */}
       <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        {CORNER_DOODLES.map((d, i) => <DoodleShape key={`corner-${i}`} d={d} />)}
+        {EDGE_DOODLES.map((d, i) => <DoodleShape key={`edge-${i}`} d={d} />)}
       </div>
     </>
   )
