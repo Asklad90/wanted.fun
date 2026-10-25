@@ -10,14 +10,28 @@ interface Doodle {
   label?: string
 }
 
-// Wide-margin stickers — only fit once the page has real empty gutters beside the content.
+// Desktop-only — fills the wide empty gutters beside the content, top to bottom,
+// with a mix of insets so it reads as scattered rather than a single lined-up column.
 const MARGIN_DOODLES: Doodle[] = [
-  { position: 'left-[1.2%] top-[14%]',  size: 58, bg: '#FF3E9A', rotate: -8,  delay: '0s',   shape: 'circle', label: '$' },
-  { position: 'left-[1.6%] top-[46%]',  size: 50, bg: '#FFE600', rotate: 12,  delay: '1.2s', shape: 'square' },
-  { position: 'left-[1.2%] top-[76%]',  size: 46, bg: '#7FF3F0', rotate: -14, delay: '2.4s', shape: 'pill',   label: 'USDC' },
-  { position: 'right-[1.2%] top-[22%]', size: 52, bg: '#C6F23A', rotate: 10,  delay: '0.6s', shape: 'square', label: '★' },
-  { position: 'right-[1.6%] top-[54%]', size: 58, bg: '#A78BFA', rotate: -6,  delay: '1.8s', shape: 'circle' },
-  { position: 'right-[1.2%] top-[82%]', size: 46, bg: '#FF3E9A', rotate: 14,  delay: '3s',   shape: 'pill',   label: 'WANT' },
+  // Left gutter, top to bottom
+  { position: 'left-[1.2%] top-[6%]',   size: 44, bg: '#7FF3F0', rotate: 9,   delay: '0.2s', shape: 'circle', label: '$' },
+  { position: 'left-[2.8%] top-[18%]',  size: 34, bg: '#FF3E9A', rotate: -12, delay: '1.4s', shape: 'square' },
+  { position: 'left-[1.2%] top-[30%]',  size: 58, bg: '#FF3E9A', rotate: -8,  delay: '0s',   shape: 'circle', label: '$' },
+  { position: 'left-[2.4%] top-[42%]',  size: 42, bg: '#FFE600', rotate: 14,  delay: '2.2s', shape: 'pill',   label: 'WANT' },
+  { position: 'left-[1.6%] top-[54%]',  size: 50, bg: '#FFE600', rotate: 12,  delay: '1.2s', shape: 'square' },
+  { position: 'left-[3%] top-[66%]',    size: 36, bg: '#A78BFA', rotate: -10, delay: '0.8s', shape: 'circle' },
+  { position: 'left-[1.2%] top-[78%]',  size: 46, bg: '#7FF3F0', rotate: -14, delay: '2.4s', shape: 'pill',   label: 'USDC' },
+  { position: 'left-[2.4%] top-[90%]',  size: 38, bg: '#C6F23A', rotate: 10,  delay: '1.8s', shape: 'square', label: '★' },
+
+  // Right gutter, top to bottom
+  { position: 'right-[2.6%] top-[8%]',  size: 38, bg: '#A78BFA', rotate: -9,  delay: '1s',   shape: 'square', label: '★' },
+  { position: 'right-[1.2%] top-[20%]', size: 52, bg: '#C6F23A', rotate: 10,  delay: '0.6s', shape: 'square', label: '★' },
+  { position: 'right-[2.8%] top-[32%]', size: 40, bg: '#FF3E9A', rotate: 13,  delay: '2s',   shape: 'circle', label: '$' },
+  { position: 'right-[1.6%] top-[44%]', size: 58, bg: '#A78BFA', rotate: -6,  delay: '1.8s', shape: 'circle' },
+  { position: 'right-[2.4%] top-[56%]', size: 44, bg: '#FFE600', rotate: -11, delay: '0.4s', shape: 'pill',   label: 'WANT' },
+  { position: 'right-[1.2%] top-[68%]', size: 46, bg: '#FF3E9A', rotate: 14,  delay: '3s',   shape: 'pill',   label: 'WANT' },
+  { position: 'right-[2.8%] top-[80%]', size: 36, bg: '#7FF3F0', rotate: 8,   delay: '1.3s', shape: 'circle', label: '$' },
+  { position: 'right-[1.4%] top-[92%]', size: 42, bg: '#C6F23A', rotate: -13, delay: '0.9s', shape: 'square' },
 ]
 
 // Smaller stickers spread down both edges — these work at any viewport width, phones
