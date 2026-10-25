@@ -54,6 +54,61 @@ const EDGE_DOODLES: Doodle[] = [
   { position: 'right-[-10px] bottom-[2%]', size: 34, bg: '#7FF3F0', rotate: -8,  delay: '1.5s', shape: 'square', label: '★' },
 ]
 
+interface StripDoodle {
+  leftPct: number
+  size: number
+  bg: string
+  rotate: number
+  delay: string
+  shape: 'circle' | 'square' | 'pill'
+  label?: string
+}
+
+// A handful of stickers scattered across the gap between two page sections.
+// These scroll WITH the page (not fixed), so they only show in the real empty
+// band between cards — never behind a card's own solid background.
+const STRIP_ITEMS: StripDoodle[] = [
+  { leftPct: 8,  size: 28, bg: '#FFE600', rotate: -9,  delay: '0s',   shape: 'square', label: '★' },
+  { leftPct: 28, size: 24, bg: '#7FF3F0', rotate: 11,  delay: '0.7s', shape: 'circle', label: '$' },
+  { leftPct: 50, size: 22, bg: '#FF3E9A', rotate: -12, delay: '1.4s', shape: 'circle' },
+  { leftPct: 72, size: 26, bg: '#C6F23A', rotate: 8,   delay: '0.4s', shape: 'square' },
+  { leftPct: 92, size: 30, bg: '#A78BFA', rotate: -8,  delay: '2s',   shape: 'circle', label: '$' },
+]
+
+export function DoodleStrip() {
+  return (
+    <div aria-hidden="true" className="hidden desk:block relative h-0 pointer-events-none">
+      {STRIP_ITEMS.map((d, i) => {
+        const width = d.shape === 'pill' ? Math.round(d.size * 1.6) : d.size
+        const height = d.shape === 'pill' ? Math.round(d.size * 0.55) : d.size
+        const borderRadius = d.shape === 'circle' ? '50%' : d.shape === 'pill' ? '999px' : '12px'
+        return (
+          // Outer div: static positioning only (centers the sticker on its left%).
+          // Inner div: the animated one — keeping these separate means the floaty
+          // keyframes (which fully own `transform`) can't wipe out the centering offset.
+          <div key={i} className="absolute" style={{ left: `${d.leftPct}%`, top: 0, transform: 'translate(-50%, -50%)' }}>
+            <div
+              className="animate-floaty flex items-center justify-center border-[3px] border-[#111] font-mono-bold text-[#111]"
+              style={{
+                width,
+                height,
+                backgroundColor: d.bg,
+                borderRadius,
+                boxShadow: '4px 4px 0 #111',
+                fontSize: d.shape === 'pill' ? 10 : Math.round(d.size * 0.4),
+                animationDelay: d.delay,
+                '--r': `${d.rotate}deg`,
+              } as React.CSSProperties}
+            >
+              {d.label}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function DoodleShape({ d }: { d: Doodle }) {
   const width = d.shape === 'pill' ? Math.round(d.size * 1.6) : d.size
   const height = d.shape === 'pill' ? Math.round(d.size * 0.55) : d.size
