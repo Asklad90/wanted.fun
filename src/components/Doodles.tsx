@@ -12,6 +12,7 @@ interface Doodle {
 
 // Desktop-only — fills the wide empty gutters beside the content, top to bottom,
 // with a mix of insets so it reads as scattered rather than a single lined-up column.
+// Only kicks in on genuinely wide screens (1536px+), where this much side gutter exists.
 const MARGIN_DOODLES: Doodle[] = [
   // Left gutter, top to bottom
   { position: 'left-[1.2%] top-[6%]',   size: 44, bg: '#7FF3F0', rotate: 9,   delay: '0.2s', shape: 'circle', label: '$' },
@@ -34,16 +35,23 @@ const MARGIN_DOODLES: Doodle[] = [
   { position: 'right-[1.4%] top-[92%]', size: 42, bg: '#C6F23A', rotate: -13, delay: '0.9s', shape: 'square' },
 ]
 
-// Smaller stickers spread down both edges — these work at any viewport width, phones
-// included, so the page doesn't feel empty when the wide-margin set above has no room.
-// Kept small and off to the side so they never compete with real content.
+// Smaller stickers spread down both edges — these have NO breakpoint restriction, so
+// this is the set that actually shows on medium-width screens (including a phone's
+// "desktop site" view, which usually lands around 980–1024px, well under 2xl).
+// Tucked right at the edge so they sit in the dotted background gutter, not on content.
 const EDGE_DOODLES: Doodle[] = [
-  { position: 'left-[-8px] top-[16%]',   size: 30, bg: '#FFE600', rotate: -10, delay: '0s',   shape: 'square', label: '★' },
-  { position: 'right-[-8px] top-[26%]',  size: 32, bg: '#7FF3F0', rotate: 9,   delay: '0.8s', shape: 'circle', label: '$' },
-  { position: 'left-[-10px] top-[48%]',  size: 28, bg: '#C6F23A', rotate: 12,  delay: '1.6s', shape: 'square' },
-  { position: 'right-[-10px] top-[60%]', size: 34, bg: '#A78BFA', rotate: -8,  delay: '2.2s', shape: 'circle' },
-  { position: 'left-[-8px] bottom-[14%]',  size: 32, bg: '#FF3E9A', rotate: -10, delay: '0.4s', shape: 'circle', label: '$' },
-  { position: 'right-[-8px] bottom-[8%]',  size: 34, bg: '#FFE600', rotate: 8,   delay: '1.2s', shape: 'square', label: '★' },
+  { position: 'left-[-8px] top-[11%]',   size: 30, bg: '#FFE600', rotate: -10, delay: '0s',    shape: 'square', label: '★' },
+  { position: 'right-[-8px] top-[17%]',  size: 32, bg: '#7FF3F0', rotate: 9,   delay: '0.8s',  shape: 'circle', label: '$' },
+  { position: 'left-[-10px] top-[22%]',  size: 28, bg: '#C6F23A', rotate: 12,  delay: '1.6s',  shape: 'square' },
+  { position: 'right-[-10px] top-[30%]', size: 34, bg: '#A78BFA', rotate: -8,  delay: '2.2s',  shape: 'circle' },
+  { position: 'left-[-8px] top-[40%]',   size: 32, bg: '#FF3E9A', rotate: -10, delay: '0.4s',  shape: 'circle', label: '$' },
+  { position: 'right-[-8px] top-[48%]',  size: 34, bg: '#FFE600', rotate: 8,   delay: '1.2s',  shape: 'square', label: '★' },
+  { position: 'left-[-10px] top-[58%]',  size: 30, bg: '#7FF3F0', rotate: 11,  delay: '1.9s',  shape: 'circle' },
+  { position: 'right-[-10px] top-[66%]', size: 28, bg: '#C6F23A', rotate: -9,  delay: '0.6s',  shape: 'square', label: '★' },
+  { position: 'left-[-8px] top-[76%]',   size: 34, bg: '#A78BFA', rotate: 10,  delay: '2.4s',  shape: 'circle', label: '$' },
+  { position: 'right-[-8px] top-[84%]',  size: 30, bg: '#FF3E9A', rotate: -12, delay: '1s',    shape: 'square' },
+  { position: 'left-[-10px] bottom-[6%]',  size: 32, bg: '#FFE600', rotate: 9,   delay: '0.3s', shape: 'circle', label: '$' },
+  { position: 'right-[-10px] bottom-[2%]', size: 34, bg: '#7FF3F0', rotate: -8,  delay: '1.5s', shape: 'square', label: '★' },
 ]
 
 function DoodleShape({ d }: { d: Doodle }) {
@@ -77,7 +85,7 @@ export function Doodles() {
         {MARGIN_DOODLES.map((d, i) => <DoodleShape key={`margin-${i}`} d={d} />)}
       </div>
 
-      {/* Smaller stickers spread down both edges — every screen size, phones included */}
+      {/* Edge stickers — every screen size, phones and mid-width "desktop view" alike */}
       <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         {EDGE_DOODLES.map((d, i) => <DoodleShape key={`edge-${i}`} d={d} />)}
       </div>
