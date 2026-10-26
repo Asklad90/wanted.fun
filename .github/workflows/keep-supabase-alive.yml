@@ -1,0 +1,16 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    # Runs every 3 days at 09:00 UTC — well inside Supabase's 7-day inactivity window
+    - cron: '0 9 */3 * *'
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping a read-only API route (generates real DB activity)
+        run: |
+          curl -sS -o /dev/null -w "status: %{http_code}\n" \
+            "https://want-fun.vercel.app/api/bounties/keepalive-ping/examples"
