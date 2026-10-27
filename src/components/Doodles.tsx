@@ -35,10 +35,8 @@ const MARGIN_DOODLES: Doodle[] = [
   { position: 'right-[1.4%] top-[92%]', size: 42, bg: '#C6F23A', rotate: -13, delay: '0.9s', shape: 'square' },
 ]
 
-// Smaller stickers spread down both edges — these have NO breakpoint restriction, so
-// this is the set that actually shows on medium-width screens (including a phone's
-// "desktop site" view, which usually lands around 980–1024px, well under 2xl).
-// Tucked right at the edge so they sit in the dotted background gutter, not on content.
+// Desktop-view edge stickers (900px and up) — the fuller set, spread the full page
+// height. Below that, MOBILE_DOODLES (a much smaller set) takes over instead.
 const EDGE_DOODLES: Doodle[] = [
   { position: 'left-[-8px] top-[11%]',   size: 30, bg: '#FFE600', rotate: -10, delay: '0s',    shape: 'square', label: '★' },
   { position: 'right-[-8px] top-[17%]',  size: 32, bg: '#7FF3F0', rotate: 9,   delay: '0.8s',  shape: 'circle', label: '$' },
@@ -52,6 +50,14 @@ const EDGE_DOODLES: Doodle[] = [
   { position: 'right-[-8px] top-[84%]',  size: 30, bg: '#FF3E9A', rotate: -12, delay: '1s',    shape: 'square' },
   { position: 'left-[-10px] bottom-[6%]',  size: 32, bg: '#FFE600', rotate: 9,   delay: '0.3s', shape: 'circle', label: '$' },
   { position: 'right-[-10px] bottom-[2%]', size: 34, bg: '#7FF3F0', rotate: -8,  delay: '1.5s', shape: 'square', label: '★' },
+]
+
+// Mobile — a light touch, well below the desktop set above. Below 900px only.
+const MOBILE_DOODLES: Doodle[] = [
+  { position: 'left-[-8px] top-[15%]',    size: 26, bg: '#FFE600', rotate: -10, delay: '0s',   shape: 'square', label: '★' },
+  { position: 'right-[-8px] top-[26%]',   size: 24, bg: '#7FF3F0', rotate: 9,   delay: '1s',   shape: 'circle', label: '$' },
+  { position: 'left-[-8px] bottom-[20%]', size: 24, bg: '#FF3E9A', rotate: -9,  delay: '1.8s', shape: 'circle', label: '$' },
+  { position: 'right-[-8px] bottom-[8%]', size: 26, bg: '#C6F23A', rotate: 10,  delay: '0.6s', shape: 'square', label: '★' },
 ]
 
 interface StripDoodle {
@@ -140,9 +146,14 @@ export function Doodles() {
         {MARGIN_DOODLES.map((d, i) => <DoodleShape key={`margin-${i}`} d={d} />)}
       </div>
 
-      {/* Edge stickers — every screen size, phones and mid-width "desktop view" alike */}
-      <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+      {/* Edge stickers — desktop view only (900px+), mid-width "desktop site" toggles included */}
+      <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 hidden desk:block overflow-hidden">
         {EDGE_DOODLES.map((d, i) => <DoodleShape key={`edge-${i}`} d={d} />)}
+      </div>
+
+      {/* A light touch on real mobile — below the desktop breakpoint only */}
+      <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 block desk:hidden overflow-hidden">
+        {MOBILE_DOODLES.map((d, i) => <DoodleShape key={`mobile-${i}`} d={d} />)}
       </div>
     </>
   )
