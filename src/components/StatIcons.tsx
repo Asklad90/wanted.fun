@@ -21,29 +21,17 @@ export function NotepadIcon({ size = 48, className = '' }: IconProps) {
   )
 }
 
-// Real USDC mark: a flat #2775CA disc with the two open rings flanking a "$" — matches Circle's official USDC token icon.
+// Official USDC mark, measured from Circle's real asset (bracket arcs are exactly
+// 147° with 33° gaps, ring sits at ~0.70 of the circle's radius) — flat, no outline.
+// Kept identical to Icons.tsx's CoinIcon so every USDC mark on the site matches.
 export function UsdcCoinIcon({ size = 48, className = '' }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" fill="none" className={className} aria-hidden="true">
-      {/* hard shadow, consistent with the rest of the site's icon set */}
-      <circle cx="35" cy="35" r="27" fill="#111" />
-      {/* coin */}
-      <circle cx="32" cy="32" r="27" fill="#2775CA" stroke="#111" strokeWidth="3" />
-      {/* two open rings flanking the dollar sign */}
-      <path
-        d="M29.22 16.24 C21.58 17.59 16 24.24 16 32 C16 39.76 21.58 46.41 29.22 47.76"
-        stroke="#FFFDF0" strokeWidth="4.3" strokeLinecap="round" fill="none"
-      />
-      <path
-        d="M34.78 16.24 C42.42 17.59 48 24.24 48 32 C48 39.76 42.42 46.41 34.78 47.76"
-        stroke="#FFFDF0" strokeWidth="4.3" strokeLinecap="round" fill="none"
-      />
-      {/* dollar sign */}
-      <path d="M32 14 V50" stroke="#FFFDF0" strokeWidth="4" strokeLinecap="round" />
-      <path
-        d="M39 25 C39 20.5 35.8 18 32 18 C27.5 18 24 20.3 24 24.3 C24 28.3 27.8 29.8 32 31 C36.2 32.2 40 33.8 40 38.3 C40 42.8 36.2 46 32 46 C27.8 46 24.5 43.3 24.5 39"
-        stroke="#FFFDF0" strokeWidth="4" strokeLinecap="round" fill="none"
-      />
+      <circle cx="32" cy="32" r="27" fill="#2775CA" />
+      <path d="M37.40 13.78 C45.46 16.17 51 23.59 51 32 C51 40.41 45.46 47.83 37.40 50.22" stroke="#FFFDF0" strokeWidth="3" strokeLinecap="round" fill="none" />
+      <path d="M26.60 13.78 C18.54 16.17 13 23.59 13 32 C13 40.41 18.54 47.83 26.60 50.22" stroke="#FFFDF0" strokeWidth="3" strokeLinecap="round" fill="none" />
+      <path d="M32 19 V45" stroke="#FFFDF0" strokeWidth="3" strokeLinecap="round" />
+      <path d="M37.5 26.8 C37.5 24.6 35.3 23.2 32 23.2 C29.2 23.2 27 24.4 27 26.6 C27 28.8 29.3 29.7 32 30.4 C34.7 31.1 37 32 37 34.4 C37 36.8 34.7 38.8 32 38.8 C29.3 38.8 27.2 37.3 27 35.1" stroke="#FFFDF0" strokeWidth="3" strokeLinecap="round" fill="none" />
     </svg>
   )
 }

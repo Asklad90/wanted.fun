@@ -413,9 +413,9 @@ export function ProfilePage({ address, onBack, onSelectBounty }: ProfilePageProp
               {!editingProfile ? (
                 <div className="flex items-center gap-2 flex-wrap">
                   {profile.bio ? (
-                    <p className="font-mono-ui text-[12px] text-[#111]/70 max-w-md">{profile.bio}</p>
+                    <p className="font-mono-ui text-[13px] font-bold text-[#111] bg-[#FFFDF0] border-[2px] border-[#111]/15 rounded-md px-2.5 py-1.5 max-w-md leading-snug">{profile.bio}</p>
                   ) : isOwn ? (
-                    <span className="font-mono-ui text-[12px] text-[#111]/40 italic">No bio yet.</span>
+                    <span className="font-mono-ui text-[12px] text-[#111]/50 italic">No bio yet.</span>
                   ) : null}
                   {isOwn && (
                     <button onClick={startEditingProfile} className="font-mono-bold text-[10px] uppercase tracking-widest text-[#1A1AE6] underline shrink-0">
@@ -480,7 +480,7 @@ export function ProfilePage({ address, onBack, onSelectBounty }: ProfilePageProp
 
       {/* ── Wallet window ─────────────────────────────────────────────────── */}
       {isOwn && (
-        <WindowCard title="WALLET_&_ESCROW.EXE" titleBarColor="#C6F23A" bodyClassName="flex flex-col gap-4">
+        <WindowCard title="WALLET.EXE" titleBarColor="#C6F23A" bodyClassName="flex flex-col gap-4">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-2">
               <CoinIcon size={32} />
