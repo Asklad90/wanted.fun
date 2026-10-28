@@ -10,7 +10,6 @@ import { PixelAvatar } from './PixelAvatar'
 import { TrophyIcon, CoinIcon, ClockIcon, ArrowRightIcon } from './Icons'
 import { NotepadIcon, UsdcCoinIcon, TrophyBigIcon } from './StatIcons'
 import { MyBounties, MySubmissions } from './MyBounties'
-import { DoodleStrip } from './Doodles'
 import { BOUNTY_BOARD_ABI } from '../bounty-abi'
 import { CHAIN_ID, CONTRACT_ADDRESS, CONTRACT_DEPLOYED } from '../bounty-config'
 import { formatUsdc, formatAddress, timeLeft, bountyStatus, decodeBytes } from '../lib/utils'
@@ -296,8 +295,6 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
         </motion.section>
       </div>
 
-      <DoodleStrip />
-
       {/* Stats row — desktop only (mobile keeps the stats inside the hero) */}
       {CONTRACT_DEPLOYED && (
         <div className="hidden desk:flex items-center justify-between w-full max-w-[1040px] mx-auto px-6">
@@ -428,8 +425,6 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
           )
         )}
       </div>
-
-      <DoodleStrip />
     </div>
   )
 }
