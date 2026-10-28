@@ -202,11 +202,12 @@ function BountyItem({ bountyId, index, onSelect, filter, query, onReport }: Boun
   )
 }
 
-function BountyGrid({ total, onSelectBounty, filter, query }: {
+function BountyGrid({ total, onSelectBounty, filter, query, onCreateBounty }: {
   total: number
   onSelectBounty: (id: bigint) => void
   filter: StatusFilter
   query: string
+  onCreateBounty: () => void
 }) {
   const ids = Array.from({ length: Math.min(total, 24) }, (_, i) => BigInt(total - i))
   const [visible, setVisible] = useState<Record<string, boolean>>({})
@@ -216,6 +217,9 @@ function BountyGrid({ total, onSelectBounty, filter, query }: {
 
   const allReported = ids.every(id => visible[id.toString()] !== undefined)
   const noMatches = allReported && ids.every(id => visible[id.toString()] === false)
+  // No active filter/search means these bounties aren't "hidden by a search" — they're
+  // just not showing (e.g. aged off the wall), so the wall is effectively empty.
+  const noActiveFilter = filter === 'all' && query.trim() === ''
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 desk:grid-cols-2 xl:grid-cols-3 gap-4 items-stretch">
@@ -231,9 +235,19 @@ function BountyGrid({ total, onSelectBounty, filter, query }: {
         />
       ))}
       {noMatches && (
-        <div className="col-span-full rounded-lg border-[2px] border-dashed border-[#111] bg-[#FFFDF0] py-12 px-4 text-center font-mono-bold text-[12px] uppercase tracking-widest text-[#111]/60">
-          No bounties match. Try a different search or filter.
-        </div>
+        noActiveFilter ? (
+          <div className="col-span-full checkerboard rounded-lg py-16 flex flex-col items-center gap-4">
+            <TrophyIcon size={48} />
+            <div className="font-mono-bold text-[12px] uppercase tracking-widest text-[#111]/60 text-center max-w-xs">
+              No bounties yet. Be the first to post one!
+            </div>
+            <PillButton onClick={onCreateBounty} variant="pink">Post first bounty</PillButton>
+          </div>
+        ) : (
+          <div className="col-span-full rounded-lg border-[2px] border-dashed border-[#111] bg-[#FFFDF0] py-12 px-4 text-center font-mono-bold text-[12px] uppercase tracking-widest text-[#111]/60">
+            No bounties match. Try a different search or filter.
+          </div>
+        )
       )}
     </div>
   )
@@ -410,6 +424,7 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
                     onSelectBounty={onSelectBounty}
                     filter={filter}
                     query={query}
+                    onCreateBounty={onCreateBounty}
                   />
                   <aside className="hidden desk:flex flex-col items-center text-center gap-3 rounded-lg border-[2px] border-[#111] bg-[#A78BFA]/20 p-5">
                     <TrophyBigIcon size={64} />
