@@ -258,7 +258,7 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
   const [filter, setFilter] = useState<StatusFilter>('all')
   const [query, setQuery] = useState('')
 
-  const { data: totalBountiesRaw } = useReadContract({
+  const { data: totalBountiesRaw, isLoading: totalBountiesLoading } = useReadContract({
     address: CONTRACT_ADDRESS, abi: BOUNTY_BOARD_ABI, functionName: 'totalBounties',
     chainId: CHAIN_ID, query: { enabled: CONTRACT_DEPLOYED, refetchInterval: 8000 },
   })
@@ -358,6 +358,13 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
                 </div>
               </div>
             </WindowCard>
+          ) : totalBountiesLoading ? (
+            // Still reading the count — don't flash "No bounties yet" before we actually know.
+            <div className="grid grid-cols-1 sm:grid-cols-2 desk:grid-cols-2 xl:grid-cols-3 gap-4">
+              <SkeletonBountyCard />
+              <SkeletonBountyCard />
+              <SkeletonBountyCard />
+            </div>
           ) : totalBounties === 0 ? (
             <WindowCard title="BOUNTIES.EXE" titleBarColor="#A78BFA">
               <div className="checkerboard rounded-lg py-16 flex flex-col items-center gap-4">
