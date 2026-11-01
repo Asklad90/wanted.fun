@@ -202,12 +202,12 @@ function BountyItem({ bountyId, index, onSelect, filter, query, onReport }: Boun
   )
 }
 
-function BountyGrid({ total, onSelectBounty, filter, query, onCreateBounty }: {
+function BountyGrid({ total, onSelectBounty, filter, query, onAllHiddenChange }: {
   total: number
   onSelectBounty: (id: bigint) => void
   filter: StatusFilter
   query: string
-  onCreateBounty: () => void
+  onAllHiddenChange: (hidden: boolean) => void
 }) {
   const ids = Array.from({ length: Math.min(total, 24) }, (_, i) => BigInt(total - i))
   const [visible, setVisible] = useState<Record<string, boolean>>({})
@@ -220,6 +220,15 @@ function BountyGrid({ total, onSelectBounty, filter, query, onCreateBounty }: {
   // No active filter/search means these bounties aren't "hidden by a search" — they're
   // just not showing (e.g. aged off the wall), so the wall is effectively empty.
   const noActiveFilter = filter === 'all' && query.trim() === ''
+  const allHidden = noMatches && noActiveFilter
+
+  useEffect(() => {
+    onAllHiddenChange(allHidden)
+  }, [allHidden, onAllHiddenChange])
+
+  // When every bounty is hidden with no active filter, the parent swaps to the same
+  // clean "No bounties yet" card used for a genuinely empty wall — skip rendering here.
+  if (allHidden) return null
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 desk:grid-cols-2 xl:grid-cols-3 gap-4 items-stretch">
@@ -234,20 +243,10 @@ function BountyGrid({ total, onSelectBounty, filter, query, onCreateBounty }: {
           onReport={report}
         />
       ))}
-      {noMatches && (
-        noActiveFilter ? (
-          <div className="col-span-full checkerboard rounded-lg py-16 flex flex-col items-center gap-4">
-            <TrophyIcon size={48} />
-            <div className="font-mono-bold text-[12px] uppercase tracking-widest text-[#111]/60 text-center max-w-xs">
-              No bounties yet. Be the first to post one!
-            </div>
-            <PillButton onClick={onCreateBounty} variant="pink">Post first bounty</PillButton>
-          </div>
-        ) : (
-          <div className="col-span-full rounded-lg border-[2px] border-dashed border-[#111] bg-[#FFFDF0] py-12 px-4 text-center font-mono-bold text-[12px] uppercase tracking-widest text-[#111]/60">
-            No bounties match. Try a different search or filter.
-          </div>
-        )
+      {noMatches && !noActiveFilter && (
+        <div className="col-span-full rounded-lg border-[2px] border-dashed border-[#111] bg-[#FFFDF0] py-12 px-4 text-center font-mono-bold text-[12px] uppercase tracking-widest text-[#111]/60">
+          No bounties match. Try a different search or filter.
+        </div>
       )}
     </div>
   )
@@ -257,6 +256,10 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
   const [tab, setTab] = useState<Tab>('wall')
   const [filter, setFilter] = useState<StatusFilter>('all')
   const [query, setQuery] = useState('')
+  // Tagged with the inputs it was computed from, so a change to totalBounties, filter,
+  // or query (below) invalidates it automatically — read it only through the derived
+  // `allBountiesHidden` further down, never directly.
+  const [hiddenSnapshot, setHiddenSnapshot] = useState<{ hidden: boolean; totalBounties: number; filter: StatusFilter; query: string } | null>(null)
 
   const { data: totalBountiesRaw, isLoading: totalBountiesLoading } = useReadContract({
     address: CONTRACT_ADDRESS, abi: BOUNTY_BOARD_ABI, functionName: 'totalBounties',
@@ -273,6 +276,19 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
 
   const totalBounties = totalBountiesRaw ? Number(totalBountiesRaw) : 0
   const totalEscrowed = (totalEscrowRaw) ?? 0n
+
+  // Only trust the snapshot while it was computed from today's totalBounties/filter/query —
+  // otherwise (e.g. a new bounty appears, or the filter/search changes), treat it as
+  // unknown until BountyGrid re-mounts and reports back.
+  const allBountiesHidden = !!hiddenSnapshot
+    && hiddenSnapshot.totalBounties === totalBounties
+    && hiddenSnapshot.filter === filter
+    && hiddenSnapshot.query === query
+    && hiddenSnapshot.hidden
+
+  const handleAllHiddenChange = useCallback((hidden: boolean) => {
+    setHiddenSnapshot({ hidden, totalBounties, filter, query })
+  }, [totalBounties, filter, query])
   const totalPaid = (totalPaidRaw) ?? 0n
 
   return (
@@ -365,7 +381,7 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
               <SkeletonBountyCard />
               <SkeletonBountyCard />
             </div>
-          ) : totalBounties === 0 ? (
+          ) : totalBounties === 0 || allBountiesHidden ? (
             <WindowCard title="BOUNTIES.EXE" titleBarColor="#A78BFA">
               <div className="checkerboard rounded-lg py-16 flex flex-col items-center gap-4">
                 <TrophyIcon size={48} />
@@ -431,7 +447,7 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
                     onSelectBounty={onSelectBounty}
                     filter={filter}
                     query={query}
-                    onCreateBounty={onCreateBounty}
+                    onAllHiddenChange={handleAllHiddenChange}
                   />
                   <aside className="hidden desk:flex flex-col items-center text-center gap-3 rounded-lg border-[2px] border-[#111] bg-[#A78BFA]/20 p-5">
                     <TrophyBigIcon size={64} />
