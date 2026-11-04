@@ -32,6 +32,28 @@ import { shouldPrimeSubmitAuth } from '../lib/submit-prime'
 // silently showed nothing. useWorker:false needs no policy changes.
 const fireBurst = confetti.create(undefined, { resize: true, useWorker: false })
 
+function linkify(text: string): React.ReactNode {
+  const urlRegex = /(https?:\/\/[^\s]+)/g
+  const parts = text.split(urlRegex)
+  return parts.map((part, i) => {
+    if (part.match(/^https?:\/\//i)) {
+      return (
+        <a
+          key={i}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[#1A1AE6] underline hover:text-[#111] break-all font-mono-ui font-semibold"
+          onClick={e => e.stopPropagation()}
+        >
+          {part}
+        </a>
+      )
+    }
+    return part
+  })
+}
+
 // Snapshot current unix seconds — defined outside components to avoid purity lint
 const _getNowSec = (): number => Date.now() / 1000
 
@@ -313,9 +335,58 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
   // Check if connected user already submitted
   const alreadySubmitted = !!offchainSubs.find(s => s.submitter.toLowerCase() === address?.toLowerCase())
 
+  // Share / Copy link state
+  const [copied, setCopied] = useState(false)
+
+  const getShareUrl = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      return `${window.location.origin}/#/bounty/${bountyId.toString()}`
+    }
+    return `https://want.fun/#/bounty/${bountyId.toString()}`
+  }, [bountyId])
+
+  const handleCopyLink = useCallback(() => {
+    const url = getShareUrl()
+    navigator.clipboard.writeText(url)
+      .then(() => {
+        setCopied(true)
+        toast.success('Bounty link copied!')
+        setTimeout(() => setCopied(false), 2000)
+      })
+      .catch(() => toast.error('Failed to copy link'))
+  }, [getShareUrl])
+
+  const handleShareX = useCallback(() => {
+    const url = getShareUrl()
+    const text = encodeURIComponent(
+      `Check out this bounty on @wanteddotfun:\n"${titleStr}"\n\n💰 ${formatUsdc(bounty.rewardPerWinner)} USDC prize locked in escrow!\n\n${url}`
+    )
+    window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank', 'noopener,noreferrer')
+  }, [getShareUrl, titleStr, bounty.rewardPerWinner])
+
   return (
     <div className="flex flex-col gap-5 max-w-2xl desk:max-w-[1120px] mx-auto">
-      <button onClick={onBack} className="font-mono-bold text-[12px] uppercase tracking-widest text-[#1A1AE6] hover:underline self-start">← Back to wall</button>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <button onClick={onBack} className="font-mono-bold text-[12px] uppercase tracking-widest text-[#1A1AE6] hover:underline self-start">← Back to wall</button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleCopyLink}
+            className="flex items-center gap-1.5 font-mono-bold text-[11px] uppercase tracking-wider bg-white border-2 border-[#111] px-3 py-1 rounded-md shadow-hard-sm hover:bg-[#FFE600] transition-colors btn-press cursor-pointer"
+            title="Copy link to this bounty"
+          >
+            <span>{copied ? '✓ Copied' : '🔗 Copy link'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleShareX}
+            className="flex items-center gap-1.5 font-mono-bold text-[11px] uppercase tracking-wider bg-[#111] text-white border-2 border-[#111] px-3 py-1 rounded-md shadow-hard-sm hover:bg-[#222] hover:text-[#FFE600] transition-colors btn-press cursor-pointer"
+            title="Share on X"
+          >
+            <span>𝕏 Share</span>
+          </button>
+        </div>
+      </div>
 
       <div className="flex flex-col gap-5 desk:grid desk:grid-cols-[1fr_320px] desk:gap-6 desk:items-start">
       <div className="flex flex-col gap-5 min-w-0">
@@ -331,7 +402,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
         </div>
 
         <h1 className="font-heading text-[26px] font-extrabold leading-tight text-[#111]">{titleStr}</h1>
-        <p className="font-body text-[14px] leading-relaxed text-[#111]/80 whitespace-pre-wrap">{descStr}</p>
+        <p className="font-body text-[14px] leading-relaxed text-[#111]/80 whitespace-pre-wrap">{linkify(descStr)}</p>
 
         {/* Inline preview of the first attachment, with a button to view them all */}
         {examples.length > 0 && (
