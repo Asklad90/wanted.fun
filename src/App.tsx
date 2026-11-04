@@ -195,6 +195,12 @@ export default function App() {
 
           {/* Right: my profile + connect */}
           <div className="flex items-center gap-2 min-w-0 shrink-0">
+            <button
+              onClick={() => openGuide()}
+              className="desk:hidden font-mono-bold text-[11px] uppercase tracking-wider text-[#FFFDF0]/80 hover:text-[#FFE600] px-2.5 py-1.5 rounded-full border border-[#FFFDF0]/20 hover:border-[#FFE600] transition-colors"
+            >
+              Guide
+            </button>
             {connectedAddr && (
               <button
                 onClick={() => openProfile(connectedAddr)}
@@ -295,7 +301,13 @@ export default function App() {
             Text posted onchain is permanent and public. Review before submitting.
           </span>
           <span className="font-mono-ui text-[11px] text-[#FFFDF0]/30 flex items-center gap-2 flex-wrap justify-center sm:justify-end">
-            Want.fun · {CHAIN_NAME} · USDC
+            <button
+              onClick={() => openGuide()}
+              className="text-[#FFFDF0]/60 hover:text-[#FFE600] transition-colors underline underline-offset-2 font-mono-ui"
+            >
+              How it works
+            </button>
+            · Want.fun · {CHAIN_NAME} · USDC
             {CONTRACT_DEPLOYED && (
               <a
                 href={getAddressUrl(CONTRACT_ADDRESS)}

@@ -309,8 +309,15 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
               <p className="font-heading text-[18px] font-bold text-[#111] max-w-md leading-relaxed">
                 Lock USDC in escrow, get work done onchain. The prize is guaranteed before a single worker types a word.
               </p>
-              <div>
+              <div className="flex items-center gap-3 flex-wrap">
                 <PillButton onClick={onCreateBounty} variant="yellow" size="lg">Post a bounty</PillButton>
+                <button
+                  type="button"
+                  onClick={() => { window.location.hash = '#/how-it-works' }}
+                  className="desk:hidden font-mono-bold text-[12px] uppercase tracking-wider text-[#111] bg-white border-[2px] border-[#111] px-4 py-2.5 rounded-full shadow-hard-sm hover:bg-[#FFFDF0] transition-colors btn-press"
+                >
+                  How it works →
+                </button>
               </div>
               {CONTRACT_DEPLOYED && (
                 <div className="flex gap-8 flex-wrap pt-4 mt-1 border-t-[3px] border-[#111] desk:hidden">
