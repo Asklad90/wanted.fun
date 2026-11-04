@@ -50,19 +50,24 @@ export function CreateBountyForm({ onClose, onSuccess }: CreateBountyFormProps) 
   // Create bounty
   const { writeContract: createBounty, data: createHash, isPending: createPending, error: createErr, reset: resetCreate } = useWriteContract()
   const { isLoading: createConfirming, isSuccess: createSuccess, data: createReceipt } = useWaitForTransactionReceipt({ hash: createHash })
+  const [createdBountyId, setCreatedBountyId] = useState<bigint | null>(null)
 
   // Once the tx confirms, save examples under the real onchain bounty ID from the BountyCreated event
   useEffect(() => {
-    if (!createSuccess || !createReceipt || examples.length === 0) return
+    if (!createSuccess || !createReceipt) return
     try {
       const logs = parseEventLogs({ abi: BOUNTY_BOARD_ABI, logs: createReceipt.logs, eventName: 'BountyCreated' })
       const bountyId = logs[0]?.args?.id
-      if (bountyId == null) return
-      const idStr = bountyId.toString()
-      void saveExamples(idStr, examples.map(e => e.dataUrl)).catch(() => {
-        toast.error('Examples could not be saved — try re-uploading from the bounty page.')
-      })
-      void registerBounty(idStr, address?.toLowerCase())
+      if (bountyId != null) {
+        setCreatedBountyId(bountyId)
+        const idStr = bountyId.toString()
+        if (examples.length > 0) {
+          void saveExamples(idStr, examples.map(e => e.dataUrl)).catch(() => {
+            toast.error('Examples could not be saved — try re-uploading from the bounty page.')
+          })
+        }
+        void registerBounty(idStr, address?.toLowerCase())
+      }
     } catch {
       // If log parsing fails, examples are silently skipped
     }
@@ -163,7 +168,22 @@ export function CreateBountyForm({ onClose, onSuccess }: CreateBountyFormProps) 
             Prize is locked in escrow. Workers can now submit.
           </div>
           <TxStatus hash={createHash} isPending={false} isConfirming={false} isSuccess isError={false} successMessage="Prize locked!" />
-          <PillButton variant="lime" onClick={() => { onSuccess?.(); onClose?.() }}>View wall</PillButton>
+          <div className="flex items-center gap-3 flex-wrap justify-center pt-2">
+            {createdBountyId != null && (
+              <PillButton
+                variant="lime"
+                onClick={() => {
+                  onSuccess?.()
+                  window.location.hash = `#/bounty/${createdBountyId.toString()}`
+                }}
+              >
+                View your bounty →
+              </PillButton>
+            )}
+            <PillButton variant="yellow" onClick={() => { onSuccess?.(); onClose?.() }}>
+              View wall
+            </PillButton>
+          </div>
         </div>
       </WindowCard>
     )
