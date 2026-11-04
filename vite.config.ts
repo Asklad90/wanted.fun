@@ -8,6 +8,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@stripe/stripe-js': path.resolve(__dirname, './src/empty-stub.ts'),
     },
     dedupe: ['react', 'react-dom'],
   },
