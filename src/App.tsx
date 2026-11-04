@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useAccount } from 'wagmi'
 import { ConnectButton } from './components/ConnectButton'
@@ -11,6 +11,48 @@ import { Doodles } from './components/Doodles'
 import { CHAIN_NAME, CONTRACT_ADDRESS, CONTRACT_DEPLOYED, getAddressUrl } from './bounty-config'
 
 type View = 'wall' | 'bounty' | 'create' | 'profile' | 'how-it-works'
+
+interface ParsedRoute {
+  view: View
+  bountyId: bigint | null
+  profileAddr: `0x${string}` | null
+}
+
+function parseHash(rawHash: string): ParsedRoute {
+  const clean = rawHash.replace(/^#\/?/, '').trim()
+  if (!clean || clean === 'wall') {
+    return { view: 'wall', bountyId: null, profileAddr: null }
+  }
+
+  const parts = clean.split('/')
+  const section = parts[0]?.toLowerCase()
+
+  if (section === 'bounty' && parts[1]) {
+    try {
+      const id = BigInt(parts[1])
+      if (id > 0n) return { view: 'bounty', bountyId: id, profileAddr: null }
+    } catch {
+      // not a valid bigint
+    }
+  }
+
+  if (section === 'profile' && parts[1]) {
+    const addr = parts[1].toLowerCase()
+    if (/^0x[0-9a-f]{40}$/i.test(addr)) {
+      return { view: 'profile', bountyId: null, profileAddr: addr as `0x${string}` }
+    }
+  }
+
+  if (section === 'create') {
+    return { view: 'create', bountyId: null, profileAddr: null }
+  }
+
+  if (section === 'how-it-works') {
+    return { view: 'how-it-works', bountyId: null, profileAddr: null }
+  }
+
+  return { view: 'wall', bountyId: null, profileAddr: null }
+}
 
 const pageVariants = {
   initial: { opacity: 0, y: 12 },
@@ -28,30 +70,64 @@ function PageView({ children, narrow = false }: { children: React.ReactNode; nar
 
 export default function App() {
   const { address: connectedAddr } = useAccount()
-  const [view, setView] = useState<View>('wall')
-  const [activeBountyId, setActiveBountyId] = useState<bigint | null>(null)
-  const [activeProfileAddr, setActiveProfileAddr] = useState<`0x${string}` | null>(null)
+  const [route, setRoute] = useState<ParsedRoute>(() => parseHash(window.location.hash))
   const [refreshKey, setRefreshKey] = useState(0)
 
-  function openBounty(id: bigint) { setActiveBountyId(id); setView('bounty') }
-  function openProfile(addr: `0x${string}`) { setActiveProfileAddr(addr); setView('profile') }
-  function goBack() { setView('wall'); setActiveBountyId(null); setActiveProfileAddr(null) }
-  function openCreate() { setView('create') }
-  function onCreated() { setRefreshKey(k => k + 1); setView('wall') }
-  function goTo(id: string) {
-    const wasWall = view === 'wall'
-    setView('wall'); setActiveBountyId(null); setActiveProfileAddr(null)
+  const view = route.view
+  const activeBountyId = route.bountyId
+  const activeProfileAddr = route.profileAddr
+
+  useEffect(() => {
+    function handleHashChange() {
+      setRoute(parseHash(window.location.hash))
+    }
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [])
+
+  const openBounty = useCallback((id: bigint) => {
+    window.location.hash = `#/bounty/${id.toString()}`
+  }, [])
+
+  const openProfile = useCallback((addr: `0x${string}`) => {
+    window.location.hash = `#/profile/${addr}`
+  }, [])
+
+  const openCreate = useCallback(() => {
+    window.location.hash = `#/create`
+  }, [])
+
+  const openGuide = useCallback((scrollId?: string) => {
+    window.location.hash = `#/how-it-works`
+    if (scrollId) {
+      window.setTimeout(() => document.getElementById(scrollId)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
+    }
+  }, [])
+
+  const goBack = useCallback(() => {
+    const curHash = window.location.hash
+    if (curHash && curHash !== '#' && curHash !== '#/' && curHash !== '#/wall') {
+      window.history.back()
+    } else {
+      window.location.hash = '#/'
+    }
+  }, [])
+
+  const onCreated = useCallback(() => {
+    setRefreshKey(k => k + 1)
+    window.location.hash = '#/'
+  }, [])
+
+  const goTo = useCallback((id: string) => {
+    const wasWall = route.view === 'wall'
+    if (window.location.hash && window.location.hash !== '#' && window.location.hash !== '#/' && window.location.hash !== '#/wall') {
+      window.location.hash = '#/'
+    }
     window.setTimeout(
       () => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
       wasWall ? 0 : 450,
     )
-  }
-  function openGuide(scrollId?: string) {
-    setView('how-it-works'); setActiveBountyId(null); setActiveProfileAddr(null)
-    if (scrollId) {
-      window.setTimeout(() => document.getElementById(scrollId)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
-    }
-  }
+  }, [route.view])
 
   return (
     <div className="min-h-dvh flex flex-col">
@@ -62,7 +138,13 @@ export default function App() {
         <div className="max-w-[1280px] mx-auto flex items-center justify-between gap-3">
           {/* Logo */}
           <button
-            onClick={() => { setView('wall') }}
+            onClick={() => {
+              if (window.location.hash && window.location.hash !== '#' && window.location.hash !== '#/' && window.location.hash !== '#/wall') {
+                window.location.hash = '#/'
+              } else {
+                goTo('wall')
+              }
+            }}
             className="flex items-center gap-1 select-none"
             aria-label="Want.fun home"
           >
@@ -191,7 +273,7 @@ export default function App() {
           ) : view === 'create' ? (
             <PageView key="create" narrow>
               <div className="max-w-lg mx-auto">
-                <CreateBountyForm onClose={() => setView('wall')} onSuccess={onCreated} />
+                <CreateBountyForm onClose={goBack} onSuccess={onCreated} />
               </div>
             </PageView>
           ) : view === 'how-it-works' ? (
@@ -213,7 +295,13 @@ export default function App() {
             Text posted onchain is permanent and public. Review before submitting.
           </span>
           <span className="font-mono-ui text-[11px] text-[#FFFDF0]/30 flex items-center gap-2 flex-wrap justify-center sm:justify-end">
-            Want.fun · {CHAIN_NAME} · USDC
+            <button
+              onClick={() => openGuide()}
+              className="text-[#FFFDF0]/60 hover:text-[#FFE600] transition-colors underline underline-offset-2 font-mono-ui"
+            >
+              How it works
+            </button>
+            · Want.fun · {CHAIN_NAME} · USDC
             {CONTRACT_DEPLOYED && (
               <a
                 href={getAddressUrl(CONTRACT_ADDRESS)}
