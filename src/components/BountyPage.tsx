@@ -358,11 +358,22 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
 
   const handleShareX = useCallback(() => {
     const url = getShareUrl()
-    const text = encodeURIComponent(
-      `Check out this bounty on @wanteddotfun:\n"${titleStr}"\n\n💰 ${formatUsdc(bounty.rewardPerWinner)} USDC prize locked in escrow!\n\n${url}`
-    )
+    const cleanDesc = descStr.replace(/\s+/g, ' ').trim()
+    const descSnippet = cleanDesc
+      ? cleanDesc.length > 120
+        ? `"${cleanDesc.slice(0, 117)}..."`
+        : `"${cleanDesc}"`
+      : ''
+
+    const parts = [
+      `Check out this bounty on @wanteddotfun:\n"${titleStr}"`,
+      descSnippet,
+      `💰 ${formatUsdc(bounty.rewardPerWinner)} USDC prize locked in escrow!\n\n${url}`,
+    ].filter(Boolean)
+
+    const text = encodeURIComponent(parts.join('\n\n'))
     window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank', 'noopener,noreferrer')
-  }, [getShareUrl, titleStr, bounty.rewardPerWinner])
+  }, [getShareUrl, titleStr, descStr, bounty.rewardPerWinner])
 
   return (
     <div className="flex flex-col gap-5 max-w-2xl desk:max-w-[1120px] mx-auto">
