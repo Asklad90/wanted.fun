@@ -10,10 +10,10 @@ interface ConnectButtonProps {
 }
 
 const pillClass =
-  'inline-flex flex-col items-center gap-1 rounded-full border-[3px] border-[#111] shadow-hard-sm btn-press bg-[#FFE600] px-4 py-2 font-mono-bold uppercase tracking-widest text-[#111] cursor-pointer'
+  'inline-flex items-center gap-2 rounded-full border-[2.5px] border-[#111] shadow-hard-sm btn-press bg-[#FFE600] px-3.5 py-1.5 sm:px-4 sm:py-2 font-mono-bold uppercase tracking-wider text-[#111] cursor-pointer min-h-[40px] text-[11px] sm:text-[12px] select-none'
 
 const profileBtnClass =
-  'sm:hidden font-mono-bold text-[10px] uppercase tracking-widest text-[#FFFDF0]/70 border-[2px] border-[#FFFDF0]/30 rounded-full px-2 py-1'
+  'sm:hidden font-mono-bold text-[10px] uppercase tracking-wider text-[#111] bg-[#C6F23A] border-[2px] border-[#111] rounded-full px-2.5 py-1 shadow-hard-sm btn-press cursor-pointer'
 
 /** Sign in with Google (auto-creates a wallet) or connect an existing wallet — powered by Privy. */
 function PrivyConnectButton({ onProfileClick }: ConnectButtonProps) {
@@ -58,9 +58,20 @@ function PrivyConnectButton({ onProfileClick }: ConnectButtonProps) {
         onClick={() => (signedIn ? setMenuOpen(o => !o) : login())}
         disabled={!ready}
         className={pillClass}
+        aria-expanded={menuOpen}
+        aria-label={signedIn ? `Account menu for ${label}` : 'Sign in'}
       >
-        <span className="text-[11px] leading-none">{label}</span>
-        <WalletIcon size={18} />
+        {signedIn ? (
+          <span className="w-2 h-2 rounded-full bg-[#16A34A] ring-2 ring-[#111]" aria-hidden="true" />
+        ) : (
+          <WalletIcon size={16} />
+        )}
+        <span className="leading-none">{label}</span>
+        {signedIn && (
+          <svg className="w-3 h-3 text-[#111] transition-transform" style={{ transform: menuOpen ? 'rotate(180deg)' : 'none' }} viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
+        )}
       </button>
 
       {menuOpen && signedIn && (
@@ -108,12 +119,16 @@ function LegacyConnectButton({ onProfileClick }: ConnectButtonProps) {
             </button>
           )}
           <button onClick={show} className={pillClass}>
-            <span className="text-[11px] leading-none">
+            {isConnected ? (
+              <span className="w-2 h-2 rounded-full bg-[#16A34A] ring-2 ring-[#111]" aria-hidden="true" />
+            ) : (
+              <WalletIcon size={16} />
+            )}
+            <span className="leading-none">
               {isConnected && address
                 ? `${address.slice(0, 6)}...${address.slice(-4)}`
-                : 'CONNECT WALLET'}
+                : 'CONNECT'}
             </span>
-            <WalletIcon size={18} />
           </button>
         </div>
       )}

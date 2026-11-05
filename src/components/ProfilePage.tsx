@@ -385,7 +385,14 @@ export function ProfilePage({ address, onBack, onSelectBounty }: ProfilePageProp
 
   return (
     <div className="flex flex-col gap-5">
-      <button onClick={onBack} className="font-mono-bold text-[12px] uppercase tracking-widest text-[#1A1AE6] hover:underline self-start">← Back</button>
+      <button
+        type="button"
+        onClick={onBack}
+        className="inline-flex items-center gap-1.5 font-mono-bold text-[11px] sm:text-[12px] uppercase tracking-wider bg-white border-[2.5px] border-[#111] px-3.5 py-1.5 rounded-full shadow-hard-sm hover:bg-[#FFE600] transition-colors btn-press cursor-pointer min-h-[38px] self-start"
+      >
+        <span className="text-[14px] leading-none">←</span>
+        <span>Bounties</span>
+      </button>
 
       {/* Hidden readers — sum escrowRemaining across every bounty this address posted */}
       {totalPosted?.map(id => <EscrowReader key={id.toString()} bountyId={id} onValue={onEscrowValue} />)}

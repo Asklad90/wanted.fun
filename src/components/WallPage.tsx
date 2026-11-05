@@ -100,7 +100,7 @@ function WallBountyCard({ bounty, onClick }: { bounty: BountyData; onClick: () =
     <button
       type="button"
       onClick={onClick}
-      className="text-left w-full h-full flex flex-col gap-3 rounded-lg border-[2px] border-[#111] bg-[#FFFDF0] p-4 shadow-hard-sm transition-all hover:shadow-[6px_6px_0_#111] hover:-translate-y-0.5"
+      className="text-left w-full h-full flex flex-col gap-3 rounded-lg border-[2.5px] border-[#111] bg-[#FFFDF0] p-4 shadow-hard-sm transition-all hover:shadow-[6px_6px_0_#111] hover:-translate-y-1 cursor-pointer btn-press"
     >
       <div className="flex items-center justify-between gap-2">
         <StatusTag status={status} />
@@ -303,6 +303,12 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
         >
           <div className="bg-[#FFFDF0]/92 desk:bg-transparent px-6 py-10 desk:px-12 desk:py-14 desk:grid desk:grid-cols-[1.1fr_0.9fr] desk:gap-12 desk:items-center">
             <div className="flex flex-col gap-5">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border-[2px] border-[#111] bg-white text-[#111] shadow-hard-sm w-fit">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#16A34A] animate-pulse" aria-hidden="true" />
+                <span className="font-mono-bold text-[10px] sm:text-[11px] uppercase tracking-wider">
+                  Live on Arc · 100% Escrow Guaranteed
+                </span>
+              </div>
               <h1 className="font-heading text-[44px] sm:text-[58px] desk:text-[64px] font-extrabold leading-[1.05] text-[#111] text-balance" style={{ letterSpacing: '-0.02em' }}>
                 Post a bounty.<br />Get it done.
               </h1>
@@ -314,7 +320,7 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
                 <button
                   type="button"
                   onClick={() => { window.location.hash = '#/how-it-works' }}
-                  className="desk:hidden font-mono-bold text-[12px] uppercase tracking-wider text-[#111] bg-white border-[2px] border-[#111] px-4 py-2.5 rounded-full shadow-hard-sm hover:bg-[#FFFDF0] transition-colors btn-press"
+                  className="desk:hidden font-mono-bold text-[12px] uppercase tracking-wider text-[#111] bg-white border-[2px] border-[#111] px-4 py-2.5 rounded-full shadow-hard-sm hover:bg-[#FFFDF0] transition-colors btn-press cursor-pointer"
                 >
                   How it works →
                 </button>
@@ -399,51 +405,61 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
               </div>
             </WindowCard>
           ) : (
-            <div className="desk:border-[3px] desk:border-[#111] desk:rounded-xl desk:shadow-[6px_6px_0_#111] desk:bg-[#FFFDF0] desk:overflow-hidden">
-              {/* Desktop toolbar: title, count, search */}
-              <div className="hidden desk:flex items-center gap-4 flex-wrap checkerboard border-b-[3px] border-[#111] px-6 py-5">
-                <span className="font-heading text-[20px] font-extrabold uppercase tracking-wide text-[#111] bg-[#FFE600] border-[3px] border-[#111] shadow-hard-sm rounded-md px-4 py-1.5">
-                  Bounty Wall
-                </span>
-                <span className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111]/70 border-l-2 border-[#111]/30 pl-4">
-                  {totalBounties} bount{totalBounties === 1 ? 'y' : 'ies'}
-                </span>
-                <label className="relative block w-full max-w-[340px] ml-auto">
-                  <span className="sr-only">Search bounties</span>
+            <div className="border-[3px] border-[#111] rounded-xl shadow-hard bg-[#FFFDF0] overflow-hidden">
+              {/* Responsive toolbar: title, count, search */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 checkerboard border-b-[3px] border-[#111] px-4 py-3 sm:px-6 sm:py-4">
+                <div className="flex items-center gap-3">
+                  <span className="font-heading text-[18px] sm:text-[20px] font-extrabold uppercase tracking-wide text-[#111] bg-[#FFE600] border-[2.5px] border-[#111] shadow-hard-sm rounded-md px-3 py-1 sm:px-4 sm:py-1.5">
+                    Bounty Wall
+                  </span>
+                  <span className="font-mono-bold text-[11px] uppercase tracking-wider text-[#111]/70 border-l-2 border-[#111]/30 pl-3">
+                    {totalBounties} bount{totalBounties === 1 ? 'y' : 'ies'}
+                  </span>
+                </div>
+
+                {/* Search input available on all viewports */}
+                <div className="relative w-full sm:max-w-[320px]">
+                  <label htmlFor="bounty-search-input" className="sr-only">Search bounties</label>
                   <svg
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#111]"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#111]/70 pointer-events-none"
                     viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"
                   >
                     <circle cx="8.5" cy="8.5" r="5.5" />
                     <path d="M13 13l4.5 4.5" />
                   </svg>
                   <input
+                    id="bounty-search-input"
                     type="search"
                     value={query}
                     onChange={e => setQuery(e.target.value)}
-                    placeholder="Search bounties..."
-                    className="w-full bg-white border-[3px] border-[#111] rounded-lg shadow-hard-sm pl-10 pr-3 py-2 font-mono-ui text-[13px] text-[#111] placeholder:text-[#111]/50 focus:outline-none focus:shadow-[6px_6px_0_#111] transition-shadow"
+                    placeholder="Search task, title, tag..."
+                    className="w-full bg-white border-[2.5px] border-[#111] rounded-lg shadow-hard-sm pl-9 pr-8 py-2 font-mono-ui text-[13px] text-[#111] placeholder:text-[#111]/50 focus:outline-none focus:shadow-[5px_5px_0_#111] transition-shadow"
                   />
-                </label>
+                  {query && (
+                    <button
+                      type="button"
+                      onClick={() => setQuery('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-mono-bold text-[#111]/60 hover:text-[#111] w-5 h-5 flex items-center justify-center rounded-full hover:bg-[#111]/10 cursor-pointer"
+                      aria-label="Clear search"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
               </div>
 
-              <div className="flex flex-col gap-4 desk:p-6 desk:gap-5">
-                {/* Mobile heading (unchanged look) */}
-                <div className="flex items-center justify-between desk:hidden">
-                  <h2 className="font-heading text-[20px] font-bold text-[#111]">All Bounties ({totalBounties})</h2>
-                </div>
-
-                {/* Desktop filter pills */}
-                <div className="hidden desk:flex items-center gap-2 flex-wrap">
+              <div className="flex flex-col gap-4 p-4 desk:p-6 desk:gap-5">
+                {/* Filter pills on ALL screens */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 sm:flex-wrap no-scrollbar">
                   {FILTERS.map(f => (
                     <button
                       key={f.id}
                       type="button"
                       onClick={() => setFilter(f.id)}
                       aria-pressed={filter === f.id}
-                      className={`font-mono-bold text-[12px] text-[#111] px-4 py-1.5 rounded-full border-2 border-[#111] transition-colors ${filter === f.id ? 'bg-[#FFE600]' : 'bg-[#FFFDF0] hover:bg-[#FFE600]/50'}`}
+                      className={`font-mono-bold text-[11px] sm:text-[12px] text-[#111] px-3.5 py-1.5 sm:px-4 sm:py-1.5 rounded-full border-2 border-[#111] shadow-hard-sm btn-press transition-colors cursor-pointer select-none whitespace-nowrap min-h-[38px] flex items-center gap-1.5 ${filter === f.id ? 'bg-[#FFE600] font-extrabold' : 'bg-[#FFFDF0] hover:bg-[#FFE600]/40'}`}
                     >
-                      {f.label}
+                      <span>{f.label}</span>
                     </button>
                   ))}
                 </div>

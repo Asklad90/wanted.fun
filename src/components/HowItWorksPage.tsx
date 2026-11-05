@@ -66,7 +66,19 @@ function GuideCard({ title, color, steps, note, action }: {
 
 export function HowItWorksPage({ onCreateBounty, onBrowse }: HowItWorksPageProps) {
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6 sm:gap-8">
+      {/* Top back action */}
+      <div>
+        <button
+          type="button"
+          onClick={onBrowse}
+          className="inline-flex items-center gap-1.5 font-mono-bold text-[11px] sm:text-[12px] uppercase tracking-wider bg-white border-[2.5px] border-[#111] px-3.5 py-1.5 rounded-full shadow-hard-sm hover:bg-[#FFE600] transition-colors btn-press cursor-pointer min-h-[38px]"
+        >
+          <span className="text-[14px] leading-none">←</span>
+          <span>Back to Bounties</span>
+        </button>
+      </div>
+
       {/* Header */}
       <div className="checkerboard border-[3px] border-[#111] rounded-xl shadow-hard overflow-hidden">
         <div className="bg-[#FFFDF0]/92 px-6 py-10 desk:px-12 desk:py-12 flex flex-col gap-6">
