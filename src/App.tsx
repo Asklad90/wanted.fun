@@ -18,8 +18,13 @@ interface ParsedRoute {
   profileAddr: `0x${string}` | null
 }
 
-function parseHash(rawHash: string): ParsedRoute {
-  const clean = rawHash.replace(/^#\/?/, '').trim()
+function parseRoute(): ParsedRoute {
+  if (typeof window === 'undefined') {
+    return { view: 'wall', bountyId: null, profileAddr: null }
+  }
+  const hash = window.location.hash.replace(/^#\/?/, '').trim()
+  const pathname = window.location.pathname.replace(/^\//, '').trim()
+  const clean = hash || pathname
   if (!clean || clean === 'wall') {
     return { view: 'wall', bountyId: null, profileAddr: null }
   }
@@ -54,6 +59,46 @@ function parseHash(rawHash: string): ParsedRoute {
   return { view: 'wall', bountyId: null, profileAddr: null }
 }
 
+interface ErrorBoundaryState {
+  hasError: boolean
+  error: Error | null
+}
+
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, ErrorBoundaryState> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error }
+  }
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('UI error caught by ErrorBoundary:', error, errorInfo)
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto px-4">
+          <div className="font-heading text-[24px] font-extrabold text-[#111] mb-2">Something went wrong</div>
+          <p className="font-mono-ui text-[12px] text-[#111]/70 mb-4 leading-relaxed">
+            {this.state.error?.message || 'An unexpected rendering error occurred.'}
+          </p>
+          <button
+            onClick={() => {
+              window.location.hash = '#/'
+              window.location.reload()
+            }}
+            className="font-mono-bold text-[11px] uppercase tracking-wider bg-[#FFE600] border-[2px] border-[#111] px-4 py-2 rounded-full shadow-hard-sm hover:bg-[#FFE600]/80 transition-colors btn-press cursor-pointer"
+          >
+            Return to wall
+          </button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
+
 const pageVariants = {
   initial: { opacity: 0, y: 12 },
   animate: { opacity: 1, y: 0, transition: { duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] } },
@@ -70,7 +115,7 @@ function PageView({ children, narrow = false }: { children: React.ReactNode; nar
 
 export default function App() {
   const { address: connectedAddr } = useAccount()
-  const [route, setRoute] = useState<ParsedRoute>(() => parseHash(window.location.hash))
+  const [route, setRoute] = useState<ParsedRoute>(parseRoute)
   const [refreshKey, setRefreshKey] = useState(0)
 
   const view = route.view
@@ -78,11 +123,15 @@ export default function App() {
   const activeProfileAddr = route.profileAddr
 
   useEffect(() => {
-    function handleHashChange() {
-      setRoute(parseHash(window.location.hash))
+    function handleRouteChange() {
+      setRoute(parseRoute())
     }
-    window.addEventListener('hashchange', handleHashChange)
-    return () => window.removeEventListener('hashchange', handleHashChange)
+    window.addEventListener('hashchange', handleRouteChange)
+    window.addEventListener('popstate', handleRouteChange)
+    return () => {
+      window.removeEventListener('hashchange', handleRouteChange)
+      window.removeEventListener('popstate', handleRouteChange)
+    }
   }, [])
 
   const openBounty = useCallback((id: bigint) => {
@@ -261,31 +310,33 @@ export default function App() {
 
       {/* ─── Main ─────────────────────────────────────────────────────────────── */}
       <main className="flex-1 max-w-[1280px] mx-auto w-full px-4 py-6">
-        <AnimatePresence mode="wait">
-          {view === 'profile' && activeProfileAddr ? (
-            <PageView key="profile" narrow>
-              <ProfilePage address={activeProfileAddr} onBack={goBack} onSelectBounty={openBounty} />
-            </PageView>
-          ) : view === 'bounty' && activeBountyId !== null ? (
-            <PageView key={`bounty-${activeBountyId}`} narrow>
-              <BountyPage bountyId={activeBountyId} onBack={goBack} onDataChange={() => setRefreshKey(k => k + 1)} />
-            </PageView>
-          ) : view === 'create' ? (
-            <PageView key="create" narrow>
-              <div className="max-w-lg mx-auto">
-                <CreateBountyForm onClose={goBack} onSuccess={onCreated} />
-              </div>
-            </PageView>
-          ) : view === 'how-it-works' ? (
-            <PageView key="how-it-works" narrow>
-              <HowItWorksPage onCreateBounty={openCreate} onBrowse={() => goTo('wall')} />
-            </PageView>
-          ) : (
-            <PageView key="wall">
-              <WallPage onSelectBounty={openBounty} onCreateBounty={openCreate} refreshKey={refreshKey} />
-            </PageView>
-          )}
-        </AnimatePresence>
+        <ErrorBoundary>
+          <AnimatePresence mode="wait">
+            {view === 'profile' && activeProfileAddr ? (
+              <PageView key="profile" narrow>
+                <ProfilePage address={activeProfileAddr} onBack={goBack} onSelectBounty={openBounty} />
+              </PageView>
+            ) : view === 'bounty' && activeBountyId !== null ? (
+              <PageView key={`bounty-${activeBountyId}`} narrow>
+                <BountyPage bountyId={activeBountyId} onBack={goBack} onDataChange={() => setRefreshKey(k => k + 1)} />
+              </PageView>
+            ) : view === 'create' ? (
+              <PageView key="create" narrow>
+                <div className="max-w-lg mx-auto">
+                  <CreateBountyForm onClose={goBack} onSuccess={onCreated} />
+                </div>
+              </PageView>
+            ) : view === 'how-it-works' ? (
+              <PageView key="how-it-works" narrow>
+                <HowItWorksPage onCreateBounty={openCreate} onBrowse={() => goTo('wall')} />
+              </PageView>
+            ) : (
+              <PageView key="wall">
+                <WallPage onSelectBounty={openBounty} onCreateBounty={openCreate} refreshKey={refreshKey} />
+              </PageView>
+            )}
+          </AnimatePresence>
+        </ErrorBoundary>
       </main>
 
       {/* ─── Footer ───────────────────────────────────────────────────────────── */}

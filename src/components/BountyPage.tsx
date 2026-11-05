@@ -85,6 +85,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
   const [submitting, setSubmitting] = useState(false)
   const [examples, setExamples] = useState<BountyExample[]>([])
   const [showAttachments, setShowAttachments] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   // Confetti — fires once per bounty visit when user is a winner
   const confettiFired = useRef(false)
@@ -99,10 +100,10 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
     setTimeout(() => { void fireBurst({ particleCount: 40, angle: 120, spread: 60, origin: { x: 1, y: 0.6 }, colors }) }, 350)
   }, [])
 
-  const { data: bounty, refetch: refetchBounty } = useReadContract({
+  const { data: bounty, isError: bountyError, refetch: refetchBounty } = useReadContract({
     address: CONTRACT_ADDRESS, abi: BOUNTY_BOARD_ABI, functionName: 'getBounty',
     args: [bountyId], chainId: CHAIN_ID,
-  }) as { data: BountyData | undefined; refetch: () => void }
+  }) as { data: BountyData | undefined; isError: boolean; refetch: () => void }
 
   const { data: userPayoutStatus, refetch: refetchPayoutStatus } = useReadContract({
     address: CONTRACT_ADDRESS, abi: BOUNTY_BOARD_ABI, functionName: 'payoutStatus',
@@ -299,6 +300,23 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
     }
   }
 
+  if (bountyError) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-20 text-center max-w-md mx-auto px-4">
+        <div className="font-heading text-[24px] font-extrabold text-[#111]">Bounty Not Found</div>
+        <p className="font-mono-ui text-[12px] text-[#111]/70 leading-relaxed">
+          We couldn't load Bounty #{bountyId.toString()}. It may not exist yet or there was a network connection issue.
+        </p>
+        <button
+          onClick={onBack}
+          className="font-mono-bold text-[11px] uppercase tracking-wider bg-[#FFE600] border-[2px] border-[#111] px-4 py-2 rounded-full shadow-hard-sm hover:bg-[#FFE600]/80 transition-colors btn-press cursor-pointer"
+        >
+          ← Back to wall
+        </button>
+      </div>
+    )
+  }
+
   if (!bounty) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -335,17 +353,14 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
   // Check if connected user already submitted
   const alreadySubmitted = !!offchainSubs.find(s => s.submitter.toLowerCase() === address?.toLowerCase())
 
-  // Share / Copy link state
-  const [copied, setCopied] = useState(false)
-
-  const getShareUrl = useCallback(() => {
+  function getShareUrl(): string {
     if (typeof window !== 'undefined') {
       return `${window.location.origin}/#/bounty/${bountyId.toString()}`
     }
     return `https://want.fun/#/bounty/${bountyId.toString()}`
-  }, [bountyId])
+  }
 
-  const handleCopyLink = useCallback(() => {
+  function handleCopyLink() {
     const url = getShareUrl()
     navigator.clipboard.writeText(url)
       .then(() => {
@@ -354,9 +369,9 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
         setTimeout(() => setCopied(false), 2000)
       })
       .catch(() => toast.error('Failed to copy link'))
-  }, [getShareUrl])
+  }
 
-  const handleShareX = useCallback(() => {
+  function handleShareX() {
     const url = getShareUrl()
     const cleanDesc = descStr.replace(/\s+/g, ' ').trim()
     const descSnippet = cleanDesc
@@ -373,7 +388,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
 
     const text = encodeURIComponent(parts.join('\n\n'))
     window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank', 'noopener,noreferrer')
-  }, [getShareUrl, titleStr, descStr, bounty.rewardPerWinner])
+  }
 
   return (
     <div className="flex flex-col gap-5 max-w-2xl desk:max-w-[1120px] mx-auto">
