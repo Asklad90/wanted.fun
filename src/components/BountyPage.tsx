@@ -696,20 +696,69 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
         {/* Posted by card */}
         <PosterCard poster={bounty.poster} />
 
-        {/* Requirements card — platform rules that apply to every bounty */}
-        <WindowCard title="REQUIREMENTS.EXE" titleBarColor="#7FF3F0" bodyClassName="flex flex-col gap-2.5">
-          <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/50">How this bounty is run</span>
-          {[
-            'The full USDC prize was locked in escrow before this bounty went live',
-            'Your submission is reviewed privately by the poster',
-            'No gas is required to submit your work',
-            'Winners are paid automatically, straight from escrow',
-          ].map((text, i) => (
-            <div key={i} className="flex items-start gap-2">
-              <CheckCircleIcon size={16} className="shrink-0 mt-0.5" />
-              <p className="font-mono-ui text-[11px] leading-snug text-[#111]/70">{text}</p>
+        {/* Requirements card — specific requirements and criteria for workers */}
+        <WindowCard title="REQUIREMENTS.EXE" titleBarColor="#7FF3F0" bodyClassName="flex flex-col gap-3">
+          <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/50">
+            Submission Requirements
+          </span>
+
+          <div className="flex flex-col gap-3">
+            <div className="flex items-start gap-2.5">
+              <CheckCircleIcon size={16} className="shrink-0 mt-0.5 text-[#111]" />
+              <div className="flex flex-col">
+                <span className="font-mono-bold text-[11px] uppercase tracking-wider text-[#111]">Deliverable Formats</span>
+                <span className="font-mono-ui text-[11px] leading-snug text-[#111]/70">
+                  Live links (GitHub repo, Figma, YouTube, demo) or media upload (PNG, JPG, MP4 max 3 MB).
+                </span>
+              </div>
             </div>
-          ))}
+
+            <div className="flex items-start gap-2.5">
+              <CheckCircleIcon size={16} className="shrink-0 mt-0.5 text-[#111]" />
+              <div className="flex flex-col">
+                <span className="font-mono-bold text-[11px] uppercase tracking-wider text-[#111]">Deadline</span>
+                <span className="font-mono-ui text-[11px] leading-snug text-[#111]/70">
+                  Submit before deadline ({timeLeft(bounty.deadline)} remaining). Entries close automatically.
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2.5">
+              <CheckCircleIcon size={16} className="shrink-0 mt-0.5 text-[#111]" />
+              <div className="flex flex-col">
+                <span className="font-mono-bold text-[11px] uppercase tracking-wider text-[#111]">Winner Selection</span>
+                <span className="font-mono-ui text-[11px] leading-snug text-[#111]/70">
+                  Poster selects up to {bounty.maxWinners.toString()} winner{bounty.maxWinners === 1n ? '' : 's'} ({formatUsdc(bounty.rewardPerWinner)} USDC each).
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2.5">
+              <CheckCircleIcon size={16} className="shrink-0 mt-0.5 text-[#111]" />
+              <div className="flex flex-col">
+                <span className="font-mono-bold text-[11px] uppercase tracking-wider text-[#111]">Submission Rules</span>
+                <span className="font-mono-ui text-[11px] leading-snug text-[#111]/70">
+                  1 submission per wallet. Gasless &amp; free — no crypto required to submit work.
+                </span>
+              </div>
+            </div>
+
+            {examples.length > 0 && (
+              <div className="flex items-start gap-2.5 pt-2 border-t-2 border-[#111]/10">
+                <span className="text-[13px] leading-none mt-0.5">📎</span>
+                <div className="flex flex-col">
+                  <span className="font-mono-bold text-[11px] uppercase tracking-wider text-[#111]">Reference Files</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowAttachments(true)}
+                    className="font-mono-bold text-[11px] text-[#1A1AE6] underline text-left hover:text-[#111] transition-colors"
+                  >
+                    View {examples.length} reference attachment{examples.length === 1 ? '' : 's'} provided by poster →
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </WindowCard>
       </div>
       </div>
