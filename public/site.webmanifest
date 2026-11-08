@@ -1,0 +1,27 @@
+{
+  "name": "Want.fun — Onchain Bounty Board",
+  "short_name": "Want.fun",
+  "description": "Lock USDC in escrow, get work done onchain. 100% Escrow Guaranteed on Arc.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFDF0",
+  "theme_color": "#111111",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

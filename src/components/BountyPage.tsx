@@ -449,7 +449,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
                 // eslint-disable-next-line jsx-a11y/media-has-caption
                 <video src={examples[0].content} className="w-full max-w-sm max-h-56 object-cover bg-black" muted />
               ) : (
-                <img src={examples[0].content} alt="Bounty attachment preview" className="w-full max-w-sm max-h-56 object-cover" />
+                <img src={examples[0].content} alt="Bounty requirement attachment preview" className="w-full max-w-sm max-h-56 object-cover" />
               )}
               <span className="absolute top-2 right-2 w-6 h-6 rounded-md border-2 border-[#111] bg-white/90 flex items-center justify-center">
                 <AttachmentIcon />
@@ -587,7 +587,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
                     // eslint-disable-next-line jsx-a11y/media-has-caption
                     <video src={uploadPreview} controls className="w-full max-h-48 bg-black" />
                   ) : (
-                    <img src={uploadPreview} alt="Preview" className="w-full max-h-48 object-contain bg-[#FFFDF0]" />
+                    <img src={uploadPreview} alt="Upload file preview" className="w-full max-h-48 object-contain bg-[#FFFDF0]" />
                   )}
                   <button
                     onClick={clearFile}
@@ -813,8 +813,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
                         src={ex.content}
                         alt={`Attachment ${idx + 1}`}
                         className="w-full max-h-48 object-contain"
-                      />
-                    )}
+                      />                    )}
                     <div className="px-2 py-1 border-t-[2px] border-[#111] font-mono-ui text-[9px] uppercase tracking-widest text-[#111]/50">
                       File {idx + 1}
                     </div>

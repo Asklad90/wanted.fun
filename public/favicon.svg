@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="3" dy="3" stdDeviation="0" flood-color="#111111" />
+    </filter>
+  </defs>
+  <!-- Background badge -->
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="#FFE600" stroke="#111111" stroke-width="4" />
+  <!-- Inner tilted sticker -->
+  <g transform="rotate(-6 32 32)">
+    <rect x="10" y="14" width="44" height="36" rx="8" fill="#FF3E9A" stroke="#111111" stroke-width="3.5" filter="url(#shadow)" />
+    <!-- Letter W in Space Mono style -->
+    <path d="M18 22 L23 42 L28 28 L32 38 L36 28 L41 42 L46 22" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+</svg>

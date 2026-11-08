@@ -57,6 +57,8 @@ export function PixelAvatar({ address, size = 48, variant = 0 }: PixelAvatarProp
 
   return (
     <svg
+      role="img"
+      aria-label={`Avatar for ${address.slice(0, 6)}...`}
       width={size}
       height={size}
       viewBox={`0 0 ${size} ${size}`}

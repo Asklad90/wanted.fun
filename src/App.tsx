@@ -7,10 +7,13 @@ import { BountyPage } from './components/BountyPage'
 import { CreateBountyForm } from './components/CreateBountyForm'
 import { ProfilePage } from './components/ProfilePage'
 import { HowItWorksPage } from './components/HowItWorksPage'
+import { NotFoundPage } from './components/NotFoundPage'
+import { PrivacyPage } from './components/PrivacyPage'
 import { Doodles } from './components/Doodles'
 import { CHAIN_NAME, CONTRACT_ADDRESS, CONTRACT_DEPLOYED, getAddressUrl } from './bounty-config'
+import { updatePageMeta } from './lib/meta'
 
-type View = 'wall' | 'bounty' | 'create' | 'profile' | 'how-it-works'
+type View = 'wall' | 'bounty' | 'create' | 'profile' | 'how-it-works' | 'privacy' | 'not-found'
 
 interface ParsedRoute {
   view: View
@@ -32,20 +35,26 @@ function parseRoute(): ParsedRoute {
   const parts = clean.split('/')
   const section = parts[0]?.toLowerCase()
 
-  if (section === 'bounty' && parts[1]) {
-    try {
-      const id = BigInt(parts[1])
-      if (id > 0n) return { view: 'bounty', bountyId: id, profileAddr: null }
-    } catch {
-      // not a valid bigint
+  if (section === 'bounty') {
+    if (parts[1]) {
+      try {
+        const id = BigInt(parts[1])
+        if (id > 0n) return { view: 'bounty', bountyId: id, profileAddr: null }
+      } catch {
+        // not a valid bigint
+      }
     }
+    return { view: 'not-found', bountyId: null, profileAddr: null }
   }
 
-  if (section === 'profile' && parts[1]) {
-    const addr = parts[1].toLowerCase()
-    if (/^0x[0-9a-f]{40}$/i.test(addr)) {
-      return { view: 'profile', bountyId: null, profileAddr: addr as `0x${string}` }
+  if (section === 'profile') {
+    if (parts[1]) {
+      const addr = parts[1].toLowerCase()
+      if (/^0x[0-9a-f]{40}$/i.test(addr)) {
+        return { view: 'profile', bountyId: null, profileAddr: addr as `0x${string}` }
+      }
     }
+    return { view: 'not-found', bountyId: null, profileAddr: null }
   }
 
   if (section === 'create') {
@@ -56,7 +65,11 @@ function parseRoute(): ParsedRoute {
     return { view: 'how-it-works', bountyId: null, profileAddr: null }
   }
 
-  return { view: 'wall', bountyId: null, profileAddr: null }
+  if (section === 'privacy') {
+    return { view: 'privacy', bountyId: null, profileAddr: null }
+  }
+
+  return { view: 'not-found', bountyId: null, profileAddr: null }
 }
 
 interface ErrorBoundaryState {
@@ -133,6 +146,58 @@ export default function App() {
       window.removeEventListener('popstate', handleRouteChange)
     }
   }, [])
+
+  useEffect(() => {
+    switch (route.view) {
+      case 'create':
+        updatePageMeta({
+          title: 'Post a Bounty',
+          description: 'Create and fund a new USDC escrow bounty onchain on Arc.',
+          canonicalPath: '#/create',
+        })
+        break
+      case 'how-it-works':
+        updatePageMeta({
+          title: 'How It Works',
+          description: 'Learn how smart contract escrow, proof-of-work submissions, and instant USDC payouts operate on Want.fun.',
+          canonicalPath: '#/how-it-works',
+        })
+        break
+      case 'privacy':
+        updatePageMeta({
+          title: 'Privacy & Terms',
+          description: 'Protocol terms, transparency, and data privacy policies for Want.fun onchain bounties.',
+          canonicalPath: '#/privacy',
+        })
+        break
+      case 'bounty':
+        updatePageMeta({
+          title: `Bounty #${route.bountyId?.toString() || ''}`,
+          description: `View details, requirements, and submissions for Bounty #${route.bountyId?.toString() || ''} on Want.fun.`,
+          canonicalPath: `#/bounty/${route.bountyId?.toString() || ''}`,
+        })
+        break
+      case 'profile':
+        updatePageMeta({
+          title: `Profile ${route.profileAddr ? route.profileAddr.slice(0, 6) + '...' + route.profileAddr.slice(-4) : ''}`,
+          description: `Onchain bounty activity and earnings history on Want.fun.`,
+          canonicalPath: `#/profile/${route.profileAddr || ''}`,
+        })
+        break
+      case 'not-found':
+        updatePageMeta({
+          title: '404 - Bounty Not Found',
+          description: 'The requested page or bounty could not be found on Want.fun.',
+        })
+        break
+      case 'wall':
+      default:
+        updatePageMeta({
+          canonicalPath: '',
+        })
+        break
+    }
+  }, [route])
 
   const openBounty = useCallback((id: bigint) => {
     window.location.hash = `#/bounty/${id.toString()}`
@@ -337,6 +402,14 @@ export default function App() {
               <PageView key="how-it-works" narrow>
                 <HowItWorksPage onCreateBounty={openCreate} onBrowse={() => goTo('wall')} />
               </PageView>
+            ) : view === 'privacy' ? (
+              <PageView key="privacy" narrow>
+                <PrivacyPage onBack={goBack} />
+              </PageView>
+            ) : view === 'not-found' ? (
+              <PageView key="not-found" narrow>
+                <NotFoundPage onBackToWall={() => { window.location.hash = '#/' }} onHowItWorks={() => { window.location.hash = '#/how-it-works' }} />
+              </PageView>
             ) : (
               <PageView key="wall">
                 <WallPage onSelectBounty={openBounty} onCreateBounty={openCreate} refreshKey={refreshKey} />
@@ -412,9 +485,16 @@ export default function App() {
           <span className="font-mono-ui text-[11px] text-[#FFFDF0]/30 flex items-center gap-2 flex-wrap justify-center sm:justify-end">
             <button
               onClick={() => openGuide()}
-              className="text-[#FFFDF0]/60 hover:text-[#FFE600] transition-colors underline underline-offset-2 font-mono-ui"
+              className="text-[#FFFDF0]/60 hover:text-[#FFE600] transition-colors underline underline-offset-2 font-mono-ui cursor-pointer"
             >
               How it works
+            </button>
+            ·
+            <button
+              onClick={() => { window.location.hash = '#/privacy' }}
+              className="text-[#FFFDF0]/60 hover:text-[#FFE600] transition-colors underline underline-offset-2 font-mono-ui cursor-pointer"
+            >
+              Privacy & Terms
             </button>
             · Want.fun · {CHAIN_NAME} · USDC
             {CONTRACT_DEPLOYED && (
