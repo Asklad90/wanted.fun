@@ -12,15 +12,8 @@ import { CHAIN_ID, CONTRACT_ADDRESS, USDC_ADDRESS, USDC_DECIMALS, CONTRACT_DEPLO
 import { parseOnchainError, encodeText } from '../lib/utils'
 import { registerBounty, saveExamples } from '../lib/submissions-api'
 
-  // Deadline minimum: 1 hour from module load
+// Deadline minimum: 1 hour from module load
 const MIN_DEADLINE_DATE: string = new Date(Date.now() + 3600_000).toISOString().slice(0, 16)
-
-function getPresetDate(hours: number): string {
-  const d = new Date(Date.now() + hours * 3600_000)
-  const offset = d.getTimezoneOffset()
-  const local = new Date(d.getTime() - offset * 60 * 1000)
-  return local.toISOString().slice(0, 16)
-}
 
 const MAX_TITLE = 80
 const MAX_DESC = 500
@@ -357,30 +350,10 @@ export function CreateBountyForm({ onClose, onSuccess }: CreateBountyFormProps) 
 
           {/* Deadline */}
           <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <label className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111]">Deadline *</label>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="font-mono-ui text-[9px] uppercase tracking-wider text-[#111]/40">Quick:</span>
-                {[
-                  { label: '+24h', hours: 24 },
-                  { label: '+3d', hours: 72 },
-                  { label: '+7d', hours: 168 },
-                  { label: '+14d', hours: 336 },
-                ].map(p => (
-                  <button
-                    key={p.label}
-                    type="button"
-                    onClick={() => setDeadlineDate(getPresetDate(p.hours))}
-                    className="font-mono-bold text-[9px] uppercase px-2 py-0.5 rounded border border-[#111] bg-white hover:bg-[#FFE600] transition-colors btn-press cursor-pointer"
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <label className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111]">Deadline *</label>
             <input type="datetime-local" value={deadlineDate} onChange={e => setDeadlineDate(e.target.value)}
               min={MIN_DEADLINE_DATE}
-              className="border-[3px] border-[#111] rounded-lg px-3 py-2.5 text-[15px] font-body bg-white focus:outline-none focus:bg-[#FFFDF0] focus:ring-2 focus:ring-[#FFE600] w-full"
+              className="border-[3px] border-[#111] rounded-lg px-3 py-2.5 text-[15px] font-body bg-white focus:outline-none focus:bg-[#FFFDF0] w-full"
             />
           </div>
         </div>

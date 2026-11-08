@@ -40,9 +40,8 @@ export function BountyCard({ bounty, onClick }: BountyCardProps) {
 
   return (
     <button
-      type="button"
       onClick={onClick}
-      className="text-left w-full cursor-pointer btn-press transition-transform"
+      className="text-left w-full"
     >
       <WindowCard
         title={`BOUNTY_${String(idNum).padStart(3, '0')}.EXE`}

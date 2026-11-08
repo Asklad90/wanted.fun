@@ -307,21 +307,14 @@ export default function App() {
             </button>
           </nav>
 
-          {/* Right: post bounty CTA + my profile + connect */}
-          <div className="flex items-center gap-2.5 min-w-0 shrink-0">
-            <button
-              onClick={openCreate}
-              className="hidden sm:inline-flex items-center gap-1.5 font-mono-bold text-[11px] desk:text-[12px] uppercase tracking-wider bg-[#FFE600] text-[#111] border-[2.5px] border-[#111] rounded-full px-3.5 py-1.5 desk:px-4 desk:py-2 hover:bg-[#FFE600]/90 transition-all shadow-hard-sm btn-press cursor-pointer"
-            >
-              <span className="font-extrabold text-[14px] leading-none">+</span>
-              <span>Post Bounty</span>
-            </button>
+          {/* Right: my profile + connect */}
+          <div className="flex items-center gap-2 min-w-0 shrink-0">
             {connectedAddr && (
               <button
                 onClick={() => openProfile(connectedAddr)}
-                className="hidden md:flex items-center gap-1.5 font-mono-bold text-[11px] uppercase tracking-wider bg-[#C6F23A] text-[#111] border-[2px] border-[#111] rounded-full px-3 py-1.5 hover:bg-[#b5e02e] transition-colors shadow-hard-sm btn-press cursor-pointer"
+                className="hidden sm:flex items-center gap-1.5 font-mono-bold text-[11px] uppercase tracking-widest bg-[#C6F23A] text-[#111] border-[2px] border-[#FFFDF0]/40 rounded-full px-3 py-1.5 hover:border-[#C6F23A] transition-colors shadow-hard-sm btn-press"
               >
-                Profile →
+                My Profile →
               </button>
             )}
             <ConnectButton onProfileClick={connectedAddr ? () => openProfile(connectedAddr) : undefined} />
@@ -381,7 +374,7 @@ export default function App() {
       </header>
 
       {/* ─── Main ─────────────────────────────────────────────────────────────── */}
-      <main className="flex-1 max-w-[1280px] mx-auto w-full px-4 pt-6 pb-24 desk:py-6">
+      <main className="flex-1 max-w-[1280px] mx-auto w-full px-4 py-6">
         <ErrorBoundary>
           <AnimatePresence mode="wait">
             {view === 'profile' && activeProfileAddr ? (
@@ -418,63 +411,6 @@ export default function App() {
           </AnimatePresence>
         </ErrorBoundary>
       </main>
-
-      {/* ─── Mobile Sticky Navigation Bar (UI/UX Best Practice) ───────────── */}
-      <nav
-        aria-label="Mobile Navigation"
-        className="desk:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#111] border-t-[3px] border-[#111] px-4 py-2 flex items-center justify-around shadow-[0_-4px_16px_rgba(0,0,0,0.25)]"
-        style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom, 0px))' }}
-      >
-        <button
-          type="button"
-          onClick={() => {
-            if (window.location.hash && window.location.hash !== '#' && window.location.hash !== '#/' && window.location.hash !== '#/wall') {
-              window.location.hash = '#/'
-            } else {
-              goTo('wall')
-            }
-          }}
-          className={`flex flex-col items-center gap-0.5 px-3 py-1 font-mono-bold text-[10px] uppercase tracking-wider transition-colors min-h-[44px] justify-center ${view === 'wall' ? 'text-[#FFE600]' : 'text-[#FFFDF0]/60 hover:text-[#FFFDF0]'}`}
-        >
-          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
-          </svg>
-          <span>Wall</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={openCreate}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-full border-[2.5px] border-[#111] font-mono-bold text-[11px] uppercase tracking-wider bg-[#FFE600] text-[#111] shadow-hard-sm btn-press min-h-[44px] ${view === 'create' ? 'ring-2 ring-white' : ''}`}
-        >
-          <span className="text-[16px] leading-none font-black">+</span>
-          <span>Post</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => openGuide()}
-          className={`flex flex-col items-center gap-0.5 px-3 py-1 font-mono-bold text-[10px] uppercase tracking-wider transition-colors min-h-[44px] justify-center ${view === 'how-it-works' ? 'text-[#FFE600]' : 'text-[#FFFDF0]/60 hover:text-[#FFFDF0]'}`}
-        >
-          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" />
-          </svg>
-          <span>Guide</span>
-        </button>
-
-        {connectedAddr ? (
-          <button
-            type="button"
-            onClick={() => openProfile(connectedAddr)}
-            className={`flex flex-col items-center gap-0.5 px-3 py-1 font-mono-bold text-[10px] uppercase tracking-wider transition-colors min-h-[44px] justify-center ${view === 'profile' ? 'text-[#FFE600]' : 'text-[#FFFDF0]/60 hover:text-[#FFFDF0]'}`}
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
-            </svg>
-            <span>Profile</span>
-          </button>
-        ) : null}
-      </nav>
 
       {/* ─── Footer ───────────────────────────────────────────────────────────── */}
       <footer className="border-t-[3px] border-[#111] bg-[#111] px-4 py-4 mt-auto">

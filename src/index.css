@@ -102,10 +102,6 @@ body::before {
 ::-webkit-scrollbar-track { background: #FFFDF0; }
 ::-webkit-scrollbar-thumb { background: #111111; border-radius: 4px; }
 
-/* ── Hide scrollbar for horizontal chips/pills ── */
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
 /* ── Toast overrides ── */
 [data-sonner-toaster] [data-type="success"] {
   border: 3px solid #111111 !important;

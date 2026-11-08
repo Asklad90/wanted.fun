@@ -392,20 +392,13 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
 
   return (
     <div className="flex flex-col gap-5 max-w-2xl desk:max-w-[1120px] mx-auto">
-      <div className="flex items-center justify-between gap-3 flex-wrap py-1">
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex items-center gap-1.5 font-mono-bold text-[11px] sm:text-[12px] uppercase tracking-wider bg-white border-[2.5px] border-[#111] px-3.5 py-1.5 rounded-full shadow-hard-sm hover:bg-[#FFE600] transition-colors btn-press cursor-pointer min-h-[38px]"
-        >
-          <span className="text-[14px] leading-none">←</span>
-          <span>Bounties</span>
-        </button>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <button onClick={onBack} className="font-mono-bold text-[12px] uppercase tracking-widest text-[#1A1AE6] hover:underline self-start">← Back to wall</button>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={handleCopyLink}
-            className="flex items-center gap-1.5 font-mono-bold text-[11px] uppercase tracking-wider bg-white border-[2px] border-[#111] px-3.5 py-1.5 rounded-md shadow-hard-sm hover:bg-[#FFE600] transition-colors btn-press cursor-pointer min-h-[38px]"
+            className="flex items-center gap-1.5 font-mono-bold text-[11px] uppercase tracking-wider bg-white border-2 border-[#111] px-3 py-1 rounded-md shadow-hard-sm hover:bg-[#FFE600] transition-colors btn-press cursor-pointer"
             title="Copy link to this bounty"
           >
             <span>{copied ? '✓ Copied' : '🔗 Copy link'}</span>
@@ -413,7 +406,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
           <button
             type="button"
             onClick={handleShareX}
-            className="flex items-center gap-1.5 font-mono-bold text-[11px] uppercase tracking-wider bg-[#111] text-white border-[2px] border-[#111] px-3.5 py-1.5 rounded-md shadow-hard-sm hover:bg-[#222] hover:text-[#FFE600] transition-colors btn-press cursor-pointer min-h-[38px]"
+            className="flex items-center gap-1.5 font-mono-bold text-[11px] uppercase tracking-wider bg-[#111] text-white border-2 border-[#111] px-3 py-1 rounded-md shadow-hard-sm hover:bg-[#222] hover:text-[#FFE600] transition-colors btn-press cursor-pointer"
             title="Share on X"
           >
             <span>𝕏 Share</span>
