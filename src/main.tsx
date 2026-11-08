@@ -13,6 +13,14 @@
 import './tracing'
 import './console-capture'
 
+// Vercel Web Analytics runtime injection (Item #12)
+if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+  const el = document.createElement('script')
+  el.src = '/_vercel/insights/script.js'
+  el.defer = true
+  document.head.appendChild(el)
+}
+
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { WagmiProvider } from 'wagmi'
