@@ -18,7 +18,6 @@ import {
   TrophyIcon,
   CoinIcon,
   CheckCircleIcon,
-  ClockIcon,
   XIcon,
   GithubIcon,
   GlobeIcon,
@@ -488,206 +487,235 @@ export function ProfilePage({ address, onBack, onSelectBounty, onCreateBounty, o
       {totalPosted?.map(id => <BountyStatsReader key={id.toString()} bountyId={id} onValue={onBountyStat} />)}
 
       {/* ── Header window ─────────────────────────────────────────────────── */}
-      <WindowCard title="USER_PROFILE.EXE" titleBarColor="#7FF3F0" bodyClassName="flex flex-col gap-0">
-        <div className="checkerboard -m-4 mb-0 p-4 rounded-t-[5px] flex flex-col sm:flex-row sm:items-start gap-4">
-          <div className="flex items-start gap-4 flex-1 min-w-0">
-            {/* Pixel avatar */}
-            <div className="flex flex-col items-center gap-1.5 shrink-0">
-              <div className="border-[3px] border-[#111] rounded-lg overflow-hidden shadow-hard-sm bg-[#FFFDF0]">
-                <PixelAvatar address={address} size={64} variant={profile.avatar_variant} />
+      <WindowCard title="USER_PROFILE.EXE" titleBarColor="#7FF3F0" bodyClassName="flex flex-col gap-0 !p-0">
+
+        {/* ── TOP: checkerboard zone — avatar + address + badges + bio ───── */}
+        <div className="checkerboard p-4 rounded-t-[5px]">
+          <div className="flex items-start gap-4">
+            {/* Avatar with edit pencil */}
+            <div className="relative shrink-0">
+              <div className="border-[3px] border-[#111] rounded-xl overflow-hidden shadow-hard bg-[#FFFDF0]">
+                <PixelAvatar address={address} size={80} variant={profile.avatar_variant} />
               </div>
+              {isOwn && !editingProfile && (
+                <button
+                  onClick={startEditingProfile}
+                  className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-full bg-[#111] border-[2px] border-white flex items-center justify-center shadow-hard-sm cursor-pointer hover:bg-[#333] transition-colors"
+                  title="Edit profile"
+                >
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M11.5 2.5L13.5 4.5L5.5 12.5H3.5V10.5L11.5 2.5Z" stroke="white" strokeWidth="1.5" strokeLinejoin="round" fill="none" />
+                  </svg>
+                </button>
+              )}
             </div>
-            <div className="flex flex-col gap-2 min-w-0 pt-0.5 flex-1">
+
+            {/* Address + badges + bio */}
+            <div className="flex flex-col gap-2 min-w-0 flex-1 pt-0.5">
+              {/* Address + copy */}
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-heading text-[18px] font-extrabold text-[#111] truncate">{formatAddress(address)}</span>
-                <CopyButton text={address} label="Copy" />
+                <span className="font-heading text-[20px] font-extrabold text-[#111] truncate">{formatAddress(address)}</span>
+                <button
+                  onClick={() => { void navigator.clipboard.writeText(address) }}
+                  className="border-[2px] border-[#111] rounded-md p-1 bg-white shadow-hard-sm hover:bg-[#FFFDF0] transition-colors cursor-pointer shrink-0"
+                  title="Copy address"
+                >
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <rect x="5" y="5" width="9" height="9" rx="1.5" stroke="#111" strokeWidth="1.5" fill="none"/>
+                    <path d="M4 11H3C2.4 11 2 10.6 2 10V3C2 2.4 2.4 2 3 2H10C10.6 2 11 2.4 11 3V4" stroke="#111" strokeWidth="1.5" strokeLinecap="round"/>
+                  </svg>
+                </button>
               </div>
 
-              {/* Joined Date — visible to everyone on all profiles */}
-              <div className="flex items-center gap-1.5 font-mono-ui text-[11px] text-[#111]/70 bg-white/80 border border-[#111]/15 rounded-md px-2.5 py-1 inline-flex items-center gap-1.5 shadow-sm w-fit">
-                <ClockIcon size={12} className="text-[#111]/50 shrink-0" />
-                <span>User joined WANT.fun on {formatJoinedDate(profile.created_at || Math.floor(Date.now() / 1000))}</span>
-              </div>
-
-              {/* Tags and Badges */}
+              {/* Reputation badges row */}
               <div className="flex items-center gap-1.5 flex-wrap">
-                {hasPosted && (
-                  <span className="font-mono-bold text-[9px] uppercase tracking-widest border-[2px] border-[#111] rounded-full px-2 py-0.5 bg-[#A78BFA] text-[#111] shadow-hard-sm">
-                    WANT CREATOR
-                  </span>
-                )}
                 {isFirstCatch && (
-                  <ReputationBadge
-                    label="First Catch"
-                    icon="🎣"
-                    bg="#FFE600"
-                    title="First bounty won on Want.fun"
-                  />
+                  <ReputationBadge label="First Catch" icon="🚀" bg="#FFE600" title="First bounty won on Want.fun" />
+                )}
+                {hasPosted && (
+                  <ReputationBadge label="Want Creator" icon="✦" bg="#FF3E9A" textColor="#fff" title="Has posted bounties on Want.fun" />
                 )}
                 {isHeavyHitter && (
-                  <ReputationBadge
-                    label="Heavy Hitter"
-                    icon="⚡"
-                    bg="#FF3E9A"
-                    textColor="#FFFDF0"
-                    title="Earned > $500 USDC on Want.fun"
-                  />
+                  <ReputationBadge label="Heavy Hitter" icon="⚡" bg="#FF3E9A" textColor="#FFFDF0" title="Earned > $500 USDC on Want.fun" />
                 )}
                 {isPromiseKeeper && (
-                  <ReputationBadge
-                    label="Promise Keeper"
-                    icon="🤝"
-                    bg="#C6F23A"
-                    title="100% payout rate on posted bounties"
-                  />
+                  <ReputationBadge label="Promise Keeper" icon="🤝" bg="#C6F23A" title="100% payout rate on posted bounties" />
                 )}
               </div>
 
-              {/* Bio & Socials — view mode */}
-              {!editingProfile ? (
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {profile.bio ? (
-                      <p className="font-mono-ui text-[13px] font-bold text-[#111] bg-[#FFFDF0] border-[2px] border-[#111]/15 rounded-md px-2.5 py-1.5 max-w-md leading-snug">{profile.bio}</p>
-                    ) : isOwn ? (
-                      <span className="font-mono-ui text-[12px] text-[#111]/50 italic">No bio yet.</span>
-                    ) : null}
-                    {isOwn && (
-                      <button onClick={startEditingProfile} className="font-mono-bold text-[10px] uppercase tracking-widest text-[#1A1AE6] underline shrink-0 cursor-pointer">
-                        {profile.bio || hasSocials ? 'Edit profile' : '+ Add bio & socials'}
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Connected Socials Buttons */}
-                  {hasSocials && (
-                    <div className="flex items-center gap-2 flex-wrap mt-1">
-                      {cleanTwitter && (
-                        <a
-                          href={`https://x.com/${cleanTwitter}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border-[2px] border-[#111] bg-black text-white font-mono-bold text-[11px] tracking-wider shadow-hard-sm hover:translate-y-[-1px] transition-transform"
-                        >
-                          <XIcon size={12} />
-                          <span>@{cleanTwitter}</span>
-                        </a>
-                      )}
-                      {cleanGithub && (
-                        <a
-                          href={`https://github.com/${cleanGithub}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border-[2px] border-[#111] bg-[#24292e] text-white font-mono-bold text-[11px] tracking-wider shadow-hard-sm hover:translate-y-[-1px] transition-transform"
-                        >
-                          <GithubIcon size={13} />
-                          <span>{cleanGithub}</span>
-                        </a>
-                      )}
-                      {cleanWebsite && (
-                        <a
-                          href={cleanWebsite.startsWith('http') ? cleanWebsite : `https://${cleanWebsite}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border-[2px] border-[#111] bg-[#7FF3F0] text-[#111] font-mono-bold text-[11px] tracking-wider shadow-hard-sm hover:translate-y-[-1px] transition-transform"
-                        >
-                          <GlobeIcon size={13} />
-                          <span>{cleanWebsite.replace(/^https?:\/\//, '').replace(/\/$/, '')}</span>
-                        </a>
-                      )}
-                    </div>
-                  )}
+              {/* Bio pill */}
+              {!editingProfile && (profile.bio ? (
+                <div className="inline-flex items-center gap-2 bg-white border-[2px] border-[#111] rounded-full px-3 py-1.5 shadow-hard-sm w-fit max-w-full">
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <rect x="2" y="2" width="12" height="12" rx="2" stroke="#111" strokeWidth="1.5" fill="none"/>
+                    <path d="M5 6h6M5 9h4" stroke="#111" strokeWidth="1.5" strokeLinecap="round"/>
+                  </svg>
+                  <span className="font-mono-ui text-[12px] font-bold text-[#111] truncate">{profile.bio}</span>
                 </div>
-              ) : (
-                /* Profile Editor */
-                <div className="flex flex-col gap-3 max-w-md border-[2px] border-[#111] rounded-lg p-3 bg-[#FFFDF0]">
-                  <div className="flex flex-col gap-1">
-                    <label className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/70">Bio</label>
-                    <textarea
-                      value={bioDraft}
-                      onChange={e => setBioDraft(e.target.value.slice(0, 160))}
-                      rows={2}
-                      maxLength={160}
-                      placeholder="Onchain builder | Always looking for cool bounties to work on."
-                      className="border-[2px] border-[#111] rounded-md p-2 font-mono-ui text-[12px] bg-white resize-none focus:outline-none focus:ring-2 focus:ring-[#FF3E9A]"
-                    />
-                    <span className="font-mono-ui text-[9px] text-[#111]/40 self-end">{bioDraft.length}/160</span>
-                  </div>
-
-                  <p className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/70">Avatar style</p>
-                  <AvatarPicker address={address} selected={avatarDraft} onPick={setAvatarDraft} />
-
-                  <p className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/70">Connect Socials</p>
-                  <div className="flex flex-col gap-2">
-                    {/* Twitter / X */}
-                    <div className="flex items-center gap-2 border-[2px] border-[#111] rounded-md bg-white p-1.5 shadow-hard-sm">
-                      <div className="w-6 h-6 rounded bg-black flex items-center justify-center text-white shrink-0">
-                        <XIcon size={12} />
-                      </div>
-                      <input
-                        value={twitterDraft}
-                        onChange={e => setTwitterDraft(e.target.value)}
-                        placeholder="Twitter / X (@username)"
-                        className="font-mono-ui text-[12px] bg-transparent flex-1 focus:outline-none"
-                      />
-                    </div>
-
-                    {/* GitHub */}
-                    <div className="flex items-center gap-2 border-[2px] border-[#111] rounded-md bg-white p-1.5 shadow-hard-sm">
-                      <div className="w-6 h-6 rounded bg-[#24292e] flex items-center justify-center text-white shrink-0">
-                        <GithubIcon size={13} />
-                      </div>
-                      <input
-                        value={githubDraft}
-                        onChange={e => setGithubDraft(e.target.value)}
-                        placeholder="GitHub (username)"
-                        className="font-mono-ui text-[12px] bg-transparent flex-1 focus:outline-none"
-                      />
-                    </div>
-
-                    {/* Website */}
-                    <div className="flex items-center gap-2 border-[2px] border-[#111] rounded-md bg-white p-1.5 shadow-hard-sm">
-                      <div className="w-6 h-6 rounded bg-[#7FF3F0] flex items-center justify-center text-[#111] shrink-0 border border-[#111]/30">
-                        <GlobeIcon size={13} />
-                      </div>
-                      <input
-                        value={websiteDraft}
-                        onChange={e => setWebsiteDraft(e.target.value)}
-                        placeholder="Website (https://...)"
-                        className="font-mono-ui text-[12px] bg-transparent flex-1 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  {profileSaveErr && <p className="font-mono-bold text-[10px] text-[#FF3E9A]">{profileSaveErr}</p>}
-                  <div className="flex items-center justify-end gap-2 pt-1">
-                    <button onClick={() => setEditingProfile(false)} disabled={savingProfile} className="font-mono-bold text-[11px] uppercase tracking-widest bg-[#FFFDF0] border-[2px] border-[#111] rounded-full px-3 py-1.5 shadow-hard-sm btn-press disabled:opacity-40 cursor-pointer">Cancel</button>
-                    <button onClick={() => void handleSaveProfile()} disabled={savingProfile} className="font-mono-bold text-[11px] uppercase tracking-widest bg-[#FFE600] border-[2px] border-[#111] rounded-full px-3 py-1.5 shadow-hard-sm btn-press disabled:opacity-40 cursor-pointer">{savingProfile ? 'Saving...' : 'Save'}</button>
-                  </div>
-                </div>
-              )}
-
-              <div className="pt-0.5">
-                <a href={getAddressUrl(address)} target="_blank" rel="noopener noreferrer" className="font-mono-bold text-[10px] uppercase tracking-widest text-[#1A1AE6] underline w-fit">Explorer →</a>
-              </div>
+              ) : isOwn ? (
+                <button onClick={startEditingProfile} className="font-mono-bold text-[11px] uppercase tracking-widest text-[#1A1AE6] underline self-start cursor-pointer">
+                  + Add bio &amp; socials
+                </button>
+              ) : null)}
             </div>
-          </div>
-
-          {/* Total earned card */}
-          <div className="shrink-0 w-full sm:w-[220px] bg-[#111] border-[3px] border-[#111] rounded-lg p-4 flex flex-col gap-1.5 shadow-hard-sm">
-            <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#FFFDF0]/50">Total earned</span>
-            <div className="flex items-center gap-2">
-              <CoinIcon size={26} />
-              <span className="font-heading text-[26px] font-extrabold tabular-nums text-[#FFFDF0]">{formatUsdc(earned)}</span>
-            </div>
-            <span className="font-mono-ui text-[10px] text-[#FFFDF0]/50">{wins.toString()} successful submission{wins === 1n ? '' : 's'}</span>
           </div>
         </div>
 
-        {/* Shareable link */}
-        <div className="flex items-center gap-2 border-[2px] border-[#111] rounded-lg p-2 bg-[#FFFDF0] mt-4">
-          <span className="font-mono-ui text-[10px] text-[#111]/50 flex-1 truncate">{profileUrl}</span>
-          <CopyButton text={profileUrl} label="Share" />
+        {/* ── MIDDLE: dark card — socials + joined date (no purple bubble) ─ */}
+        <div className="bg-[#111] px-4 py-4 flex flex-col gap-3">
+          {/* Edit profile row (own only, view mode) */}
+          {isOwn && !editingProfile && (
+            <button
+              onClick={startEditingProfile}
+              className="self-start inline-flex items-center gap-2 font-mono-bold text-[11px] uppercase tracking-widest text-[#FFE600] border-[2px] border-[#FFE600]/40 rounded-full px-3 py-1.5 hover:border-[#FFE600] transition-colors cursor-pointer"
+            >
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M11.5 2.5L13.5 4.5L5.5 12.5H3.5V10.5L11.5 2.5Z" stroke="#FFE600" strokeWidth="1.5" strokeLinejoin="round" fill="none" />
+              </svg>
+              Edit profile
+            </button>
+          )}
+
+          {/* Profile editor (own only) */}
+          {editingProfile && (
+            <div className="flex flex-col gap-3 border-[2px] border-white/20 rounded-xl p-3 bg-white/5">
+              <div className="flex flex-col gap-1">
+                <label className="font-mono-bold text-[10px] uppercase tracking-widest text-white/50">Bio</label>
+                <textarea
+                  value={bioDraft}
+                  onChange={e => setBioDraft(e.target.value.slice(0, 160))}
+                  rows={2}
+                  maxLength={160}
+                  placeholder="Onchain builder | Always looking for cool bounties to work on."
+                  className="border-[2px] border-white/20 rounded-md p-2 font-mono-ui text-[12px] bg-white/10 text-white placeholder:text-white/30 resize-none focus:outline-none focus:border-[#FFE600]"
+                />
+                <span className="font-mono-ui text-[9px] text-white/30 self-end">{bioDraft.length}/160</span>
+              </div>
+
+              <p className="font-mono-bold text-[10px] uppercase tracking-widest text-white/50">Avatar style</p>
+              <AvatarPicker address={address} selected={avatarDraft} onPick={setAvatarDraft} />
+
+              <p className="font-mono-bold text-[10px] uppercase tracking-widest text-white/50">Connect Socials</p>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2 border-[2px] border-white/20 rounded-md bg-white/10 p-1.5">
+                  <div className="w-6 h-6 rounded bg-black flex items-center justify-center text-white shrink-0 border border-white/20">
+                    <XIcon size={12} />
+                  </div>
+                  <input value={twitterDraft} onChange={e => setTwitterDraft(e.target.value)} placeholder="Twitter / X (@username)" className="font-mono-ui text-[12px] bg-transparent flex-1 focus:outline-none text-white placeholder:text-white/30" />
+                </div>
+                <div className="flex items-center gap-2 border-[2px] border-white/20 rounded-md bg-white/10 p-1.5">
+                  <div className="w-6 h-6 rounded bg-[#24292e] flex items-center justify-center text-white shrink-0 border border-white/20">
+                    <GithubIcon size={13} />
+                  </div>
+                  <input value={githubDraft} onChange={e => setGithubDraft(e.target.value)} placeholder="GitHub (username)" className="font-mono-ui text-[12px] bg-transparent flex-1 focus:outline-none text-white placeholder:text-white/30" />
+                </div>
+                <div className="flex items-center gap-2 border-[2px] border-white/20 rounded-md bg-white/10 p-1.5">
+                  <div className="w-6 h-6 rounded bg-[#7FF3F0] flex items-center justify-center text-[#111] shrink-0">
+                    <GlobeIcon size={13} />
+                  </div>
+                  <input value={websiteDraft} onChange={e => setWebsiteDraft(e.target.value)} placeholder="Website (https://...)" className="font-mono-ui text-[12px] bg-transparent flex-1 focus:outline-none text-white placeholder:text-white/30" />
+                </div>
+              </div>
+
+              {profileSaveErr && <p className="font-mono-bold text-[10px] text-[#FF3E9A]">{profileSaveErr}</p>}
+              <div className="flex items-center justify-end gap-2 pt-1">
+                <button onClick={() => setEditingProfile(false)} disabled={savingProfile} className="font-mono-bold text-[11px] uppercase tracking-widest bg-white/10 border-[2px] border-white/20 text-white rounded-full px-3 py-1.5 btn-press disabled:opacity-40 cursor-pointer">Cancel</button>
+                <button onClick={() => void handleSaveProfile()} disabled={savingProfile} className="font-mono-bold text-[11px] uppercase tracking-widest bg-[#FFE600] border-[2px] border-[#FFE600] text-[#111] rounded-full px-3 py-1.5 btn-press disabled:opacity-40 cursor-pointer">{savingProfile ? 'Saving...' : 'Save'}</button>
+              </div>
+            </div>
+          )}
+
+          {/* Connected socials */}
+          {!editingProfile && hasSocials && (
+            <div className="flex items-center gap-2 flex-wrap">
+              {cleanTwitter && (
+                <a href={`https://x.com/${cleanTwitter}`} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 bg-[#1a1a1a] border-[2px] border-white/20 rounded-full px-3 py-1.5 font-mono-bold text-[12px] text-white tracking-wide hover:border-white/50 transition-colors shadow-hard-sm"
+                >
+                  <XIcon size={12} />
+                  <span>{cleanTwitter}</span>
+                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 10L10 2M10 2H5M10 2V7" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </a>
+              )}
+              {cleanGithub && (
+                <a href={`https://github.com/${cleanGithub}`} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 bg-[#24292e] border-[2px] border-white/20 rounded-full px-3 py-1.5 font-mono-bold text-[12px] text-white tracking-wide hover:border-white/50 transition-colors shadow-hard-sm"
+                >
+                  <GithubIcon size={13} />
+                  <span>{cleanGithub}</span>
+                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 10L10 2M10 2H5M10 2V7" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </a>
+              )}
+              {cleanWebsite && (
+                <a href={cleanWebsite.startsWith('http') ? cleanWebsite : `https://${cleanWebsite}`} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 bg-[#7FF3F0]/20 border-[2px] border-[#7FF3F0]/40 rounded-full px-3 py-1.5 font-mono-bold text-[12px] text-[#7FF3F0] tracking-wide hover:border-[#7FF3F0] transition-colors shadow-hard-sm"
+                >
+                  <GlobeIcon size={13} />
+                  <span>{cleanWebsite.replace(/^https?:\/\//, '').replace(/\/$/, '')}</span>
+                </a>
+              )}
+            </div>
+          )}
+
+          {/* Joined date */}
+          {!editingProfile && (
+            <div className="flex items-start gap-2.5 text-white/70">
+              {/* Calendar icon */}
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="mt-0.5 shrink-0" aria-hidden="true">
+                <rect x="1.5" y="3" width="13" height="11.5" rx="2" stroke="currentColor" strokeWidth="1.4" fill="none"/>
+                <path d="M5 1.5V4M11 1.5V4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+                <path d="M1.5 7h13" stroke="currentColor" strokeWidth="1.4"/>
+              </svg>
+              <span className="font-mono-ui text-[12px] leading-snug">
+                User joined WANT.fun on{' '}
+                <strong className="font-mono-bold text-white">
+                  {formatJoinedDate(profile.created_at || Math.floor(Date.now() / 1000))}
+                </strong>
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* ── BOTTOM: total earned + share link ───────────────────────────── */}
+        <div className="p-4 flex flex-col gap-3">
+          {/* Total earned */}
+          <div className="bg-[#111] border-[3px] border-[#111] rounded-xl p-4 flex items-center gap-4 shadow-hard">
+            <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+              <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#FFFDF0]/50">Total Earned</span>
+              <div className="flex items-baseline gap-2">
+                <CoinIcon size={22} />
+                <span className="font-heading text-[28px] font-extrabold tabular-nums text-[#FFFDF0] leading-none">{formatUsdc(earned)}</span>
+              </div>
+            </div>
+            <div className="border-l border-white/20 pl-4 flex flex-col gap-0.5 shrink-0">
+              <div className="flex items-center gap-1.5">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <circle cx="8" cy="8" r="6.5" stroke="#C6F23A" strokeWidth="1.5" fill="none"/>
+                  <path d="M5 8.5L7 10.5L11 6" stroke="#C6F23A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <span className="font-mono-bold text-[12px] text-white">{wins.toString()} successful</span>
+              </div>
+              <span className="font-mono-ui text-[10px] text-white/40">submission{wins === 1n ? '' : 's'}</span>
+            </div>
+          </div>
+
+          {/* Shareable link */}
+          <div className="flex items-center gap-2 border-[2px] border-[#111] rounded-xl p-2.5 bg-[#FFFDF0]">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="shrink-0 text-[#111]/50" aria-hidden="true">
+              <path d="M6.5 9.5L9.5 6.5M7 4.5H4.5C3.4 4.5 2.5 5.4 2.5 6.5v5C2.5 12.6 3.4 13.5 4.5 13.5h5c1.1 0 2-.9 2-2V9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              <path d="M9.5 2.5h4v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <span className="font-mono-ui text-[10px] text-[#111]/50 flex-1 truncate">{profileUrl}</span>
+            <button
+              onClick={() => { void navigator.clipboard.writeText(profileUrl) }}
+              className="inline-flex items-center gap-1.5 font-mono-bold text-[10px] uppercase tracking-widest border-[2px] border-[#111] rounded-full px-3 py-1 bg-[#FFE600] text-[#111] shadow-hard-sm hover:shadow-hard btn-press cursor-pointer whitespace-nowrap"
+            >
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M12 7L8 3L4 7M8 3V13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Share
+            </button>
+          </div>
         </div>
       </WindowCard>
 
