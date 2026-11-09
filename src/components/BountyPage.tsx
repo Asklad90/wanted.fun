@@ -505,7 +505,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
         <LoadingBar current={Number(bounty.winnersApproved)} max={Number(bounty.maxWinners)} label={`Winners ${bounty.winnersApproved}/${bounty.maxWinners}`} color="#FF3E9A" />
 
         <div className="font-mono-ui text-[11px] text-[#111]/50">
-          Posted by <span className="text-[#1A1AE6]">{formatAddress(bounty.poster)}</span>
+          Posted by <a href={`#/profile/${bounty.poster}`} className="text-[#1A1AE6] font-mono-bold hover:underline cursor-pointer">{formatAddress(bounty.poster)}</a>
         </div>
       </WindowCard>
 
@@ -847,12 +847,15 @@ function OffchainSubmissionList({
   onApproved,
   onToggleVisibility,
 }: OffchainSubmissionListProps) {
+  const isPrivateForViewer = !isPublic && !isPoster
   const title = loading
     ? 'SUBMISSIONS.EXE'
-    : `SUBMISSIONS.EXE (${submissions.length})`
+    : isPrivateForViewer
+      ? 'SUBMISSIONS.EXE (PRIVATE)'
+      : `SUBMISSIONS.EXE (${submissions.length})`
 
   return (
-    <WindowCard title={title} titleBarColor="#7FF3F0">
+    <WindowCard title={title} titleBarColor={isPrivateForViewer ? '#CCCCCC' : '#7FF3F0'}>
       {/* Visibility toggle (poster only) */}
       {isPoster && onToggleVisibility && (
         <div className="flex items-center justify-between mb-3 pb-3 border-b-[2px] border-[#111]/20">
@@ -875,6 +878,16 @@ function OffchainSubmissionList({
       {loading ? (
         <div className="py-8 flex justify-center">
           <span className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111]/50 animate-pulse">Loading...</span>
+        </div>
+      ) : isPrivateForViewer ? (
+        <div className="checkerboard rounded-lg py-10 flex flex-col items-center gap-3 text-center px-4">
+          <LockIcon size={36} />
+          <div className="font-mono-bold text-[12px] uppercase tracking-widest text-[#111]">
+            The submissions for this bounty are private
+          </div>
+          <p className="font-mono-ui text-[11px] text-[#111]/60 max-w-sm">
+            Only the bounty creator can view submissions for this bounty.
+          </p>
         </div>
       ) : submissions.length === 0 ? (
         <div className="checkerboard rounded-lg py-10 flex flex-col items-center gap-3">
@@ -949,7 +962,7 @@ function SingleOffchainSubmission({ sub, bountyId, isPoster, rewardPerWinner, ca
         {/* Header row */}
         <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
           <span className="font-mono-bold text-[10px] uppercase tracking-wider text-[#111]">
-            SUB #{String(sub.id).padStart(2, '0')} — {shortAddr}
+            SUB #{String(sub.id).padStart(2, '0')} — <a href={`#/profile/${sub.submitter}`} className="hover:underline cursor-pointer text-[#1A1AE6]">{shortAddr}</a>
           </span>
           <div className="flex items-center gap-1.5 flex-wrap">
             {isPaid && (

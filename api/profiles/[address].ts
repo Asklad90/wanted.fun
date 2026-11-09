@@ -30,12 +30,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (getLimiter.isLimited(ip)) return res.status(429).json({ error: 'Too many requests' })
 
       const { rows } = await pool.sql`
-        SELECT bio, avatar_variant FROM profiles WHERE address = ${address}
+        SELECT bio, avatar_variant, twitter, github, website FROM profiles WHERE address = ${address}
       `
-      const row = rows[0] as { bio: string | null; avatar_variant: number } | undefined
+      const row = rows[0] as {
+        bio: string | null
+        avatar_variant: number
+        twitter: string | null
+        github: string | null
+        website: string | null
+      } | undefined
       return res.status(200).json({
         bio: row?.bio ?? '',
         avatar_variant: row?.avatar_variant ?? 0,
+        twitter: row?.twitter ?? '',
+        github: row?.github ?? '',
+        website: row?.website ?? '',
       })
     }
 
@@ -46,6 +55,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const body = (req.body ?? {}) as {
         bio?: string
         avatar_variant?: number
+        twitter?: string
+        github?: string
+        website?: string
         address?: string
         timestamp?: number
         signature?: string
@@ -68,12 +80,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       let avatarVariant = typeof body.avatar_variant === 'number' ? Math.trunc(body.avatar_variant) : 0
       if (!Number.isFinite(avatarVariant) || avatarVariant < 0 || avatarVariant > MAX_AVATAR_VARIANT) avatarVariant = 0
 
+      // Clean social handles: strip leading @ or url prefixes if pasted
+      let twitter = typeof body.twitter === 'string' ? body.twitter.trim().replace(/^@/, '').replace(/^(https?:\/\/)?(www\.)?(twitter|x)\.com\//, '').replace(/[/?#].*$/, '').trim() : ''
+      if (twitter.length > 50) twitter = twitter.slice(0, 50)
+
+      let github = typeof body.github === 'string' ? body.github.trim().replace(/^@/, '').replace(/^(https?:\/\/)?(www\.)?github\.com\//, '').replace(/[/?#].*$/, '').trim() : ''
+      if (github.length > 50) github = github.slice(0, 50)
+
+      let website = typeof body.website === 'string' ? body.website.trim() : ''
+      if (website.length > 120) website = website.slice(0, 120)
+
       await pool.sql`
-        INSERT INTO profiles (address, bio, avatar_variant)
-        VALUES (${address}, ${bio}, ${avatarVariant})
-        ON CONFLICT (address) DO UPDATE SET bio = ${bio}, avatar_variant = ${avatarVariant}, updated_at = EXTRACT(EPOCH FROM NOW())::BIGINT
+        INSERT INTO profiles (address, bio, avatar_variant, twitter, github, website)
+        VALUES (${address}, ${bio}, ${avatarVariant}, ${twitter}, ${github}, ${website})
+        ON CONFLICT (address) DO UPDATE SET
+          bio = ${bio},
+          avatar_variant = ${avatarVariant},
+          twitter = ${twitter},
+          github = ${github},
+          website = ${website},
+          updated_at = EXTRACT(EPOCH FROM NOW())::BIGINT
       `
-      return res.status(200).json({ ok: true, bio, avatar_variant: avatarVariant })
+      return res.status(200).json({ ok: true, bio, avatar_variant: avatarVariant, twitter, github, website })
     }
 
     return res.status(405).json({ error: 'Method not allowed' })

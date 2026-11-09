@@ -234,9 +234,12 @@ export async function setVisibility(
 export interface OffchainProfile {
   bio: string
   avatar_variant: number
+  twitter?: string
+  github?: string
+  website?: string
 }
 
-const PROFILE_DEFAULT: OffchainProfile = { bio: '', avatar_variant: 0 }
+const PROFILE_DEFAULT: OffchainProfile = { bio: '', avatar_variant: 0, twitter: '', github: '', website: '' }
 
 /** Public — no auth needed. Returns defaults if the wallet has never saved a profile. */
 export async function fetchProfile(address: string): Promise<OffchainProfile> {
@@ -244,30 +247,54 @@ export async function fetchProfile(address: string): Promise<OffchainProfile> {
     const res = await fetch(`/api/profiles/${address.toLowerCase()}`)
     if (!res.ok) return PROFILE_DEFAULT
     const data = await res.json() as Partial<OffchainProfile>
-    return { bio: data.bio ?? '', avatar_variant: data.avatar_variant ?? 0 }
+    return {
+      bio: data.bio ?? '',
+      avatar_variant: data.avatar_variant ?? 0,
+      twitter: data.twitter ?? '',
+      github: data.github ?? '',
+      website: data.website ?? '',
+    }
   } catch {
     return PROFILE_DEFAULT
   }
 }
 
+export interface SaveProfileInput {
+  bio: string
+  avatarVariant: number
+  twitter?: string
+  github?: string
+  website?: string
+}
+
 /**
- * Save your own bio and/or avatar variant.
+ * Save your own bio, avatar variant, and social links.
  * Signs a message with the connected wallet to prove you own this address.
  */
 export async function saveProfile(
   address: string,
-  bio: string,
-  avatarVariant: number,
+  input: SaveProfileInput | string,
+  maybeAvatarVariant?: number,
 ): Promise<{ ok: boolean; error?: string }> {
   const auth = await signAuth('profile', 'profile')
   if (!auth) return { ok: false, error: "Your wallet didn't confirm the signature. Please try again." }
+
+  // Backward compatible with old call signature (address, bio, avatarVariant)
+  const payload = typeof input === 'string'
+    ? { bio: input, avatar_variant: maybeAvatarVariant ?? 0, twitter: '', github: '', website: '' }
+    : {
+        bio: input.bio,
+        avatar_variant: input.avatarVariant,
+        twitter: input.twitter ?? '',
+        github: input.github ?? '',
+        website: input.website ?? '',
+      }
 
   const res = await fetch(`/api/profiles/${address.toLowerCase()}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      bio,
-      avatar_variant: avatarVariant,
+      ...payload,
       address: auth.address,
       timestamp: auth.timestamp,
       signature: auth.signature,

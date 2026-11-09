@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ConnectKitButton } from 'connectkit'
 import { usePrivy } from '@privy-io/react-auth'
-import { useAccount } from 'wagmi'
+import { useAccount, useDisconnect } from 'wagmi'
 import { WalletIcon } from './Icons'
 import { PRIVY_ENABLED } from '../config'
 
@@ -11,9 +11,6 @@ interface ConnectButtonProps {
 
 const pillClass =
   'inline-flex flex-col items-center gap-1 rounded-full border-[3px] border-[#111] shadow-hard-sm btn-press bg-[#FFE600] px-4 py-2 font-mono-bold uppercase tracking-widest text-[#111] cursor-pointer'
-
-const profileBtnClass =
-  'sm:hidden font-mono-bold text-[10px] uppercase tracking-widest text-[#FFFDF0]/70 border-[2px] border-[#FFFDF0]/30 rounded-full px-2 py-1'
 
 /** Sign in with Google (auto-creates a wallet) or connect an existing wallet — powered by Privy. */
 function PrivyConnectButton({ onProfileClick }: ConnectButtonProps) {
@@ -48,12 +45,7 @@ function PrivyConnectButton({ onProfileClick }: ConnectButtonProps) {
   }
 
   return (
-    <div className="relative flex items-center gap-2">
-      {signedIn && address && onProfileClick && (
-        <button onClick={onProfileClick} className={profileBtnClass}>
-          Profile
-        </button>
-      )}
+    <div className="relative flex items-center">
       <button
         onClick={() => (signedIn ? setMenuOpen(o => !o) : login())}
         disabled={!ready}
@@ -67,15 +59,29 @@ function PrivyConnectButton({ onProfileClick }: ConnectButtonProps) {
         <>
           {/* click-away layer */}
           <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-          <div className="absolute right-0 top-full mt-2 z-50 w-60 rounded-2xl border-[3px] border-[#111] bg-[#FFFDF0] shadow-hard-sm p-3 font-mono-bold text-[#111]">
+          <div className="absolute right-0 top-full mt-2 z-50 w-60 rounded-2xl border-[3px] border-[#111] bg-[#FFFDF0] shadow-hard p-3 font-mono-bold text-[#111]">
             {user?.google?.email && (
               <p className="text-[10px] uppercase tracking-widest text-[#111]/60 mb-2 break-all normal-case">
                 Google: {user.google.email}
               </p>
             )}
+
+            {onProfileClick && (
+              <button
+                onClick={() => {
+                  setMenuOpen(false)
+                  onProfileClick()
+                }}
+                className="w-full text-left text-[11px] uppercase tracking-widest rounded-xl border-[2px] border-[#111] px-3 py-2 mb-2 bg-[#FF3E9A] text-white hover:bg-[#FF3E9A]/90 transition-colors shadow-hard-sm cursor-pointer flex items-center justify-between"
+              >
+                <span>My Profile</span>
+                <span>→</span>
+              </button>
+            )}
+
             <button
               onClick={copyAddress}
-              className="w-full text-left text-[11px] uppercase tracking-widest rounded-xl border-[2px] border-[#111] px-3 py-2 mb-2 bg-white"
+              className="w-full text-left text-[11px] uppercase tracking-widest rounded-xl border-[2px] border-[#111] px-3 py-2 mb-2 bg-white hover:bg-[#f0ede0] transition-colors cursor-pointer"
             >
               {copied ? 'Copied!' : 'Copy wallet address'}
             </button>
@@ -84,7 +90,7 @@ function PrivyConnectButton({ onProfileClick }: ConnectButtonProps) {
             </p>
             <button
               onClick={handleLogout}
-              className="w-full text-left text-[11px] uppercase tracking-widest rounded-xl border-[2px] border-[#111] px-3 py-2 bg-[#FFE600]"
+              className="w-full text-left text-[11px] uppercase tracking-widest rounded-xl border-[2px] border-[#111] px-3 py-2 bg-[#FFE600] hover:bg-[#FFE600]/80 transition-colors cursor-pointer"
             >
               Log out
             </button>
@@ -97,26 +103,90 @@ function PrivyConnectButton({ onProfileClick }: ConnectButtonProps) {
 
 /** Original wallet-only connect (used when Privy isn't configured). */
 function LegacyConnectButton({ onProfileClick }: ConnectButtonProps) {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const { disconnect } = useDisconnect()
+
+  const copyAddress = async (addr: string) => {
+    try {
+      await navigator.clipboard.writeText(addr)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch {
+      /* clipboard blocked */
+    }
+  }
+
   return (
     <ConnectKitButton.Custom>
-      {({ isConnected, show, address }) => (
-        <div className="flex items-center gap-2">
-          {/* Mobile: my profile icon when connected */}
-          {isConnected && onProfileClick && (
-            <button onClick={onProfileClick} className={profileBtnClass}>
-              Profile
+      {({ isConnected, show, address }) => {
+        if (!isConnected || !address) {
+          return (
+            <button onClick={show} className={pillClass}>
+              <span className="text-[11px] leading-none">CONNECT WALLET</span>
+              <WalletIcon size={18} />
             </button>
-          )}
-          <button onClick={show} className={pillClass}>
-            <span className="text-[11px] leading-none">
-              {isConnected && address
-                ? `${address.slice(0, 6)}...${address.slice(-4)}`
-                : 'CONNECT WALLET'}
-            </span>
-            <WalletIcon size={18} />
-          </button>
-        </div>
-      )}
+          )
+        }
+
+        return (
+          <div className="relative flex items-center">
+            <button onClick={() => setMenuOpen(o => !o)} className={pillClass}>
+              <span className="text-[11px] leading-none">
+                {`${address.slice(0, 6)}...${address.slice(-4)}`}
+              </span>
+              <WalletIcon size={18} />
+            </button>
+
+            {menuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+                <div className="absolute right-0 top-full mt-2 z-50 w-60 rounded-2xl border-[3px] border-[#111] bg-[#FFFDF0] shadow-hard p-3 font-mono-bold text-[#111]">
+                  {onProfileClick && (
+                    <button
+                      onClick={() => {
+                        setMenuOpen(false)
+                        onProfileClick()
+                      }}
+                      className="w-full text-left text-[11px] uppercase tracking-widest rounded-xl border-[2px] border-[#111] px-3 py-2 mb-2 bg-[#FF3E9A] text-white hover:bg-[#FF3E9A]/90 transition-colors shadow-hard-sm cursor-pointer flex items-center justify-between"
+                    >
+                      <span>My Profile</span>
+                      <span>→</span>
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => copyAddress(address)}
+                    className="w-full text-left text-[11px] uppercase tracking-widest rounded-xl border-[2px] border-[#111] px-3 py-2 mb-2 bg-white hover:bg-[#f0ede0] transition-colors cursor-pointer"
+                  >
+                    {copied ? 'Copied!' : 'Copy wallet address'}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false)
+                      show?.()
+                    }}
+                    className="w-full text-left text-[11px] uppercase tracking-widest rounded-xl border-[2px] border-[#111] px-3 py-2 mb-2 bg-white hover:bg-[#f0ede0] transition-colors cursor-pointer"
+                  >
+                    Wallet Details
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false)
+                      disconnect()
+                    }}
+                    className="w-full text-left text-[11px] uppercase tracking-widest rounded-xl border-[2px] border-[#111] px-3 py-2 bg-[#FFE600] hover:bg-[#FFE600]/80 transition-colors cursor-pointer"
+                  >
+                    Disconnect
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )
+      }}
     </ConnectKitButton.Custom>
   )
 }

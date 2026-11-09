@@ -102,9 +102,16 @@ export function ensureSchema(): Promise<void> {
           address TEXT PRIMARY KEY,
           bio TEXT,
           avatar_variant INTEGER NOT NULL DEFAULT 0,
+          twitter TEXT,
+          github TEXT,
+          website TEXT,
           updated_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM NOW())::BIGINT
         )
       `
+      // Idempotent column additions for existing tables
+      await pool.sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS twitter TEXT`
+      await pool.sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS github TEXT`
+      await pool.sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS website TEXT`
     })().catch((e) => {
       schemaReady = null // allow retry on next request
       throw e

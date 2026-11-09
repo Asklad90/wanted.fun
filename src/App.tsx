@@ -307,16 +307,8 @@ export default function App() {
             </button>
           </nav>
 
-          {/* Right: my profile + connect */}
+          {/* Right: connect button with embedded profile dropdown */}
           <div className="flex items-center gap-2 min-w-0 shrink-0">
-            {connectedAddr && (
-              <button
-                onClick={() => openProfile(connectedAddr)}
-                className="hidden sm:flex items-center gap-1.5 font-mono-bold text-[11px] uppercase tracking-widest bg-[#C6F23A] text-[#111] border-[2px] border-[#FFFDF0]/40 rounded-full px-3 py-1.5 hover:border-[#C6F23A] transition-colors shadow-hard-sm btn-press"
-              >
-                My Profile →
-              </button>
-            )}
             <ConnectButton onProfileClick={connectedAddr ? () => openProfile(connectedAddr) : undefined} />
           </div>
         </div>
@@ -379,7 +371,13 @@ export default function App() {
           <AnimatePresence mode="wait">
             {view === 'profile' && activeProfileAddr ? (
               <PageView key="profile" narrow>
-                <ProfilePage address={activeProfileAddr} onBack={goBack} onSelectBounty={openBounty} />
+                <ProfilePage
+                  address={activeProfileAddr}
+                  onBack={goBack}
+                  onSelectBounty={openBounty}
+                  onCreateBounty={openCreate}
+                  onBrowseWall={() => { window.location.hash = '#/' }}
+                />
               </PageView>
             ) : view === 'bounty' && activeBountyId !== null ? (
               <PageView key={`bounty-${activeBountyId}`} narrow>

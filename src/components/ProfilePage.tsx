@@ -12,7 +12,16 @@ import { PixelAvatar, AVATAR_VARIANT_COUNT } from './PixelAvatar'
 import { QRCode } from './QRCode'
 import { SkeletonBountyRow } from './Skeleton'
 import { TxStatus } from './TxStatus'
-import { FolderIcon, LockIcon, TrophyIcon, CoinIcon, CheckCircleIcon } from './Icons'
+import {
+  FolderIcon,
+  LockIcon,
+  TrophyIcon,
+  CoinIcon,
+  CheckCircleIcon,
+  XIcon,
+  GithubIcon,
+  GlobeIcon,
+} from './Icons'
 
 // ─── MyStatus enum (mirrors Solidity) ────────────────────────────────────────
 const MY_STATUS_NONE = 0
@@ -41,6 +50,8 @@ interface ProfilePageProps {
   address: `0x${string}`
   onBack: () => void
   onSelectBounty: (id: bigint) => void
+  onCreateBounty?: () => void
+  onBrowseWall?: () => void
 }
 
 type ProfileTab = 'participating' | 'past' | 'posted'
@@ -51,20 +62,46 @@ function CopyButton({ text, label = 'Copy' }: { text: string; label?: string }) 
   return (
     <button
       onClick={() => { void navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500) }) }}
-      className="font-mono-bold text-[10px] uppercase tracking-widest border-[2px] border-[#111] rounded-full px-2 py-0.5 bg-[#FFE600] text-[#111] hover:shadow-hard-sm transition-shadow btn-press"
+      className="font-mono-bold text-[10px] uppercase tracking-widest border-[2px] border-[#111] rounded-full px-2 py-0.5 bg-[#FFE600] text-[#111] hover:shadow-hard-sm transition-shadow btn-press cursor-pointer"
     >
       {copied ? 'COPIED!' : label}
     </button>
   )
 }
 
+// ─── Reputation Badge Pill ────────────────────────────────────────────────────
+function ReputationBadge({
+  label,
+  icon,
+  bg,
+  textColor = '#111',
+  title,
+}: {
+  label: string
+  icon: string
+  bg: string
+  textColor?: string
+  title: string
+}) {
+  return (
+    <div
+      title={title}
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border-[2px] border-[#111] shadow-hard-sm font-mono-bold text-[10px] uppercase tracking-wider select-none cursor-help"
+      style={{ backgroundColor: bg, color: textColor }}
+    >
+      <span>{icon}</span>
+      <span>{label}</span>
+    </div>
+  )
+}
+
 // ─── Stat card ────────────────────────────────────────────────────────────────
 function ProfileStatCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: string; color: string }) {
   return (
-    <div className="border-[3px] border-[#111] rounded-xl p-3.5 flex items-start justify-between gap-2 shadow-hard-sm" style={{ backgroundColor: color }}>
+    <div className="border-[3px] border-[#111] rounded-xl p-3 flex items-start justify-between gap-2 shadow-hard-sm" style={{ backgroundColor: color }}>
       <div className="flex flex-col gap-0.5 min-w-0">
-        <span className="font-heading text-[22px] font-extrabold tabular-nums leading-none text-[#111] truncate">{value}</span>
-        <span className="font-mono-ui text-[10px] uppercase tracking-widest text-[#111]/60">{label}</span>
+        <span className="font-heading text-[20px] font-extrabold tabular-nums leading-none text-[#111] truncate">{value}</span>
+        <span className="font-mono-ui text-[9px] uppercase tracking-widest text-[#111]/70 mt-1">{label}</span>
       </div>
       <span className="shrink-0">{icon}</span>
     </div>
@@ -90,15 +127,29 @@ function AvatarPicker({ address, selected, onPick }: { address: string; selected
   )
 }
 
-// ─── Reads one bounty's escrowRemaining and reports it up — used to sum a poster's total escrow ─
-function EscrowReader({ bountyId, onValue }: { bountyId: bigint; onValue: (id: string, value: bigint) => void }) {
+// ─── Reads one bounty's stats and reports it up ───────────────────────────────
+interface BountyStatInfo {
+  escrowRemaining: bigint
+  winnersApproved: bigint
+  maxWinners: bigint
+  cancelled: boolean
+}
+
+function BountyStatsReader({ bountyId, onValue }: { bountyId: bigint; onValue: (id: string, info: BountyStatInfo) => void }) {
   const { data: bounty } = useReadContract({
     address: CONTRACT_ADDRESS, abi: BOUNTY_BOARD_ABI, functionName: 'getBounty',
     args: [bountyId], chainId: CHAIN_ID,
-  }) as { data: { escrowRemaining: bigint } | undefined }
+  }) as { data: { escrowRemaining: bigint; winnersApproved: bigint; maxWinners: bigint; cancelled: boolean } | undefined }
 
   useEffect(() => {
-    if (bounty) onValue(bountyId.toString(), bounty.escrowRemaining)
+    if (bounty) {
+      onValue(bountyId.toString(), {
+        escrowRemaining: bounty.escrowRemaining,
+        winnersApproved: bounty.winnersApproved,
+        maxWinners: bounty.maxWinners,
+        cancelled: bounty.cancelled,
+      })
+    }
   }, [bounty, bountyId, onValue])
 
   return null
@@ -248,7 +299,7 @@ function BountyRow({ bountyId, profileAddr, onSelect, tabMode }: {
   return (
     <button
       onClick={() => onSelect(bountyId)}
-      className="w-full text-left border-[3px] border-[#111] rounded-lg p-3 bg-[#FFFDF0] shadow-hard-sm hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-hard transition-transform flex items-center justify-between gap-2"
+      className="w-full text-left border-[3px] border-[#111] rounded-lg p-3 bg-[#FFFDF0] shadow-hard-sm hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-hard transition-transform flex items-center justify-between gap-2 cursor-pointer"
     >
       <div className="flex flex-col gap-0.5 min-w-0">
         <span className="font-heading text-[14px] font-bold text-[#111] truncate">{titleStr || '(untitled)'}</span>
@@ -270,7 +321,7 @@ function BountyRow({ bountyId, profileAddr, onSelect, tabMode }: {
 }
 
 // ─── Main ProfilePage ─────────────────────────────────────────────────────────
-export function ProfilePage({ address, onBack, onSelectBounty }: ProfilePageProps) {
+export function ProfilePage({ address, onBack, onSelectBounty, onCreateBounty, onBrowseWall }: ProfilePageProps) {
   const { address: connectedAddr } = useAccount()
   const isOwn = connectedAddr?.toLowerCase() === address.toLowerCase()
 
@@ -278,11 +329,14 @@ export function ProfilePage({ address, onBack, onSelectBounty }: ProfilePageProp
   const [showSend, setShowSend] = useState(false)
   const [showReceive, setShowReceive] = useState(false)
 
-  // Off-chain profile (bio + avatar style)
+  // Off-chain profile (bio, avatar style, twitter, github, website)
   const [profile, setProfile] = useState<OffchainProfile>({ bio: '', avatar_variant: 0 })
   const [editingProfile, setEditingProfile] = useState(false)
   const [bioDraft, setBioDraft] = useState('')
   const [avatarDraft, setAvatarDraft] = useState(0)
+  const [twitterDraft, setTwitterDraft] = useState('')
+  const [githubDraft, setGithubDraft] = useState('')
+  const [websiteDraft, setWebsiteDraft] = useState('')
   const [savingProfile, setSavingProfile] = useState(false)
   const [profileSaveErr, setProfileSaveErr] = useState('')
 
@@ -293,8 +347,11 @@ export function ProfilePage({ address, onBack, onSelectBounty }: ProfilePageProp
   }, [address])
 
   function startEditingProfile() {
-    setBioDraft(profile.bio)
-    setAvatarDraft(profile.avatar_variant)
+    setBioDraft(profile.bio || '')
+    setAvatarDraft(profile.avatar_variant || 0)
+    setTwitterDraft(profile.twitter || '')
+    setGithubDraft(profile.github || '')
+    setWebsiteDraft(profile.website || '')
     setProfileSaveErr('')
     setEditingProfile(true)
   }
@@ -302,10 +359,22 @@ export function ProfilePage({ address, onBack, onSelectBounty }: ProfilePageProp
   async function handleSaveProfile() {
     setSavingProfile(true)
     setProfileSaveErr('')
-    const result = await saveProfile(address, bioDraft, avatarDraft)
+    const result = await saveProfile(address, {
+      bio: bioDraft,
+      avatarVariant: avatarDraft,
+      twitter: twitterDraft,
+      github: githubDraft,
+      website: websiteDraft,
+    })
     setSavingProfile(false)
     if (result.ok) {
-      setProfile({ bio: bioDraft.trim(), avatar_variant: avatarDraft })
+      setProfile({
+        bio: bioDraft.trim(),
+        avatar_variant: avatarDraft,
+        twitter: twitterDraft.trim() || undefined,
+        github: githubDraft.trim() || undefined,
+        website: websiteDraft.trim() || undefined,
+      })
       setEditingProfile(false)
     } else {
       setProfileSaveErr(result.error ?? 'Could not save your profile. Please try again.')
@@ -342,15 +411,29 @@ export function ProfilePage({ address, onBack, onSelectBounty }: ProfilePageProp
 
   const hasPosted = (totalPosted?.length ?? 0) > 0
 
-  // Sum of escrowRemaining across every bounty this address has posted
-  const [escrowByBounty, setEscrowByBounty] = useState<Record<string, bigint>>({})
-  const onEscrowValue = useCallback((id: string, value: bigint) => {
-    setEscrowByBounty(prev => (prev[id] === value ? prev : { ...prev, [id]: value }))
+  // Track stats across all bounties this address posted
+  const [bountyStats, setBountyStats] = useState<Record<string, BountyStatInfo>>({})
+  const onBountyStat = useCallback((id: string, info: BountyStatInfo) => {
+    setBountyStats(prev => ({ ...prev, [id]: info }))
   }, [])
+
   const escrowTotal = useMemo(
-    () => Object.values(escrowByBounty).reduce((sum, v) => sum + v, 0n),
-    [escrowByBounty],
+    () => Object.values(bountyStats).reduce((sum, v) => sum + v.escrowRemaining, 0n),
+    [bountyStats],
   )
+
+  // ── Reputation Badges ────────────────────────────────────────────────────────
+  // 1. "First Catch": First bounty won
+  const isFirstCatch = wins >= 1n
+  // 2. "Heavy Hitter": Earned > $500 USDC
+  const isHeavyHitter = earned >= 500_000_000n
+  // 3. "Promise Keeper": 100% payout rate on posted bounties (posted bounties, >=1 paid winner, zero unpaid cancellations)
+  const allPostedStats = Object.values(bountyStats)
+  const isPromiseKeeper =
+    hasPosted &&
+    allPostedStats.length > 0 &&
+    allPostedStats.some(b => b.winnersApproved > 0n) &&
+    allPostedStats.every(b => !b.cancelled && (b.escrowRemaining === 0n || b.winnersApproved > 0n))
 
   // USDC balance (only read if own profile)
   const { data: balanceRaw, refetch: refetchBalance } = useReadContract({
@@ -372,9 +455,6 @@ export function ProfilePage({ address, onBack, onSelectBounty }: ProfilePageProp
   const participatingIds = submittedList
   const pastIds = submittedList
 
-  // Pending claim bounties — items where the contract reports WinnerPending for this address
-  // We can only know this after BountyRow fetches each, so PendingClaimRow handles its own visibility.
-  // We show the PendingClaimsWindow whenever pendingEarnings > 0 (contract-level aggregate).
   const hasPendingClaims = pendingEarnings > 0n && isOwn
 
   const TABS: { id: ProfileTab; label: string; color: string }[] = [
@@ -383,12 +463,17 @@ export function ProfilePage({ address, onBack, onSelectBounty }: ProfilePageProp
     { id: 'posted', label: 'POSTED', color: '#FF3E9A' },
   ]
 
+  const cleanTwitter = profile.twitter?.replace(/^@/, '').trim()
+  const cleanGithub = profile.github?.replace(/^@/, '').trim()
+  const cleanWebsite = profile.website?.trim()
+  const hasSocials = !!(cleanTwitter || cleanGithub || cleanWebsite)
+
   return (
     <div className="flex flex-col gap-5">
-      <button onClick={onBack} className="font-mono-bold text-[12px] uppercase tracking-widest text-[#1A1AE6] hover:underline self-start">← Back</button>
+      <button onClick={onBack} className="font-mono-bold text-[12px] uppercase tracking-widest text-[#1A1AE6] hover:underline self-start cursor-pointer">← Back</button>
 
-      {/* Hidden readers — sum escrowRemaining across every bounty this address posted */}
-      {totalPosted?.map(id => <EscrowReader key={id.toString()} bountyId={id} onValue={onEscrowValue} />)}
+      {/* Hidden readers — collect stats across every bounty this address posted */}
+      {totalPosted?.map(id => <BountyStatsReader key={id.toString()} bountyId={id} onValue={onBountyStat} />)}
 
       {/* ── Header window ─────────────────────────────────────────────────── */}
       <WindowCard title="USER_PROFILE.EXE" titleBarColor="#7FF3F0" bodyClassName="flex flex-col gap-0">
@@ -400,48 +485,166 @@ export function ProfilePage({ address, onBack, onSelectBounty }: ProfilePageProp
                 <PixelAvatar address={address} size={64} variant={profile.avatar_variant} />
               </div>
             </div>
-            <div className="flex flex-col gap-1.5 min-w-0 pt-0.5 flex-1">
+            <div className="flex flex-col gap-2 min-w-0 pt-0.5 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-heading text-[18px] font-extrabold text-[#111] truncate">{formatAddress(address)}</span>
                 <CopyButton text={address} label="Copy" />
               </div>
-              {hasPosted && (
-                <span className="self-start font-mono-bold text-[9px] uppercase tracking-widest border-[2px] border-[#111] rounded-full px-2 py-0.5 bg-[#A78BFA] text-[#111] shadow-hard-sm w-fit">WANT CREATOR</span>
-              )}
 
-              {/* Bio — view or edit */}
+              {/* Tags and Badges */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {hasPosted && (
+                  <span className="font-mono-bold text-[9px] uppercase tracking-widest border-[2px] border-[#111] rounded-full px-2 py-0.5 bg-[#A78BFA] text-[#111] shadow-hard-sm">
+                    WANT CREATOR
+                  </span>
+                )}
+                {isFirstCatch && (
+                  <ReputationBadge
+                    label="First Catch"
+                    icon="🎣"
+                    bg="#FFE600"
+                    title="First bounty won on Want.fun"
+                  />
+                )}
+                {isHeavyHitter && (
+                  <ReputationBadge
+                    label="Heavy Hitter"
+                    icon="⚡"
+                    bg="#FF3E9A"
+                    textColor="#FFFDF0"
+                    title="Earned > $500 USDC on Want.fun"
+                  />
+                )}
+                {isPromiseKeeper && (
+                  <ReputationBadge
+                    label="Promise Keeper"
+                    icon="🤝"
+                    bg="#C6F23A"
+                    title="100% payout rate on posted bounties"
+                  />
+                )}
+              </div>
+
+              {/* Bio & Socials — view mode */}
               {!editingProfile ? (
-                <div className="flex items-center gap-2 flex-wrap">
-                  {profile.bio ? (
-                    <p className="font-mono-ui text-[13px] font-bold text-[#111] bg-[#FFFDF0] border-[2px] border-[#111]/15 rounded-md px-2.5 py-1.5 max-w-md leading-snug">{profile.bio}</p>
-                  ) : isOwn ? (
-                    <span className="font-mono-ui text-[12px] text-[#111]/50 italic">No bio yet.</span>
-                  ) : null}
-                  {isOwn && (
-                    <button onClick={startEditingProfile} className="font-mono-bold text-[10px] uppercase tracking-widest text-[#1A1AE6] underline shrink-0">
-                      {profile.bio ? 'Edit' : '+ Add bio'}
-                    </button>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {profile.bio ? (
+                      <p className="font-mono-ui text-[13px] font-bold text-[#111] bg-[#FFFDF0] border-[2px] border-[#111]/15 rounded-md px-2.5 py-1.5 max-w-md leading-snug">{profile.bio}</p>
+                    ) : isOwn ? (
+                      <span className="font-mono-ui text-[12px] text-[#111]/50 italic">No bio yet.</span>
+                    ) : null}
+                    {isOwn && (
+                      <button onClick={startEditingProfile} className="font-mono-bold text-[10px] uppercase tracking-widest text-[#1A1AE6] underline shrink-0 cursor-pointer">
+                        {profile.bio || hasSocials ? 'Edit profile' : '+ Add bio & socials'}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Connected Socials Buttons */}
+                  {hasSocials && (
+                    <div className="flex items-center gap-2 flex-wrap mt-1">
+                      {cleanTwitter && (
+                        <a
+                          href={`https://x.com/${cleanTwitter}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border-[2px] border-[#111] bg-black text-white font-mono-bold text-[11px] tracking-wider shadow-hard-sm hover:translate-y-[-1px] transition-transform"
+                        >
+                          <XIcon size={12} />
+                          <span>@{cleanTwitter}</span>
+                        </a>
+                      )}
+                      {cleanGithub && (
+                        <a
+                          href={`https://github.com/${cleanGithub}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border-[2px] border-[#111] bg-[#24292e] text-white font-mono-bold text-[11px] tracking-wider shadow-hard-sm hover:translate-y-[-1px] transition-transform"
+                        >
+                          <GithubIcon size={13} />
+                          <span>{cleanGithub}</span>
+                        </a>
+                      )}
+                      {cleanWebsite && (
+                        <a
+                          href={cleanWebsite.startsWith('http') ? cleanWebsite : `https://${cleanWebsite}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border-[2px] border-[#111] bg-[#7FF3F0] text-[#111] font-mono-bold text-[11px] tracking-wider shadow-hard-sm hover:translate-y-[-1px] transition-transform"
+                        >
+                          <GlobeIcon size={13} />
+                          <span>{cleanWebsite.replace(/^https?:\/\//, '').replace(/\/$/, '')}</span>
+                        </a>
+                      )}
+                    </div>
                   )}
                 </div>
               ) : (
-                <div className="flex flex-col gap-2 max-w-md border-[2px] border-[#111] rounded-lg p-3 bg-[#FFFDF0]">
-                  <textarea
-                    value={bioDraft}
-                    onChange={e => setBioDraft(e.target.value.slice(0, 160))}
-                    rows={2}
-                    maxLength={160}
-                    placeholder="Onchain builder | Always looking for cool projects to work on."
-                    className="border-[2px] border-[#111] rounded-md p-2 font-mono-ui text-[12px] bg-white resize-none focus:outline-none focus:ring-2 focus:ring-[#FF3E9A]"
-                  />
-                  <p className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/50">Avatar style</p>
+                /* Profile Editor */
+                <div className="flex flex-col gap-3 max-w-md border-[2px] border-[#111] rounded-lg p-3 bg-[#FFFDF0]">
+                  <div className="flex flex-col gap-1">
+                    <label className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/70">Bio</label>
+                    <textarea
+                      value={bioDraft}
+                      onChange={e => setBioDraft(e.target.value.slice(0, 160))}
+                      rows={2}
+                      maxLength={160}
+                      placeholder="Onchain builder | Always looking for cool bounties to work on."
+                      className="border-[2px] border-[#111] rounded-md p-2 font-mono-ui text-[12px] bg-white resize-none focus:outline-none focus:ring-2 focus:ring-[#FF3E9A]"
+                    />
+                    <span className="font-mono-ui text-[9px] text-[#111]/40 self-end">{bioDraft.length}/160</span>
+                  </div>
+
+                  <p className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/70">Avatar style</p>
                   <AvatarPicker address={address} selected={avatarDraft} onPick={setAvatarDraft} />
-                  {profileSaveErr && <p className="font-mono-bold text-[10px] text-[#FF3E9A]">{profileSaveErr}</p>}
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono-ui text-[10px] text-[#111]/40">{bioDraft.length}/160</span>
-                    <div className="flex gap-2">
-                      <button onClick={() => setEditingProfile(false)} disabled={savingProfile} className="font-mono-bold text-[11px] uppercase tracking-widest bg-[#FFFDF0] border-[2px] border-[#111] rounded-full px-3 py-1.5 shadow-hard-sm btn-press disabled:opacity-40">Cancel</button>
-                      <button onClick={() => void handleSaveProfile()} disabled={savingProfile} className="font-mono-bold text-[11px] uppercase tracking-widest bg-[#FFE600] border-[2px] border-[#111] rounded-full px-3 py-1.5 shadow-hard-sm btn-press disabled:opacity-40">{savingProfile ? 'Saving...' : 'Save'}</button>
+
+                  <p className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/70">Connect Socials</p>
+                  <div className="flex flex-col gap-2">
+                    {/* Twitter / X */}
+                    <div className="flex items-center gap-2 border-[2px] border-[#111] rounded-md bg-white p-1.5 shadow-hard-sm">
+                      <div className="w-6 h-6 rounded bg-black flex items-center justify-center text-white shrink-0">
+                        <XIcon size={12} />
+                      </div>
+                      <input
+                        value={twitterDraft}
+                        onChange={e => setTwitterDraft(e.target.value)}
+                        placeholder="Twitter / X (@username)"
+                        className="font-mono-ui text-[12px] bg-transparent flex-1 focus:outline-none"
+                      />
                     </div>
+
+                    {/* GitHub */}
+                    <div className="flex items-center gap-2 border-[2px] border-[#111] rounded-md bg-white p-1.5 shadow-hard-sm">
+                      <div className="w-6 h-6 rounded bg-[#24292e] flex items-center justify-center text-white shrink-0">
+                        <GithubIcon size={13} />
+                      </div>
+                      <input
+                        value={githubDraft}
+                        onChange={e => setGithubDraft(e.target.value)}
+                        placeholder="GitHub (username)"
+                        className="font-mono-ui text-[12px] bg-transparent flex-1 focus:outline-none"
+                      />
+                    </div>
+
+                    {/* Website */}
+                    <div className="flex items-center gap-2 border-[2px] border-[#111] rounded-md bg-white p-1.5 shadow-hard-sm">
+                      <div className="w-6 h-6 rounded bg-[#7FF3F0] flex items-center justify-center text-[#111] shrink-0 border border-[#111]/30">
+                        <GlobeIcon size={13} />
+                      </div>
+                      <input
+                        value={websiteDraft}
+                        onChange={e => setWebsiteDraft(e.target.value)}
+                        placeholder="Website (https://...)"
+                        className="font-mono-ui text-[12px] bg-transparent flex-1 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {profileSaveErr && <p className="font-mono-bold text-[10px] text-[#FF3E9A]">{profileSaveErr}</p>}
+                  <div className="flex items-center justify-end gap-2 pt-1">
+                    <button onClick={() => setEditingProfile(false)} disabled={savingProfile} className="font-mono-bold text-[11px] uppercase tracking-widest bg-[#FFFDF0] border-[2px] border-[#111] rounded-full px-3 py-1.5 shadow-hard-sm btn-press disabled:opacity-40 cursor-pointer">Cancel</button>
+                    <button onClick={() => void handleSaveProfile()} disabled={savingProfile} className="font-mono-bold text-[11px] uppercase tracking-widest bg-[#FFE600] border-[2px] border-[#111] rounded-full px-3 py-1.5 shadow-hard-sm btn-press disabled:opacity-40 cursor-pointer">{savingProfile ? 'Saving...' : 'Save'}</button>
                   </div>
                 </div>
               )}
@@ -468,17 +671,50 @@ export function ProfilePage({ address, onBack, onSelectBounty }: ProfilePageProp
         </div>
       </WindowCard>
 
-      {/* ── Stats ─────────────────────────────────────────────────────────── */}
-      <div className={`grid grid-cols-2 ${hasPosted ? 'sm:grid-cols-4' : 'sm:grid-cols-3'} gap-3`}>
-        <ProfileStatCard icon={<FolderIcon size={30} />} label="Bounties posted" value={(totalPosted?.length ?? 0).toString()} color="#FFE600" />
-        <ProfileStatCard icon={<CheckCircleIcon size={30} />} label="Submissions" value={submittedList.length.toString()} color="#7FF3F0" />
-        {hasPosted && (
-          <ProfileStatCard icon={<LockIcon size={30} />} label="In escrow" value={`$${formatUsdc(escrowTotal)}`} color="#A78BFA" />
-        )}
-        <ProfileStatCard icon={<TrophyIcon size={30} />} label="Paid out" value={`$${formatUsdc(earned)}`} color="#C6F23A" />
+      {/* ── Hunter Activity Stats ─────────────────────────────────────────── */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <span className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111]/70">
+            Hunter Activity
+          </span>
+          <div className="h-[2px] flex-1 bg-[#111]/15" />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <ProfileStatCard icon={<CheckCircleIcon size={26} />} label="Submissions" value={submittedList.length.toString()} color="#7FF3F0" />
+          <ProfileStatCard icon={<TrophyIcon size={26} />} label="Bounties Won" value={wins.toString()} color="#FFE600" />
+          <ProfileStatCard
+            icon={<span className="font-heading font-extrabold text-[20px] text-[#111]">%</span>}
+            label="Win Rate"
+            value={submittedList.length > 0 ? `${Math.round(Number(wins * 100n) / submittedList.length)}%` : '—'}
+            color="#FFB3D9"
+          />
+          <ProfileStatCard icon={<CoinIcon size={26} />} label="Total Earned" value={`$${formatUsdc(earned)}`} color="#C6F23A" />
+        </div>
       </div>
 
-      {/* ── Wallet window ─────────────────────────────────────────────────── */}
+      {/* ── Poster Activity Stats (if posted bounties) ─────────────────────── */}
+      {hasPosted && (
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <span className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111]/70">
+              Poster Activity
+            </span>
+            <div className="h-[2px] flex-1 bg-[#111]/15" />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <ProfileStatCard icon={<FolderIcon size={26} />} label="Bounties Posted" value={(totalPosted?.length ?? 0).toString()} color="#FFE600" />
+            <ProfileStatCard icon={<LockIcon size={26} />} label="In Escrow" value={`$${formatUsdc(escrowTotal)}`} color="#A78BFA" />
+            <ProfileStatCard
+              icon={<TrophyIcon size={26} />}
+              label="Payout Status"
+              value={isPromiseKeeper ? '100% Payout' : allPostedStats.some(b => b.winnersApproved > 0n) ? 'Active' : 'Open'}
+              color="#C6F23A"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ── Wallet window (own profile only) ───────────────────────────────── */}
       {isOwn && (
         <WindowCard title="WALLET.EXE" titleBarColor="#C6F23A" bodyClassName="flex flex-col gap-4">
           <div className="flex items-center justify-between flex-wrap gap-4">
@@ -499,8 +735,8 @@ export function ProfilePage({ address, onBack, onSelectBounty }: ProfilePageProp
               </div>
             )}
             <div className="flex gap-2 ml-auto">
-              <button onClick={() => setShowReceive(true)} className="font-mono-bold text-[12px] uppercase tracking-widest bg-[#7FF3F0] border-[3px] border-[#111] rounded-full px-4 py-2.5 shadow-hard-sm btn-press">Receive</button>
-              <button onClick={() => setShowSend(true)} className="font-mono-bold text-[12px] uppercase tracking-widest bg-[#FFE600] border-[3px] border-[#111] rounded-full px-4 py-2.5 shadow-hard-sm btn-press">Send →</button>
+              <button onClick={() => setShowReceive(true)} className="font-mono-bold text-[12px] uppercase tracking-widest bg-[#7FF3F0] border-[3px] border-[#111] rounded-full px-4 py-2.5 shadow-hard-sm btn-press cursor-pointer">Receive</button>
+              <button onClick={() => setShowSend(true)} className="font-mono-bold text-[12px] uppercase tracking-widest bg-[#FFE600] border-[3px] border-[#111] rounded-full px-4 py-2.5 shadow-hard-sm btn-press cursor-pointer">Send →</button>
             </div>
           </div>
           {hasPosted && (balance + escrowTotal) > 0n && (
@@ -533,20 +769,44 @@ export function ProfilePage({ address, onBack, onSelectBounty }: ProfilePageProp
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className="px-3 py-2 font-mono-bold text-[10px] uppercase tracking-widest text-[#111] border-r-[3px] border-[#111] last:border-r-0 transition-colors"
+              className="px-3 py-2 font-mono-bold text-[10px] uppercase tracking-widest text-[#111] border-r-[3px] border-[#111] last:border-r-0 transition-colors cursor-pointer"
               style={{ backgroundColor: tab === t.id ? t.color : '#FFFDF0' }}
             >{t.label}</button>
           ))}
         </div>
         <div className="border-[3px] border-t-0 border-[#111] rounded-b-lg rounded-tr-lg p-4 bg-[#FFFDF0]">
           {tab === 'participating' && (
-            <BountyList ids={participatingIds as bigint[]} profileAddr={address} onSelect={onSelectBounty} emptyMsg="No active submissions yet." tabMode="participating" />
+            <BountyList
+              ids={participatingIds as bigint[]}
+              profileAddr={address}
+              onSelect={onSelectBounty}
+              emptyMsg="No active submissions yet."
+              tabMode="participating"
+              onBrowseWall={onBrowseWall}
+              onCreateBounty={onCreateBounty}
+            />
           )}
           {tab === 'past' && (
-            <BountyList ids={pastIds as bigint[]} profileAddr={address} onSelect={onSelectBounty} emptyMsg="No past bounties yet." tabMode="past" />
+            <BountyList
+              ids={pastIds as bigint[]}
+              profileAddr={address}
+              onSelect={onSelectBounty}
+              emptyMsg="No past bounties yet."
+              tabMode="past"
+              onBrowseWall={onBrowseWall}
+              onCreateBounty={onCreateBounty}
+            />
           )}
           {tab === 'posted' && (
-            <BountyList ids={postedList as bigint[]} profileAddr={address} onSelect={onSelectBounty} emptyMsg="No bounties posted yet." tabMode="posted" />
+            <BountyList
+              ids={postedList as bigint[]}
+              profileAddr={address}
+              onSelect={onSelectBounty}
+              emptyMsg="No bounties posted yet."
+              tabMode="posted"
+              onBrowseWall={onBrowseWall}
+              onCreateBounty={onCreateBounty}
+            />
           )}
         </div>
       </div>
@@ -558,24 +818,67 @@ export function ProfilePage({ address, onBack, onSelectBounty }: ProfilePageProp
 }
 
 // ─── Bounty list ──────────────────────────────────────────────────────────────
-function BountyList({ ids, profileAddr, onSelect, emptyMsg, tabMode }: {
+function BountyList({ ids, profileAddr, onSelect, emptyMsg, tabMode, onBrowseWall, onCreateBounty }: {
   ids: bigint[]
   profileAddr: `0x${string}`
   onSelect: (id: bigint) => void
   emptyMsg: string
   tabMode: 'participating' | 'past' | 'posted'
+  onBrowseWall?: () => void
+  onCreateBounty?: () => void
 }) {
   if (ids.length === 0) {
+    if (tabMode === 'participating') {
+      return (
+        <div className="checkerboard rounded-lg py-10 flex flex-col items-center justify-center gap-3 text-center px-4">
+          <span className="font-mono-bold text-[13px] uppercase tracking-wider text-[#111] bg-[#FFFDF0] border-[2px] border-[#111] px-3 py-1.5 rounded-lg shadow-hard-sm">
+            No active submissions yet
+          </span>
+          <p className="font-mono-ui text-[11px] text-[#111]/70 max-w-sm">
+            Hunt open bounties on the wall, submit proof of work, and earn USDC directly to your wallet.
+          </p>
+          {onBrowseWall && (
+            <button
+              onClick={onBrowseWall}
+              className="font-mono-bold text-[11px] uppercase tracking-widest bg-[#FFE600] border-[2px] border-[#111] px-4 py-2 rounded-full shadow-hard-sm hover:shadow-hard btn-press cursor-pointer mt-1"
+            >
+              Browse Open Bounties →
+            </button>
+          )}
+        </div>
+      )
+    }
+
+    if (tabMode === 'posted') {
+      return (
+        <div className="checkerboard rounded-lg py-10 flex flex-col items-center justify-center gap-3 text-center px-4">
+          <span className="font-mono-bold text-[13px] uppercase tracking-wider text-[#111] bg-[#FFFDF0] border-[2px] border-[#111] px-3 py-1.5 rounded-lg shadow-hard-sm">
+            No bounties posted yet
+          </span>
+          <p className="font-mono-ui text-[11px] text-[#111]/70 max-w-sm">
+            Put your tasks onchain with automated USDC escrow and let the world build for you.
+          </p>
+          {onCreateBounty && (
+            <button
+              onClick={onCreateBounty}
+              className="font-mono-bold text-[11px] uppercase tracking-widest bg-[#FF3E9A] text-white border-[2px] border-[#111] px-4 py-2 rounded-full shadow-hard-sm hover:shadow-hard btn-press cursor-pointer mt-1"
+            >
+              Post a Bounty →
+            </button>
+          )}
+        </div>
+      )
+    }
+
     return (
-      <div className="flex flex-col items-center justify-center py-8 gap-3" style={{
-        backgroundImage: 'repeating-conic-gradient(#7FF3F0 0% 25%, #1FB5A5 0% 50%)',
-        backgroundSize: '16px 16px',
-        borderRadius: '8px',
-      }}>
-        <span className="font-mono-bold text-[12px] uppercase tracking-widest text-[#111] bg-[#FFFDF0] border-[2px] border-[#111] px-3 py-1.5 rounded-lg">{emptyMsg}</span>
+      <div className="checkerboard rounded-lg py-8 flex flex-col items-center justify-center gap-2 text-center px-4">
+        <span className="font-mono-bold text-[12px] uppercase tracking-widest text-[#111] bg-[#FFFDF0] border-[2px] border-[#111] px-3 py-1.5 rounded-lg shadow-hard-sm">
+          {emptyMsg}
+        </span>
       </div>
     )
   }
+
   return (
     <div className="flex flex-col gap-2">
       {ids.map(id => (
@@ -589,7 +892,12 @@ function BountyList({ ids, profileAddr, onSelect, emptyMsg, tabMode }: {
 function PendingClaimsWindow({ bountyIds, profileAddr }: { bountyIds: bigint[]; profileAddr: `0x${string}` }) {
   return (
     <WindowCard title="PENDING_CLAIMS.EXE" titleBarColor="#FFE600" bodyClassName="flex flex-col gap-3">
-      <p className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111]/60">You have unclaimed rewards</p>
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div>
+          <p className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111]">You have unclaimed rewards</p>
+          <p className="font-mono-ui text-[10px] text-[#111]/60">Claim each approved submission to transfer USDC directly to your wallet.</p>
+        </div>
+      </div>
       {bountyIds.map(id => (
         <PendingClaimRow key={id.toString()} bountyId={id} profileAddr={profileAddr} />
       ))}
@@ -627,7 +935,7 @@ function PendingClaimRow({ bountyId, profileAddr }: { bountyId: bigint; profileA
         <button
           onClick={() => { if (isWrongChain) { switchChain({ chainId: CHAIN_ID }); return }; claim({ address: CONTRACT_ADDRESS, abi: BOUNTY_BOARD_ABI, functionName: 'claim', args: [bountyId], chainId: CHAIN_ID }) }}
           disabled={claiming || claimConfirming}
-          className="font-mono-bold text-[12px] uppercase tracking-widest bg-[#FFE600] border-[3px] border-[#111] rounded-full px-4 py-2.5 shadow-hard-sm btn-press disabled:opacity-40 w-full"
+          className="font-mono-bold text-[12px] uppercase tracking-widest bg-[#FFE600] border-[3px] border-[#111] rounded-full px-4 py-2.5 shadow-hard-sm btn-press disabled:opacity-40 w-full cursor-pointer"
         >
           {isWrongChain ? 'Switch chain' : claiming ? 'Confirm...' : claimConfirming ? 'Confirming...' : `Claim ${formatUsdc(bounty.rewardPerWinner)} USDC →`}
         </button>
