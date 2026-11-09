@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
+import { createPublicClient, http } from 'viem'
 import { pool, ensureSchema } from '../../_db.js'
 import { ensurePoster, bountyKey } from '../../_poster.js'
 import { verifyAuth, type AuthPayload } from '../../_auth.js'
@@ -95,6 +96,42 @@ function parseEnvelope(content: string): { text?: string; file?: string } | 'inv
   return { text: obj.text as string | undefined, file: obj.file as string | undefined }
 }
 
+async function checkOnchainActivity(address: `0x${string}`): Promise<boolean> {
+  try {
+    const chainId = process.env.VITE_CHAIN_ID ?? '5042002'
+    const rpc = process.env.VITE_RPC_URL || (chainId === '5042' ? 'https://rpc.mainnet.arc.io' : 'https://rpc.testnet.arc.io')
+    const client = createPublicClient({ transport: http(rpc) })
+    const [txCount, balance] = await Promise.all([
+      client.getTransactionCount({ address }),
+      client.getBalance({ address }),
+    ])
+    return txCount > 0 || balance > 0n
+  } catch (e) {
+    console.warn('onchain check error:', e)
+    return true // fail open so network hiccups don't break legit users
+  }
+}
+
+async function verifyTurnstile(token: string | undefined, ip: string): Promise<boolean> {
+  const secret = process.env.TURNSTILE_SECRET_KEY
+  if (!secret) return true // Turnstile secret not configured, skip
+  if (!token) return false // Secret is configured but token is missing
+  try {
+    const formData = new URLSearchParams()
+    formData.append('secret', secret)
+    formData.append('response', token)
+    formData.append('remoteip', ip)
+    const resp = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      body: formData,
+    })
+    const outcome = await resp.json() as { success: boolean }
+    return outcome.success === true
+  } catch {
+    return true // fail open on verification network error
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     if (req.method === 'OPTIONS') return res.status(204).end()
@@ -129,9 +166,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'Invalid viewer address' })
 
       const { rows: bountyRows } = await pool.sql`
-        SELECT id, is_public FROM bounties WHERE id = ${key}
+        SELECT id, is_public, require_social, min_account_age_days, min_onchain_tx FROM bounties WHERE id = ${key}
       `
-      const isPublic = (bountyRows[0] as { is_public: boolean } | undefined)?.is_public === true
+      const bRow = bountyRows[0] as {
+        is_public?: boolean
+        require_social?: boolean
+        min_account_age_days?: number
+        min_onchain_tx?: boolean
+      } | undefined
+
+      const isPublic = bRow?.is_public === true
+      const requirements = {
+        require_social: bRow?.require_social === true,
+        min_account_age_days: bRow?.min_account_age_days ?? 0,
+        min_onchain_tx: bRow?.min_onchain_tx === true,
+      }
 
       // The poster comes from the DB, filled in from the escrow contract if missing.
       // The client's ?poster= value is never trusted.
@@ -145,7 +194,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           WHERE bounty_id = ${key}
           ORDER BY created_at ASC
         `
-        return res.status(200).json({ submissions: subs, is_public: isPublic })
+        return res.status(200).json({ submissions: subs, is_public: isPublic, requirements })
       }
 
       // Private bounty — submitter can only see their own
@@ -155,10 +204,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           FROM submissions
           WHERE bounty_id = ${key} AND submitter = ${viewer}
         `
-        return res.status(200).json({ submissions: subs, is_public: false })
+        return res.status(200).json({ submissions: subs, is_public: false, requirements })
       }
 
-      return res.status(200).json({ submissions: [], is_public: false })
+      return res.status(200).json({ submissions: [], is_public: false, requirements })
     }
 
     // ── POST — create submission ────────────────────────────────────────────
@@ -237,6 +286,63 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const bountyPoster = await ensurePoster(bountyId)
       if (bountyPoster && bountyPoster === submitter)
         return res.status(403).json({ error: "You can't submit to your own bounty" })
+
+      // ── Turnstile Bot Verification ────────────────────────────────────────
+      const turnstileToken = (body as { turnstileToken?: string }).turnstileToken
+      const turnstileValid = await verifyTurnstile(turnstileToken, ip)
+      if (!turnstileValid) {
+        return res.status(403).json({ error: 'Bot verification failed. Please complete the security check.' })
+      }
+
+      // ── Anti-Spam / Gating Rules Check ────────────────────────────────────
+      const { rows: bRows } = await pool.sql`
+        SELECT require_social, min_account_age_days, min_onchain_tx FROM bounties WHERE id = ${key}
+      `
+      const bGate = bRows[0] as {
+        require_social?: boolean
+        min_account_age_days?: number
+        min_onchain_tx?: boolean
+      } | undefined
+
+      if (bGate) {
+        // 1. Social account gating
+        if (bGate.require_social) {
+          const { rows: pRows } = await pool.sql`
+            SELECT twitter, github FROM profiles WHERE address = ${submitter}
+          `
+          const p = pRows[0] as { twitter: string | null; github: string | null } | undefined
+          const hasSocial = !!((p?.twitter && p.twitter.trim()) || (p?.github && p.github.trim()))
+          if (!hasSocial) {
+            return res.status(403).json({
+              error: 'This bounty requires a connected social account (Twitter/X or GitHub). Please connect your socials in your profile first.',
+            })
+          }
+        }
+
+        // 2. Minimum account age
+        if (bGate.min_account_age_days && bGate.min_account_age_days > 0) {
+          const { rows: pRows } = await pool.sql`
+            SELECT created_at FROM profiles WHERE address = ${submitter}
+          `
+          const createdAt = pRows[0]?.created_at ? Number(pRows[0].created_at) : Math.floor(Date.now() / 1000)
+          const ageDays = (Math.floor(Date.now() / 1000) - createdAt) / 86400
+          if (ageDays < bGate.min_account_age_days) {
+            return res.status(403).json({
+              error: `This bounty requires an account age of at least ${bGate.min_account_age_days} day(s) on WANT.fun.`,
+            })
+          }
+        }
+
+        // 3. Minimum onchain footprint
+        if (bGate.min_onchain_tx) {
+          const hasActivity = await checkOnchainActivity(submitter as `0x${string}`)
+          if (!hasActivity) {
+            return res.status(403).json({
+              error: 'This bounty requires a wallet with prior onchain transaction history on Arc (empty burner wallets are rejected).',
+            })
+          }
+        }
+      }
 
       // Ensure bounty row exists
       await pool.sql`

@@ -8,7 +8,7 @@ import { StatusTag } from './StatusTag'
 import { LoadingBar } from './LoadingBar'
 import { TxStatus } from './TxStatus'
 import { SubmissionViewer } from './SubmissionViewer'
-import { ClockIcon, LockIcon, CoinIcon, FolderIcon, CheckCircleIcon } from './Icons'
+import { ClockIcon, LockIcon, CoinIcon, FolderIcon, CheckCircleIcon, WalletIcon, XIcon } from './Icons'
 import { PixelAvatar } from './PixelAvatar'
 import { fetchProfile, type OffchainProfile } from '../lib/submissions-api'
 import { BOUNTY_BOARD_ABI } from '../bounty-abi'
@@ -23,6 +23,7 @@ import {
   setVisibility,
   type OffchainSubmission,
   type BountyExample,
+  type BountyRequirements,
 } from '../lib/submissions-api'
 
 // Confetti is drawn on the main thread on purpose. The default `confetti()` renders inside a
@@ -65,6 +66,66 @@ interface BountyPageProps {
   onDataChange?: () => void
 }
 
+const TURNSTILE_SITE_KEY = (import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined) ?? ''
+
+function TurnstileWidget({ onToken }: { onToken: (token: string) => void }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const widgetIdRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!TURNSTILE_SITE_KEY || !containerRef.current) return
+
+    const SCRIPT_ID = 'cf-turnstile-script'
+    if (!document.getElementById(SCRIPT_ID)) {
+      const script = document.createElement('script')
+      script.id = SCRIPT_ID
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
+      script.async = true
+      script.defer = true
+      document.head.appendChild(script)
+    }
+
+    const interval = setInterval(() => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const turnstile = (window as any).turnstile
+      if (turnstile && containerRef.current && !widgetIdRef.current) {
+        clearInterval(interval)
+        try {
+          widgetIdRef.current = turnstile.render(containerRef.current, {
+            sitekey: TURNSTILE_SITE_KEY,
+            callback: (token: string) => onToken(token),
+            theme: 'light',
+          })
+        } catch {
+          // ignore render error
+        }
+      }
+    }, 200)
+
+    return () => {
+      clearInterval(interval)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const turnstile = (window as any).turnstile
+      if (turnstile && widgetIdRef.current) {
+        try {
+          turnstile.remove(widgetIdRef.current)
+        } catch {
+          /* ignore */
+        }
+        widgetIdRef.current = null
+      }
+    }
+  }, [onToken])
+
+  if (!TURNSTILE_SITE_KEY) return null
+
+  return (
+    <div className="my-2 flex justify-center">
+      <div ref={containerRef} />
+    </div>
+  )
+}
+
 export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) {
   const { address, chainId } = useAccount()
   const { switchChain } = useSwitchChain()
@@ -72,8 +133,19 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
 
   const [uploadFile, setUploadFile] = useState<File | null>(null)
   const [uploadPreview, setUploadPreview] = useState<string | null>(null)
+  const [bountyRequirements, setBountyRequirements] = useState<BountyRequirements | null>(null)
+  const [turnstileToken, setTurnstileToken] = useState<string>('')
+  const [userProfile, setUserProfile] = useState<OffchainProfile | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const isWrongChain = chainId !== CHAIN_ID
+
+  useEffect(() => {
+    if (!address) { setUserProfile(null); return }
+    fetchProfile(address).then(setUserProfile).catch(() => {})
+  }, [address])
+
+  const userHasSocial = !!(userProfile?.twitter?.trim() || userProfile?.github?.trim())
+  const userMissingSocial = !!(bountyRequirements?.require_social && !userHasSocial)
 
   // Off-chain submission state
   const [offchainSubs, setOffchainSubs] = useState<OffchainSubmission[]>([])
@@ -146,6 +218,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
       const res = await fetchSubmissions(bountyId.toString(), viewer, poster)
       setOffchainSubs(res.submissions)
       setIsPublic(res.is_public)
+      if (res.requirements) setBountyRequirements(res.requirements)
     } catch {
       // silently ignore — the onchain path is the fallback
     } finally {
@@ -219,7 +292,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
 
     setSubmitting(true)
     try {
-      const result = await postSubmission(bountyId.toString(), address, content)
+      const result = await postSubmission(bountyId.toString(), address, content, turnstileToken)
       if (!result.ok) {
         toast.error(result.error ?? 'Submission failed.')
         return
@@ -561,10 +634,26 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
               )}
             </div>
 
+            {userMissingSocial && (
+              <div className="border-[2px] border-[#111] rounded-lg p-2.5 bg-[#FFE600]/30 flex items-center justify-between gap-2">
+                <span className="font-mono-ui text-[11px] text-[#111]">
+                  ⚠️ This bounty requires a connected Twitter/X or GitHub profile.
+                </span>
+                <a
+                  href={address ? `#/profile/${address}` : '#/'}
+                  className="font-mono-bold text-[10px] uppercase tracking-wider text-[#1A1AE6] underline shrink-0"
+                >
+                  Add socials →
+                </a>
+              </div>
+            )}
+
+            <TurnstileWidget onToken={setTurnstileToken} />
+
             <PillButton
               onClick={() => { void handleSubmit() }}
               loading={submitting}
-              disabled={submitting || submissionText.length > 1000}
+              disabled={submitting || submissionText.length > 1000 || userMissingSocial || (!!TURNSTILE_SITE_KEY && !turnstileToken)}
             >
               Submit work — free →
             </PillButton>
@@ -667,51 +756,76 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
         {/* Posted by card */}
         <PosterCard poster={bounty.poster} />
 
-        {/* Requirements card — specific requirements and criteria for workers */}
+        {/* Requirements card — shows ONLY what the poster chose */}
         <WindowCard title="REQUIREMENTS.EXE" titleBarColor="#7FF3F0" bodyClassName="flex flex-col gap-3">
           <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/50">
-            Submission Requirements
+            Hunter Requirements
           </span>
 
           <div className="flex flex-col gap-3">
-            <div className="flex items-start gap-2.5">
-              <CheckCircleIcon size={16} className="shrink-0 mt-0.5 text-[#111]" />
-              <div className="flex flex-col">
-                <span className="font-mono-bold text-[11px] uppercase tracking-wider text-[#111]">Deliverable Formats</span>
-                <span className="font-mono-ui text-[11px] leading-snug text-[#111]/70">
-                  Live links (GitHub repo, Figma, YouTube, demo) or media upload (PNG, JPG, MP4 max 3 MB).
-                </span>
+            {bountyRequirements?.require_social && (
+              <div className="flex items-start gap-2.5">
+                <div className="w-5 h-5 rounded bg-black flex items-center justify-center text-white shrink-0 mt-0.5 shadow-sm">
+                  <XIcon size={11} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-mono-bold text-[11px] uppercase tracking-wider text-[#111]">
+                    Connected Social Account
+                  </span>
+                  <span className="font-mono-ui text-[11px] leading-snug text-[#111]/70">
+                    Hunters must link a Twitter/X or GitHub profile on WANT.fun to submit.
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
 
-            <div className="flex items-start gap-2.5">
-              <CheckCircleIcon size={16} className="shrink-0 mt-0.5 text-[#111]" />
-              <div className="flex flex-col">
-                <span className="font-mono-bold text-[11px] uppercase tracking-wider text-[#111]">Deadline</span>
-                <span className="font-mono-ui text-[11px] leading-snug text-[#111]/70">
-                  Submit before deadline ({timeLeft(bounty.deadline)} remaining). Entries close automatically.
-                </span>
+            {bountyRequirements?.min_account_age_days ? (
+              <div className="flex items-start gap-2.5">
+                <ClockIcon size={16} className="shrink-0 mt-0.5 text-[#111]" />
+                <div className="flex flex-col">
+                  <span className="font-mono-bold text-[11px] uppercase tracking-wider text-[#111]">
+                    Minimum Account Age: {bountyRequirements.min_account_age_days} Day{bountyRequirements.min_account_age_days === 1 ? '' : 's'}
+                  </span>
+                  <span className="font-mono-ui text-[11px] leading-snug text-[#111]/70">
+                    Must have joined WANT.fun at least {bountyRequirements.min_account_age_days} day{bountyRequirements.min_account_age_days === 1 ? '' : 's'} ago.
+                  </span>
+                </div>
               </div>
-            </div>
+            ) : null}
 
-            <div className="flex items-start gap-2.5">
-              <CheckCircleIcon size={16} className="shrink-0 mt-0.5 text-[#111]" />
-              <div className="flex flex-col">
-                <span className="font-mono-bold text-[11px] uppercase tracking-wider text-[#111]">Winner Selection</span>
-                <span className="font-mono-ui text-[11px] leading-snug text-[#111]/70">
-                  Poster selects up to {bounty.maxWinners.toString()} winner{bounty.maxWinners === 1n ? '' : 's'} ({formatUsdc(bounty.rewardPerWinner)} USDC each).
-                </span>
+            {bountyRequirements?.min_onchain_tx && (
+              <div className="flex items-start gap-2.5">
+                <WalletIcon size={16} className="shrink-0 mt-0.5 text-[#111]" />
+                <div className="flex flex-col">
+                  <span className="font-mono-bold text-[11px] uppercase tracking-wider text-[#111]">
+                    Active Onchain History
+                  </span>
+                  <span className="font-mono-ui text-[11px] leading-snug text-[#111]/70">
+                    Wallet must have prior transaction activity on Arc (empty burner wallets rejected).
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
 
-            <div className="flex items-start gap-2.5">
-              <CheckCircleIcon size={16} className="shrink-0 mt-0.5 text-[#111]" />
-              <div className="flex flex-col">
-                <span className="font-mono-bold text-[11px] uppercase tracking-wider text-[#111]">Submission Rules</span>
-                <span className="font-mono-ui text-[11px] leading-snug text-[#111]/70">
-                  1 submission per wallet. Gasless &amp; free — no crypto required to submit work.
-                </span>
+            {!bountyRequirements?.require_social &&
+             !bountyRequirements?.min_account_age_days &&
+             !bountyRequirements?.min_onchain_tx && (
+              <div className="flex items-start gap-2.5">
+                <CheckCircleIcon size={16} className="shrink-0 mt-0.5 text-[#111]" />
+                <div className="flex flex-col">
+                  <span className="font-mono-bold text-[11px] uppercase tracking-wider text-[#111]">
+                    Open to All Hunters
+                  </span>
+                  <span className="font-mono-ui text-[11px] leading-snug text-[#111]/70">
+                    No special gating restrictions. Any connected wallet can submit proof of work.
+                  </span>
+                </div>
               </div>
+            )}
+
+            <div className="border-t-[1.5px] border-[#111]/15 pt-2 flex items-center justify-between text-[#111]/60 font-mono-ui text-[10px] uppercase tracking-wider">
+              <span>1 submission per wallet</span>
+              <span>Free &amp; Gasless</span>
             </div>
 
             {examples.length > 0 && (

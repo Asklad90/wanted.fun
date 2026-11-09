@@ -41,6 +41,9 @@ export function CreateBountyForm({ onClose, onSuccess }: CreateBountyFormProps) 
   const [maxWinners, setMaxWinners] = useState('1')
   const [deadlineDate, setDeadlineDate] = useState('')
   const [examples, setExamples] = useState<ExampleAttachment[]>([])
+  const [requireSocial, setRequireSocial] = useState(false)
+  const [minAccountAgeDays, setMinAccountAgeDays] = useState(0)
+  const [minOnchainTx, setMinOnchainTx] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Approve USDC
@@ -66,7 +69,11 @@ export function CreateBountyForm({ onClose, onSuccess }: CreateBountyFormProps) 
             toast.error('Examples could not be saved — try re-uploading from the bounty page.')
           })
         }
-        void registerBounty(idStr, address?.toLowerCase())
+        void registerBounty(idStr, address?.toLowerCase(), {
+          require_social: requireSocial,
+          min_account_age_days: minAccountAgeDays,
+          min_onchain_tx: minOnchainTx,
+        })
       }
     } catch {
       // If log parsing fails, examples are silently skipped
@@ -321,6 +328,83 @@ export function CreateBountyForm({ onClose, onSuccess }: CreateBountyFormProps) 
               onChange={handleAddExample}
               className="hidden"
             />
+          </div>
+        </div>
+
+        {/* ── Section: Hunter Requirements & Anti-Spam ── */}
+        <div className="flex flex-col gap-3">
+          <div className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/40 border-b-[2px] border-[#111]/10 pb-1 flex items-center justify-between">
+            <span>Hunter Requirements &amp; Anti-Spam</span>
+            <span className="font-mono-ui text-[9px] text-[#FF3E9A]">Anti-Sybil Protection</span>
+          </div>
+
+          <div className="border-[3px] border-[#111] rounded-lg p-3.5 bg-[#FFFDF0] flex flex-col gap-3 shadow-hard-sm">
+            {/* Require Social */}
+            <label className="flex items-start gap-2.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={requireSocial}
+                onChange={e => setRequireSocial(e.target.checked)}
+                className="mt-0.5 w-4 h-4 rounded border-2 border-[#111] accent-[#FF3E9A] cursor-pointer"
+              />
+              <div className="flex flex-col">
+                <span className="font-mono-bold text-[11px] uppercase tracking-wider text-[#111]">
+                  Require Connected Social Account
+                </span>
+                <span className="font-mono-ui text-[10px] text-[#111]/60">
+                  Hunters must have Twitter/X or GitHub linked on their WANT.fun profile.
+                </span>
+              </div>
+            </label>
+
+            {/* Minimum Account Age */}
+            <div className="flex flex-col gap-1.5 pt-2 border-t border-[#111]/10">
+              <span className="font-mono-bold text-[11px] uppercase tracking-wider text-[#111]">
+                Minimum Account Age
+              </span>
+              <div className="flex gap-1.5 flex-wrap">
+                {[
+                  { label: 'Any age', value: 0 },
+                  { label: '1 Day', value: 1 },
+                  { label: '3 Days', value: 3 },
+                  { label: '7 Days', value: 7 },
+                ].map(opt => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setMinAccountAgeDays(opt.value)}
+                    className={`font-mono-bold text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-md border-[2px] border-[#111] transition-all cursor-pointer ${
+                      minAccountAgeDays === opt.value
+                        ? 'bg-[#FFE600] shadow-hard-sm'
+                        : 'bg-white hover:bg-[#FFFDF0]'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <span className="font-mono-ui text-[10px] text-[#111]/60">
+                Filters accounts created immediately prior to submission.
+              </span>
+            </div>
+
+            {/* Minimum Onchain Footprint */}
+            <label className="flex items-start gap-2.5 cursor-pointer select-none pt-2 border-t border-[#111]/10">
+              <input
+                type="checkbox"
+                checked={minOnchainTx}
+                onChange={e => setMinOnchainTx(e.target.checked)}
+                className="mt-0.5 w-4 h-4 rounded border-2 border-[#111] accent-[#7FF3F0] cursor-pointer"
+              />
+              <div className="flex flex-col">
+                <span className="font-mono-bold text-[11px] uppercase tracking-wider text-[#111]">
+                  Require Onchain Footprint
+                </span>
+                <span className="font-mono-ui text-[10px] text-[#111]/60">
+                  Rejects empty burner wallets with zero onchain transactions on Arc.
+                </span>
+              </div>
+            </label>
           </div>
         </div>
 

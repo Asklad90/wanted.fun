@@ -84,19 +84,35 @@ export interface OffchainSubmission {
   created_at: number
 }
 
+export interface BountyRequirements {
+  require_social: boolean
+  min_account_age_days: number
+  min_onchain_tx: boolean
+}
+
 export interface SubmissionsResponse {
   submissions: OffchainSubmission[]
   is_public: boolean
+  requirements?: BountyRequirements
 }
 
 // ── API calls ─────────────────────────────────────────────────────────────────
 
-/** Register a bounty so it has a row in the DB (idempotent). Sends poster address so access control works. */
-export async function registerBounty(bountyId: string, poster?: string): Promise<void> {
+/** Register a bounty so it has a row in the DB (idempotent). Sends poster address and gating options. */
+export async function registerBounty(
+  bountyId: string,
+  poster?: string,
+  requirements?: Partial<BountyRequirements>,
+): Promise<void> {
   await fetch(`/api/bounties/${bountyId}/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ poster: poster ?? '' }),
+    body: JSON.stringify({
+      poster: poster ?? '',
+      require_social: requirements?.require_social ?? false,
+      min_account_age_days: requirements?.min_account_age_days ?? 0,
+      min_onchain_tx: requirements?.min_onchain_tx ?? false,
+    }),
   })
 }
 
@@ -129,6 +145,7 @@ export async function postSubmission(
   bountyId: string,
   submitter: string,
   content: string,
+  turnstileToken?: string,
 ): Promise<{ ok: boolean; error?: string }> {
   const auth = await signAuth('submit', bountyId)
   if (!auth) return { ok: false, error: "Your wallet didn't confirm the signature. Open your wallet app, approve the signature request, then tap Submit again." }
@@ -142,6 +159,7 @@ export async function postSubmission(
       address: auth.address,
       timestamp: auth.timestamp,
       signature: auth.signature,
+      turnstileToken: turnstileToken || undefined,
     }),
   })
   const text = await res.text()

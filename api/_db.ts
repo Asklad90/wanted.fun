@@ -71,7 +71,10 @@ export function ensureSchema(): Promise<void> {
         CREATE TABLE IF NOT EXISTS bounties (
           id TEXT PRIMARY KEY,
           is_public BOOLEAN NOT NULL DEFAULT FALSE,
-          poster TEXT
+          poster TEXT,
+          require_social BOOLEAN NOT NULL DEFAULT FALSE,
+          min_account_age_days INTEGER NOT NULL DEFAULT 0,
+          min_onchain_tx BOOLEAN NOT NULL DEFAULT FALSE
         )
       `
       await pool.sql`
@@ -110,10 +113,14 @@ export function ensureSchema(): Promise<void> {
         )
       `
       // Idempotent column additions for existing tables
+      await pool.sql`ALTER TABLE bounties ADD COLUMN IF NOT EXISTS require_social BOOLEAN NOT NULL DEFAULT FALSE`
+      await pool.sql`ALTER TABLE bounties ADD COLUMN IF NOT EXISTS min_account_age_days INTEGER NOT NULL DEFAULT 0`
+      await pool.sql`ALTER TABLE bounties ADD COLUMN IF NOT EXISTS min_onchain_tx BOOLEAN NOT NULL DEFAULT FALSE`
       await pool.sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS twitter TEXT`
       await pool.sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS github TEXT`
       await pool.sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS website TEXT`
       await pool.sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS created_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM NOW())::BIGINT`
+      await pool.sql`UPDATE profiles SET created_at = EXTRACT(EPOCH FROM NOW())::BIGINT WHERE created_at IS NULL OR created_at = 0`
     })().catch((e) => {
       schemaReady = null // allow retry on next request
       throw e

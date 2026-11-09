@@ -503,6 +503,12 @@ export function ProfilePage({ address, onBack, onSelectBounty, onCreateBounty, o
                 <CopyButton text={address} label="Copy" />
               </div>
 
+              {/* Joined Date — visible to everyone on all profiles */}
+              <div className="flex items-center gap-1.5 font-mono-ui text-[11px] text-[#111]/70 bg-white/80 border border-[#111]/15 rounded-md px-2.5 py-1 inline-flex items-center gap-1.5 shadow-sm w-fit">
+                <ClockIcon size={12} className="text-[#111]/50 shrink-0" />
+                <span>User joined WANT.fun on {formatJoinedDate(profile.created_at || Math.floor(Date.now() / 1000))}</span>
+              </div>
+
               {/* Tags and Badges */}
               <div className="flex items-center gap-1.5 flex-wrap">
                 {hasPosted && (
@@ -661,13 +667,7 @@ export function ProfilePage({ address, onBack, onSelectBounty, onCreateBounty, o
                 </div>
               )}
 
-              <div className="flex items-center gap-3 pt-0.5 flex-wrap">
-                {profile.created_at && (
-                  <span className="font-mono-ui text-[11px] text-[#111]/70 bg-white/70 border border-[#111]/15 rounded-md px-2 py-0.5 inline-flex items-center gap-1.5 shadow-sm">
-                    <ClockIcon size={12} className="text-[#111]/50" />
-                    User joined WANT.fun on {formatJoinedDate(profile.created_at)}
-                  </span>
-                )}
+              <div className="pt-0.5">
                 <a href={getAddressUrl(address)} target="_blank" rel="noopener noreferrer" className="font-mono-bold text-[10px] uppercase tracking-widest text-[#1A1AE6] underline w-fit">Explorer →</a>
               </div>
             </div>
