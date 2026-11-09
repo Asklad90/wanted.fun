@@ -296,29 +296,48 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
       {/* Hero */}
       <div>
         <motion.section
-          className="checkerboard border-[3px] border-[#111] rounded-xl shadow-hard overflow-hidden"
+          className="checkerboard border-[3px] border-[#111] rounded-2xl shadow-hard overflow-hidden p-4 sm:p-6 desk:p-8"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
         >
-          <div className="bg-[#FFFDF0]/92 desk:bg-transparent px-6 py-10 desk:px-12 desk:py-14 desk:grid desk:grid-cols-[1.1fr_0.9fr] desk:gap-12 desk:items-center">
-            <div className="flex flex-col gap-5">
-              <h1 className="font-heading text-[44px] sm:text-[58px] desk:text-[64px] font-extrabold leading-[1.05] text-[#111] text-balance" style={{ letterSpacing: '-0.02em' }}>
-                Post a bounty.<br />Get it done.
-              </h1>
-              <p className="font-heading text-[18px] font-bold text-[#111] max-w-md leading-relaxed">
-                Lock USDC in escrow, get work done onchain. The prize is guaranteed before a single worker types a word.
-              </p>
+          <div className="desk:grid desk:grid-cols-[1.15fr_0.85fr] desk:gap-8 desk:items-center">
+            <div className="flex flex-col gap-4">
+              {/* Dedicated black card for headline & copy */}
+              <div className="bg-[#111] text-[#FFFDF0] rounded-2xl border-[3px] border-[#111] shadow-hard p-6 sm:p-8">
+                <h1
+                  className="font-heading text-[38px] sm:text-[50px] desk:text-[56px] font-extrabold leading-[1.05] text-white text-balance"
+                  style={{ letterSpacing: '-0.02em' }}
+                >
+                  Create a bounty.<br />Get work done.
+                </h1>
+                <div className="my-4 sm:my-5 border-t border-white/20" />
+                <p className="font-heading text-[16px] sm:text-[18px] font-bold text-white/90 leading-relaxed">
+                  Put your idea onchain, set the reward, and let contributors bring it to life. No promises, just work and rewards.
+                </p>
+              </div>
+
+              {/* Action buttons sitting on the cyan checkerboard */}
               <div className="flex items-center gap-3 flex-wrap">
-                <PillButton onClick={onCreateBounty} variant="yellow" size="lg">Post a bounty</PillButton>
+                <button
+                  type="button"
+                  onClick={onCreateBounty}
+                  className="inline-flex items-center gap-2 rounded-full border-[3px] border-[#111] shadow-hard btn-press bg-[#FFE600] text-[#111] font-heading font-extrabold uppercase tracking-wide px-6 py-3.5 text-[14px] sm:text-[15px] cursor-pointer"
+                >
+                  <span>Post a bounty</span>
+                  <span aria-hidden="true">→</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => { window.location.hash = '#/how-it-works' }}
-                  className="desk:hidden font-mono-bold text-[12px] uppercase tracking-wider text-[#111] bg-white border-[2px] border-[#111] px-4 py-2.5 rounded-full shadow-hard-sm hover:bg-[#FFFDF0] transition-colors btn-press"
+                  className="inline-flex items-center gap-2 rounded-full border-[3px] border-[#111] shadow-hard btn-press bg-white text-[#111] font-mono-bold uppercase tracking-wider px-5 py-3 text-[12px] hover:bg-[#FFFDF0] transition-colors cursor-pointer"
                 >
-                  How it works →
+                  <span>How it works</span>
+                  <span aria-hidden="true">→</span>
                 </button>
               </div>
+
+              {/* Stats row on mobile */}
               {CONTRACT_DEPLOYED && (
                 <div className="flex gap-8 flex-wrap pt-4 mt-1 border-t-[3px] border-[#111] desk:hidden">
                   <Stat value={totalBounties.toString()} label="Bounties" />

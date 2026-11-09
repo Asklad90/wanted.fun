@@ -30,6 +30,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ConnectKitProvider } from 'connectkit'
 import { Toaster } from 'sonner'
 import { config, PRIVY_ENABLED, PRIVY_APP_ID, arc, arcTestnet, mainnet } from './config'
+import { PrivyWagmiSync } from './components/PrivyWagmiSync'
 import App from './App'
 import './index.css'
 
@@ -56,6 +57,7 @@ const app = PRIVY_ENABLED ? (
   >
     <QueryClientProvider client={queryClient}>
       <PrivyWagmiProvider config={config}>
+        <PrivyWagmiSync />
         <App />
         <Toaster position="top-center" />
       </PrivyWagmiProvider>

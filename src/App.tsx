@@ -309,7 +309,12 @@ export default function App() {
 
           {/* Right: connect button with embedded profile dropdown */}
           <div className="flex items-center gap-2 min-w-0 shrink-0">
-            <ConnectButton onProfileClick={connectedAddr ? () => openProfile(connectedAddr) : undefined} />
+            <ConnectButton
+              onProfileClick={(addr) => {
+                const target = addr || connectedAddr
+                if (target) openProfile(target)
+              }}
+            />
           </div>
         </div>
 

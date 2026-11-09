@@ -1,12 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ConnectKitButton } from 'connectkit'
-import { usePrivy } from '@privy-io/react-auth'
+import { usePrivy, useWallets } from '@privy-io/react-auth'
+import { useSetActiveWallet } from '@privy-io/wagmi'
 import { useAccount, useDisconnect } from 'wagmi'
 import { WalletIcon } from './Icons'
 import { PRIVY_ENABLED } from '../config'
 
 interface ConnectButtonProps {
-  onProfileClick?: () => void
+  onProfileClick?: (addr?: `0x${string}`) => void
 }
 
 const pillClass =
@@ -15,23 +16,43 @@ const pillClass =
 /** Sign in with Google (auto-creates a wallet) or connect an existing wallet — powered by Privy. */
 function PrivyConnectButton({ onProfileClick }: ConnectButtonProps) {
   const { ready, authenticated, login, logout, user } = usePrivy()
+  const { wallets } = useWallets()
+  const { setActiveWallet } = useSetActiveWallet()
   const { address } = useAccount()
   const [menuOpen, setMenuOpen] = useState(false)
   const [copied, setCopied] = useState(false)
 
   const signedIn = ready && authenticated
+
+  // Fallback chain: wagmi address -> Privy primary wallet -> first linked wallet
+  const rawAddr = address || user?.wallet?.address || wallets[0]?.address
+  const activeAddress = rawAddr
+    ? (rawAddr.startsWith('0x') ? (rawAddr as `0x${string}`) : (`0x${rawAddr}` as `0x${string}`))
+    : undefined
+
+  // Sync active wallet with Wagmi connector
+  useEffect(() => {
+    if (ready && authenticated && wallets.length > 0 && !address) {
+      const embedded = wallets.find((w) => w.walletClientType === 'privy')
+      const target = embedded || wallets[0]
+      if (target) {
+        setActiveWallet(target).catch(() => {})
+      }
+    }
+  }, [ready, authenticated, wallets, address, setActiveWallet])
+
   const label = !ready
     ? '...'
     : !signedIn
       ? 'SIGN IN'
-      : address
-        ? `${address.slice(0, 6)}...${address.slice(-4)}`
+      : activeAddress
+        ? `${activeAddress.slice(0, 6)}...${activeAddress.slice(-4)}`
         : 'SETTING UP...'
 
   const copyAddress = async () => {
-    if (!address) return
+    if (!activeAddress) return
     try {
-      await navigator.clipboard.writeText(address)
+      await navigator.clipboard.writeText(activeAddress)
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)
     } catch {
@@ -70,7 +91,7 @@ function PrivyConnectButton({ onProfileClick }: ConnectButtonProps) {
               <button
                 onClick={() => {
                   setMenuOpen(false)
-                  onProfileClick()
+                  onProfileClick(activeAddress)
                 }}
                 className="w-full text-left text-[11px] uppercase tracking-widest rounded-xl border-[2px] border-[#111] px-3 py-2 mb-2 bg-[#FF3E9A] text-white hover:bg-[#FF3E9A]/90 transition-colors shadow-hard-sm cursor-pointer flex items-center justify-between"
               >
@@ -146,7 +167,7 @@ function LegacyConnectButton({ onProfileClick }: ConnectButtonProps) {
                     <button
                       onClick={() => {
                         setMenuOpen(false)
-                        onProfileClick()
+                        onProfileClick(address as `0x${string}`)
                       }}
                       className="w-full text-left text-[11px] uppercase tracking-widest rounded-xl border-[2px] border-[#111] px-3 py-2 mb-2 bg-[#FF3E9A] text-white hover:bg-[#FF3E9A]/90 transition-colors shadow-hard-sm cursor-pointer flex items-center justify-between"
                     >
