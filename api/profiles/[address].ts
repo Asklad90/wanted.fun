@@ -30,21 +30,53 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (getLimiter.isLimited(ip)) return res.status(429).json({ error: 'Too many requests' })
 
       const { rows } = await pool.sql`
-        SELECT bio, avatar_variant, twitter, github, website FROM profiles WHERE address = ${address}
+        SELECT bio, avatar_variant, twitter, github, website, created_at FROM profiles WHERE address = ${address}
       `
-      const row = rows[0] as {
+      let row = rows[0] as {
         bio: string | null
         avatar_variant: number
         twitter: string | null
         github: string | null
         website: string | null
+        created_at: number | string | null
       } | undefined
+
+      if (!row) {
+        // If profile row doesn't exist yet, find earliest activity on Want.fun (or fallback to now)
+        const { rows: subRows } = await pool.sql`
+          SELECT MIN(created_at) as earliest FROM submissions WHERE LOWER(submitter) = ${address}
+        `
+        const { rows: bountyRows } = await pool.sql`
+          SELECT MIN(created_at) as earliest FROM bounties WHERE LOWER(poster) = ${address}
+        `
+        const subEarliest = subRows[0]?.earliest ? Number(subRows[0].earliest) : null
+        const bountyEarliest = bountyRows[0]?.earliest ? Number(bountyRows[0].earliest) : null
+        const candidates = [subEarliest, bountyEarliest].filter((x): x is number => typeof x === 'number' && x > 0)
+        const earliestTs = candidates.length > 0 ? Math.min(...candidates) : Math.floor(Date.now() / 1000)
+
+        await pool.sql`
+          INSERT INTO profiles (address, created_at, updated_at)
+          VALUES (${address}, ${earliestTs}, ${earliestTs})
+          ON CONFLICT (address) DO NOTHING
+        `
+
+        row = {
+          bio: '',
+          avatar_variant: 0,
+          twitter: '',
+          github: '',
+          website: '',
+          created_at: earliestTs,
+        }
+      }
+
       return res.status(200).json({
-        bio: row?.bio ?? '',
-        avatar_variant: row?.avatar_variant ?? 0,
-        twitter: row?.twitter ?? '',
-        github: row?.github ?? '',
-        website: row?.website ?? '',
+        bio: row.bio ?? '',
+        avatar_variant: row.avatar_variant ?? 0,
+        twitter: row.twitter ?? '',
+        github: row.github ?? '',
+        website: row.website ?? '',
+        created_at: row.created_at ? Number(row.created_at) : Math.floor(Date.now() / 1000),
       })
     }
 
@@ -91,18 +123,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       let website = typeof body.website === 'string' ? body.website.trim() : ''
       if (website.length > 120) website = website.slice(0, 120)
 
-      await pool.sql`
-        INSERT INTO profiles (address, bio, avatar_variant, twitter, github, website)
-        VALUES (${address}, ${bio}, ${avatarVariant}, ${twitter}, ${github}, ${website})
+      const now = Math.floor(Date.now() / 1000)
+      const { rows: updatedRows } = await pool.sql`
+        INSERT INTO profiles (address, bio, avatar_variant, twitter, github, website, created_at, updated_at)
+        VALUES (${address}, ${bio}, ${avatarVariant}, ${twitter}, ${github}, ${website}, ${now}, ${now})
         ON CONFLICT (address) DO UPDATE SET
           bio = ${bio},
           avatar_variant = ${avatarVariant},
           twitter = ${twitter},
           github = ${github},
           website = ${website},
-          updated_at = EXTRACT(EPOCH FROM NOW())::BIGINT
+          updated_at = ${now}
+        RETURNING created_at
       `
-      return res.status(200).json({ ok: true, bio, avatar_variant: avatarVariant, twitter, github, website })
+      const createdAt = updatedRows[0]?.created_at ? Number(updatedRows[0].created_at) : now
+      return res.status(200).json({ ok: true, bio, avatar_variant: avatarVariant, twitter, github, website, created_at: createdAt })
     }
 
     return res.status(405).json({ error: 'Method not allowed' })

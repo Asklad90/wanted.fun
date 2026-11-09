@@ -237,6 +237,7 @@ export interface OffchainProfile {
   twitter?: string
   github?: string
   website?: string
+  created_at?: number
 }
 
 const PROFILE_DEFAULT: OffchainProfile = { bio: '', avatar_variant: 0, twitter: '', github: '', website: '' }
@@ -253,6 +254,7 @@ export async function fetchProfile(address: string): Promise<OffchainProfile> {
       twitter: data.twitter ?? '',
       github: data.github ?? '',
       website: data.website ?? '',
+      created_at: typeof data.created_at === 'number' ? data.created_at : undefined,
     }
   } catch {
     return PROFILE_DEFAULT

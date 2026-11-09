@@ -18,6 +18,7 @@ import {
   TrophyIcon,
   CoinIcon,
   CheckCircleIcon,
+  ClockIcon,
   XIcon,
   GithubIcon,
   GlobeIcon,
@@ -55,6 +56,16 @@ interface ProfilePageProps {
 }
 
 type ProfileTab = 'participating' | 'past' | 'posted'
+
+function formatJoinedDate(epochSec?: number): string {
+  if (!epochSec) return ''
+  const d = new Date(epochSec * 1000)
+  return d.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
 
 // ─── Copy button ──────────────────────────────────────────────────────────────
 function CopyButton({ text, label = 'Copy' }: { text: string; label?: string }) {
@@ -368,13 +379,14 @@ export function ProfilePage({ address, onBack, onSelectBounty, onCreateBounty, o
     })
     setSavingProfile(false)
     if (result.ok) {
-      setProfile({
+      setProfile(prev => ({
+        ...prev,
         bio: bioDraft.trim(),
         avatar_variant: avatarDraft,
         twitter: twitterDraft.trim() || undefined,
         github: githubDraft.trim() || undefined,
         website: websiteDraft.trim() || undefined,
-      })
+      }))
       setEditingProfile(false)
     } else {
       setProfileSaveErr(result.error ?? 'Could not save your profile. Please try again.')
@@ -649,7 +661,15 @@ export function ProfilePage({ address, onBack, onSelectBounty, onCreateBounty, o
                 </div>
               )}
 
-              <a href={getAddressUrl(address)} target="_blank" rel="noopener noreferrer" className="font-mono-bold text-[10px] uppercase tracking-widest text-[#1A1AE6] underline w-fit">Explorer →</a>
+              <div className="flex items-center gap-3 pt-0.5 flex-wrap">
+                {profile.created_at && (
+                  <span className="font-mono-ui text-[11px] text-[#111]/70 bg-white/70 border border-[#111]/15 rounded-md px-2 py-0.5 inline-flex items-center gap-1.5 shadow-sm">
+                    <ClockIcon size={12} className="text-[#111]/50" />
+                    User joined WANT.fun on {formatJoinedDate(profile.created_at)}
+                  </span>
+                )}
+                <a href={getAddressUrl(address)} target="_blank" rel="noopener noreferrer" className="font-mono-bold text-[10px] uppercase tracking-widest text-[#1A1AE6] underline w-fit">Explorer →</a>
+              </div>
             </div>
           </div>
 

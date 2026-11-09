@@ -105,6 +105,7 @@ export function ensureSchema(): Promise<void> {
           twitter TEXT,
           github TEXT,
           website TEXT,
+          created_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM NOW())::BIGINT,
           updated_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM NOW())::BIGINT
         )
       `
@@ -112,6 +113,7 @@ export function ensureSchema(): Promise<void> {
       await pool.sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS twitter TEXT`
       await pool.sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS github TEXT`
       await pool.sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS website TEXT`
+      await pool.sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS created_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM NOW())::BIGINT`
     })().catch((e) => {
       schemaReady = null // allow retry on next request
       throw e
