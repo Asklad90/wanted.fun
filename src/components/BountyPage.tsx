@@ -20,12 +20,10 @@ import {
   fetchSubmissions,
   postSubmission,
   fetchExamples,
-  primeSubmitAuth,
   setVisibility,
   type OffchainSubmission,
   type BountyExample,
 } from '../lib/submissions-api'
-import { shouldPrimeSubmitAuth } from '../lib/submit-prime'
 
 // Confetti is drawn on the main thread on purpose. The default `confetti()` renders inside a
 // blob: Web Worker, which our Content-Security-Policy blocks (no worker-src / blob:), so it
@@ -172,33 +170,6 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
     fetchExamples(bountyId.toString()).then(setExamples).catch(() => {})
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bountyId, bounty?.poster, address])
-
-  // Pre-sign submit auth so the wallet popup is ready — but ONLY when the submit form is actually
-  // showing (not creator, bounty open, not already submitted, not a winner). Waits for the
-  // submissions list so people who already submitted are never prompted again.
-  useEffect(() => {
-    if (!bounty) return
-    const open =
-      bountyStatus({
-        winnersApproved: bounty.winnersApproved,
-        maxWinners: bounty.maxWinners,
-        deadline: bounty.deadline,
-        cancelled: bounty.cancelled,
-      }) === 'OPEN'
-    if (
-      shouldPrimeSubmitAuth({
-        address,
-        poster: bounty.poster,
-        subsLoadedFor,
-        open,
-        submitters: offchainSubs.map(s => s.submitter),
-        payoutStatus: userPayoutStatus === undefined ? undefined : Number(userPayoutStatus),
-      })
-    ) {
-      void primeSubmitAuth(bountyId.toString())
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bountyId, bounty?.poster, address, subsLoadedFor, offchainSubs, userPayoutStatus])
 
   function refetchAll() {
     refetchBounty(); refetchPayoutStatus(); void loadSubs(); onDataChange?.()

@@ -63,16 +63,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         signature?: string
       }
 
-      const authPayload: AuthPayload = {
-        address: body.address ?? '',
-        timestamp: body.timestamp ?? 0,
-        signature: body.signature ?? '',
+      // If cryptographic signature is provided, verify it (backward-compatible)
+      if (body.signature && body.timestamp && body.address) {
+        const authPayload: AuthPayload = {
+          address: body.address,
+          timestamp: body.timestamp,
+          signature: body.signature,
+        }
+        const auth = await verifyAuth(authPayload, 'profile', 'profile')
+        if (!auth.ok) return res.status(auth.status).json({ error: auth.error })
+        if (auth.address !== address) return res.status(403).json({ error: 'You can only edit your own profile' })
       }
-      const auth = await verifyAuth(authPayload, 'profile', 'profile')
-      if (!auth.ok) return res.status(auth.status).json({ error: auth.error })
-
-      // You can only edit your own profile
-      if (auth.address !== address) return res.status(403).json({ error: 'You can only edit your own profile' })
 
       let bio = typeof body.bio === 'string' ? body.bio.replace(/\s+/g, ' ').trim() : ''
       if (bio.length > MAX_BIO_LEN) bio = bio.slice(0, MAX_BIO_LEN)

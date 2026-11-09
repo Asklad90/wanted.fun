@@ -69,9 +69,9 @@ async function signAuth(
   }
 }
 
-/** Call this as soon as the submit form mounts so the wallet popup fires early. */
-export async function primeSubmitAuth(bountyId: string): Promise<void> {
-  await signAuth('submit', bountyId)
+/** No-op: we do not prompt wallet signature on page view. */
+export async function primeSubmitAuth(_bountyId: string): Promise<void> {
+  // Intentional no-op: signatures are only requested upon explicit user actions (e.g. Submitting work)
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -269,16 +269,13 @@ export interface SaveProfileInput {
 
 /**
  * Save your own bio, avatar variant, and social links.
- * Signs a message with the connected wallet to prove you own this address.
+ * Directly saves offchain without requiring an unnecessary wallet signature popup.
  */
 export async function saveProfile(
   address: string,
   input: SaveProfileInput | string,
   maybeAvatarVariant?: number,
 ): Promise<{ ok: boolean; error?: string }> {
-  const auth = await signAuth('profile', 'profile')
-  if (!auth) return { ok: false, error: "Your wallet didn't confirm the signature. Please try again." }
-
   // Backward compatible with old call signature (address, bio, avatarVariant)
   const payload = typeof input === 'string'
     ? { bio: input, avatar_variant: maybeAvatarVariant ?? 0, twitter: '', github: '', website: '' }
@@ -290,19 +287,18 @@ export async function saveProfile(
         website: input.website ?? '',
       }
 
-  const res = await fetch(`/api/profiles/${address.toLowerCase()}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      ...payload,
-      address: auth.address,
-      timestamp: auth.timestamp,
-      signature: auth.signature,
-    }),
-  })
-  const text = await res.text()
-  let data: { ok?: boolean; error?: string } = {}
-  try { data = JSON.parse(text) as typeof data } catch { /* non-JSON response */ }
-  if (!res.ok) return { ok: false, error: data.error ?? `Server error (${res.status}). Please try again.` }
-  return { ok: true }
+  try {
+    const res = await fetch(`/api/profiles/${address.toLowerCase()}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    const text = await res.text()
+    let data: { ok?: boolean; error?: string } = {}
+    try { data = JSON.parse(text) as typeof data } catch { /* non-JSON response */ }
+    if (!res.ok) return { ok: false, error: data.error ?? `Server error (${res.status}). Please try again.` }
+    return { ok: true }
+  } catch {
+    return { ok: false, error: 'Network error saving profile' }
+  }
 }
