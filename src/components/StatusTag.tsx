@@ -11,9 +11,14 @@ export function StatusTag({ status }: { status: Status }) {
   const { bg, label } = STATUS_STYLES[status]
   return (
     <span
-      className="font-mono-bold text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full border-2 border-[#111]"
+      className="font-mono-bold text-[10px] sm:text-[11px] uppercase tracking-wider px-2.5 py-0.5 rounded-full border-2 border-[#111] inline-flex items-center gap-1 shrink-0 text-[#111]"
       style={{ backgroundColor: bg }}
     >
+      {status === 'OPEN' && (
+        <svg className="w-3 h-3 fill-current shrink-0" viewBox="0 0 24 24">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+        </svg>
+      )}
       {label}
     </span>
   )

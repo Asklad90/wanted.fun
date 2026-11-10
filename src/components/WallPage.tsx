@@ -192,12 +192,7 @@ function BountyItem({ bountyId, index, onSelect, filter, query, onReport }: Boun
       whileHover={{ y: -3, transition: { duration: 0.15 } }}
       whileTap={{ scale: 0.98, transition: { duration: 0.1 } }}
     >
-      <div className="desk:hidden h-full">
-        <BountyCard bounty={bounty} onClick={() => onSelect(bountyId)} />
-      </div>
-      <div className="hidden desk:block h-full">
-        <WallBountyCard bounty={bounty} onClick={() => onSelect(bountyId)} />
-      </div>
+      <BountyCard bounty={bounty} onClick={() => onSelect(bountyId)} index={index} />
     </motion.div>
   )
 }

@@ -462,16 +462,25 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
       <div className="flex flex-col gap-5 min-w-0">
 
       {/* Main bounty window */}
-      <WindowCard title={`BOUNTY_${String(idNum).padStart(3, '0')}.EXE`} titleBarColor={barColor(idNum)} bodyClassName="flex flex-col gap-4">
+      <WindowCard
+        title={`BOUNTY_${String(idNum).padStart(3, '0')}.EXE`}
+        titleBarColor={barColor(idNum)}
+        showStarBadge={true}
+        showGlassSweep={true}
+        bodyClassName="flex flex-col gap-4"
+      >
         <div className="flex items-center justify-between flex-wrap gap-2">
           <StatusTag status={status} />
-          <div className="flex items-center gap-1.5 text-[#111]/60">
-            <ClockIcon size={13} />
-            <span className="font-mono-bold text-[10px] uppercase tracking-wider">{timeLeft(bounty.deadline)}</span>
+          <div className="flex items-center gap-1.5 text-[#111]">
+            <ClockIcon size={14} className="text-[#111]" />
+            <span className="font-mono-bold text-[11px] sm:text-[12px] uppercase tracking-wider">{timeLeft(bounty.deadline)}</span>
           </div>
         </div>
 
-        <h1 className="font-heading text-[26px] font-extrabold leading-tight text-[#111]">{titleStr}</h1>
+        <div>
+          <h1 className="font-heading text-[28px] sm:text-[32px] font-black leading-tight text-[#111]">{titleStr}</h1>
+          <div className="w-20 sm:w-24 h-1.5 bg-[#C6F23A] rounded-full mt-2" />
+        </div>
         <p className="font-body text-[14px] leading-relaxed text-[#111]/80 whitespace-pre-wrap">{linkify(descStr)}</p>
 
         {/* Inline preview of the first attachment, with a button to view them all */}
@@ -480,7 +489,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
             <button
               type="button"
               onClick={() => setShowAttachments(true)}
-              className="relative self-start border-[3px] border-[#111] rounded-lg overflow-hidden shadow-hard-sm btn-press"
+              className="relative self-start border-[3px] border-[#111] rounded-lg overflow-hidden shadow-hard-sm btn-press cursor-pointer"
             >
               {examples[0].content.startsWith('data:video') ? (
                 // eslint-disable-next-line jsx-a11y/media-has-caption
@@ -496,7 +505,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
               <button
                 type="button"
                 onClick={() => setShowAttachments(true)}
-                className="self-start font-mono-bold text-[10px] uppercase tracking-widest text-[#1A1AE6] underline"
+                className="self-start font-mono-bold text-[10px] uppercase tracking-widest text-[#1A1AE6] underline cursor-pointer"
               >
                 View all {examples.length} attachments →
               </button>
@@ -504,52 +513,152 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
           </div>
         )}
 
-        {/* Stats grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="border-[3px] border-[#111] rounded-lg p-3 bg-[#FFE600]/30 flex flex-col gap-1">
-            <CoinIcon size={14} />
-            <div className="font-heading text-[20px] font-extrabold tabular-nums">{formatUsdc(bounty.rewardPerWinner)}</div>
-            <div className="font-mono-ui text-[10px] uppercase tracking-wider text-[#111]/60">USDC / winner</div>
+        {/* 2x2 or 4-col Stat Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          {/* Box 1: USDC / WINNER */}
+          <div className="border-2 border-[#111] rounded-xl p-3 bg-[#EAFCDA] flex flex-col justify-between gap-1 shadow-xs">
+            <div className="flex items-center">
+              <CoinIcon size={18} />
+            </div>
+            <div>
+              <div className="font-heading text-[20px] sm:text-[22px] font-black leading-none text-[#111] tabular-nums">
+                {formatUsdc(bounty.rewardPerWinner)}
+              </div>
+              <div className="font-mono-bold text-[9px] uppercase tracking-wider text-[#111]/70 mt-1">
+                USDC / WINNER
+              </div>
+            </div>
           </div>
-          <div className="border-[3px] border-[#111] rounded-lg p-3 bg-[#A78BFA]/30 flex flex-col gap-1">
-            <ClockIcon size={14} />
-            <div className="font-heading text-[18px] font-extrabold">{timeLeft(bounty.deadline)}</div>
-            <div className="font-mono-ui text-[10px] uppercase tracking-wider text-[#111]/60">Deadline</div>
+
+          {/* Box 2: DEADLINE */}
+          <div className="border-2 border-[#111] rounded-xl p-3 bg-[#EDE4FF] flex flex-col justify-between gap-1 shadow-xs">
+            <div className="flex items-center">
+              <ClockIcon size={16} className="text-[#111]" />
+            </div>
+            <div>
+              <div className="font-heading text-[18px] sm:text-[20px] font-black leading-none text-[#111] truncate">
+                {timeLeft(bounty.deadline)}
+              </div>
+              <div className="font-mono-bold text-[9px] uppercase tracking-wider text-[#111]/70 mt-1">
+                DEADLINE
+              </div>
+            </div>
           </div>
-          <div className="border-[3px] border-[#111] rounded-lg p-3 bg-[#C6F23A]/30 flex flex-col gap-1">
-            <FolderIcon size={14} />
-            <div className="font-heading text-[20px] font-extrabold tabular-nums">{offchainSubs.length}</div>
-            <div className="font-mono-ui text-[10px] uppercase tracking-wider text-[#111]/60">Submissions</div>
+
+          {/* Box 3: SUBMISSIONS */}
+          <div className="border-2 border-[#111] rounded-xl p-3 bg-[#FFF6E0] flex flex-col justify-between gap-1 shadow-xs">
+            <div className="flex items-center">
+              <FolderIcon size={16} />
+            </div>
+            <div>
+              <div className="font-heading text-[20px] sm:text-[22px] font-black leading-none text-[#111] tabular-nums">
+                {offchainSubs.length}
+              </div>
+              <div className="font-mono-bold text-[9px] uppercase tracking-wider text-[#111]/70 mt-1">
+                SUBMISSIONS
+              </div>
+            </div>
           </div>
-          <div className="border-[3px] border-[#111] rounded-lg p-3 bg-[#7FF3F0]/30 flex flex-col gap-1">
-            <LockIcon size={14} />
-            <div className="font-heading text-[15px] font-extrabold leading-tight">{bounty.escrowRemaining > 0n ? 'In escrow' : 'Paid out'}</div>
-            <div className="font-mono-ui text-[10px] uppercase tracking-wider text-[#111]/60">Payment</div>
+
+          {/* Box 4: PAYMENT */}
+          <div className="border-2 border-[#111] rounded-xl p-3 bg-[#D4FAF5] flex flex-col justify-between gap-1 shadow-xs">
+            <div className="flex items-center">
+              <LockIcon size={16} className="text-[#111]" />
+            </div>
+            <div>
+              <div className="font-heading text-[16px] sm:text-[18px] font-black leading-none text-[#111] truncate">
+                {bounty.escrowRemaining > 0n ? 'in escrow' : 'paid out'}
+              </div>
+              <div className="font-mono-bold text-[9px] uppercase tracking-wider text-[#111]/70 mt-1">
+                PAYMENT
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Escrow panel */}
-        <div className="border-[3px] border-[#111] rounded-lg p-3 bg-[#C6F23A]/20 flex flex-col gap-1.5">
-          <div className="flex items-center gap-1.5">
-            <LockIcon size={14} className="text-[#111]" />
-            <span className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111]">Escrow</span>
+        <div className="border-2 border-[#111] rounded-xl p-3 bg-gradient-to-r from-[#E6FCD2] via-[#E8FCD8] to-[#DEFBAE] relative overflow-hidden">
+          <div
+            className="absolute right-0 top-0 bottom-0 w-2/5 opacity-20 pointer-events-none"
+            style={{
+              backgroundImage: 'radial-gradient(#111 1.5px, transparent 1.5px)',
+              backgroundSize: '6px 6px',
+            }}
+          />
+          <div className="flex items-center gap-1.5 mb-2 relative z-1">
+            <LockIcon size={13} className="text-[#111]" />
+            <span className="font-mono-bold text-[10px] uppercase tracking-wider text-[#111]">ESCROW</span>
           </div>
-          <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center relative z-1">
             <div className="flex flex-col">
-              <span className="font-mono-bold text-[10px] uppercase text-[#111]/50">Locked</span>
-              <span className="font-heading text-[18px] font-extrabold tabular-nums text-[#111]">{formatUsdc(bounty.escrowRemaining)} USDC</span>
+              <span className="font-mono-bold text-[9px] uppercase tracking-wider text-[#111]/60">LOCKED</span>
+              <span className="font-heading text-[16px] sm:text-[18px] font-black tabular-nums text-[#111]">
+                {formatUsdc(bounty.escrowRemaining)} USDC
+              </span>
             </div>
+            <div className="w-[1px] h-7 bg-[#111]/20 mx-3" />
             <div className="flex flex-col">
-              <span className="font-mono-bold text-[10px] uppercase text-[#111]/50">Paid out</span>
-              <span className="font-heading text-[18px] font-extrabold tabular-nums text-[#111]">{formatUsdc(paidOut)} USDC</span>
+              <span className="font-mono-bold text-[9px] uppercase tracking-wider text-[#111]/60">PAID OUT</span>
+              <span className="font-heading text-[16px] sm:text-[18px] font-black tabular-nums text-[#111]">
+                {formatUsdc(paidOut)} USDC
+              </span>
             </div>
           </div>
         </div>
 
-        <LoadingBar current={Number(bounty.winnersApproved)} max={Number(bounty.maxWinners)} label={`Winners ${bounty.winnersApproved}/${bounty.maxWinners}`} color="#FF3E9A" />
+        {/* Winners Segmented Bar */}
+        <div>
+          <div className="font-mono-bold text-[10px] uppercase tracking-wider text-[#111] mb-1.5">
+            WINNERS {Number(bounty.winnersApproved)}/{Number(bounty.maxWinners)}
+          </div>
+          {Number(bounty.maxWinners) <= 12 ? (
+            <div className="flex gap-1.5">
+              {Array.from({ length: Number(bounty.maxWinners) }, (_, i) => {
+                const isFilled = i < Number(bounty.winnersApproved)
+                return (
+                  <div
+                    key={i}
+                    className={`h-4 flex-1 border-2 border-[#111] rounded-full transition-all ${
+                      isFilled ? 'bg-[#FF2E93]' : 'bg-white'
+                    }`}
+                  />
+                )
+              })}
+            </div>
+          ) : (
+            <div className="h-4 w-full border-2 border-[#111] rounded-full bg-white overflow-hidden p-0.5">
+              <div
+                className="h-full bg-[#FF2E93] rounded-full transition-all duration-500"
+                style={{
+                  width: `${Number(bounty.maxWinners) > 0 ? Math.min(100, (Number(bounty.winnersApproved) / Number(bounty.maxWinners)) * 100) : 0}%`,
+                }}
+              />
+            </div>
+          )}
+        </div>
 
-        <div className="font-mono-ui text-[11px] text-[#111]/50">
-          Posted by <a href={`#/profile/${bounty.poster}`} className="text-[#1A1AE6] font-mono-bold hover:underline cursor-pointer">{formatAddress(bounty.poster)}</a>
+        <div className="flex items-center justify-between text-[#111]/75 font-mono-ui text-[11px] pt-1 border-t border-[#111]/10">
+          <span className="inline-flex items-center gap-1">
+            <span>Posted by</span>
+            <a
+              href={`#/profile/${bounty.poster}`}
+              className="text-[#111] font-mono-bold underline underline-offset-2 hover:text-[#1A1AE6] cursor-pointer"
+            >
+              {formatAddress(bounty.poster)}
+            </a>
+            <svg
+              className="w-3 h-3 text-[#111]/80 inline-block ml-0.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="7" y1="17" x2="17" y2="7" />
+              <polyline points="7 7 17 7 17 17" />
+            </svg>
+          </span>
         </div>
       </WindowCard>
 
