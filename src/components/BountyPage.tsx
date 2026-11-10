@@ -465,8 +465,6 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
       <WindowCard
         title={`BOUNTY_${String(idNum).padStart(3, '0')}.EXE`}
         titleBarColor={barColor(idNum)}
-        showStarBadge={true}
-        showGlassSweep={true}
         bodyClassName="flex flex-col gap-4"
       >
         <div className="flex items-center justify-between flex-wrap gap-2">
@@ -513,14 +511,17 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
           </div>
         )}
 
-        {/* 2x2 or 4-col Stat Grid */}
+        {/* 2x2 or 4-col Stat Grid with Glass Light Sweep on each box */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
           {/* Box 1: USDC / WINNER */}
-          <div className="border-2 border-[#111] rounded-xl p-3 bg-[#EAFCDA] flex flex-col justify-between gap-1 shadow-xs">
-            <div className="flex items-center">
+          <div className="relative overflow-hidden border-2 border-[#111] rounded-xl p-3 bg-[#EAFCDA] flex flex-col justify-between gap-1 shadow-xs">
+            <div className="bounty-glass-shine" aria-hidden="true">
+              <div className="bounty-glass-beam" style={{ animationDelay: '0s' }} />
+            </div>
+            <div className="flex items-center relative z-1">
               <CoinIcon size={18} />
             </div>
-            <div>
+            <div className="relative z-1">
               <div className="font-heading text-[20px] sm:text-[22px] font-black leading-none text-[#111] tabular-nums">
                 {formatUsdc(bounty.rewardPerWinner)}
               </div>
@@ -531,11 +532,14 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
           </div>
 
           {/* Box 2: DEADLINE */}
-          <div className="border-2 border-[#111] rounded-xl p-3 bg-[#EDE4FF] flex flex-col justify-between gap-1 shadow-xs">
-            <div className="flex items-center">
+          <div className="relative overflow-hidden border-2 border-[#111] rounded-xl p-3 bg-[#EDE4FF] flex flex-col justify-between gap-1 shadow-xs">
+            <div className="bounty-glass-shine" aria-hidden="true">
+              <div className="bounty-glass-beam" style={{ animationDelay: '0.8s' }} />
+            </div>
+            <div className="flex items-center relative z-1">
               <ClockIcon size={16} className="text-[#111]" />
             </div>
-            <div>
+            <div className="relative z-1">
               <div className="font-heading text-[18px] sm:text-[20px] font-black leading-none text-[#111] truncate">
                 {timeLeft(bounty.deadline)}
               </div>
@@ -546,11 +550,14 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
           </div>
 
           {/* Box 3: SUBMISSIONS */}
-          <div className="border-2 border-[#111] rounded-xl p-3 bg-[#FFF6E0] flex flex-col justify-between gap-1 shadow-xs">
-            <div className="flex items-center">
+          <div className="relative overflow-hidden border-2 border-[#111] rounded-xl p-3 bg-[#FFF6E0] flex flex-col justify-between gap-1 shadow-xs">
+            <div className="bounty-glass-shine" aria-hidden="true">
+              <div className="bounty-glass-beam" style={{ animationDelay: '1.6s' }} />
+            </div>
+            <div className="flex items-center relative z-1">
               <FolderIcon size={16} />
             </div>
-            <div>
+            <div className="relative z-1">
               <div className="font-heading text-[20px] sm:text-[22px] font-black leading-none text-[#111] tabular-nums">
                 {offchainSubs.length}
               </div>
@@ -560,12 +567,15 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
             </div>
           </div>
 
-          {/* Box 4: PAYMENT */}
-          <div className="border-2 border-[#111] rounded-xl p-3 bg-[#D4FAF5] flex flex-col justify-between gap-1 shadow-xs">
-            <div className="flex items-center">
+          {/* Box 4: PAYMENT / ESCROW */}
+          <div className="relative overflow-hidden border-2 border-[#111] rounded-xl p-3 bg-[#D4FAF5] flex flex-col justify-between gap-1 shadow-xs">
+            <div className="bounty-glass-shine" aria-hidden="true">
+              <div className="bounty-glass-beam" style={{ animationDelay: '2.4s' }} />
+            </div>
+            <div className="flex items-center relative z-1">
               <LockIcon size={16} className="text-[#111]" />
             </div>
-            <div>
+            <div className="relative z-1">
               <div className="font-heading text-[16px] sm:text-[18px] font-black leading-none text-[#111] truncate">
                 {bounty.escrowRemaining > 0n ? 'in escrow' : 'paid out'}
               </div>
@@ -577,7 +587,10 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
         </div>
 
         {/* Escrow panel */}
-        <div className="border-2 border-[#111] rounded-xl p-3 bg-gradient-to-r from-[#E6FCD2] via-[#E8FCD8] to-[#DEFBAE] relative overflow-hidden">
+        <div className="relative overflow-hidden border-2 border-[#111] rounded-xl p-3 bg-gradient-to-r from-[#E6FCD2] via-[#E8FCD8] to-[#DEFBAE]">
+          <div className="bounty-glass-shine" aria-hidden="true">
+            <div className="bounty-glass-beam" style={{ animationDelay: '3.2s' }} />
+          </div>
           <div
             className="absolute right-0 top-0 bottom-0 w-2/5 opacity-20 pointer-events-none"
             style={{

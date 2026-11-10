@@ -97,53 +97,53 @@ body::before {
   .skeleton-shimmer { animation: none; background: #e8e6d8; }
 }
 
-/* ── Premium Futuristic Glass Light Beam Sweep ── */
+/* ── Premium Futuristic Glass Light Beam Sweep (for Stat Cards) ── */
 .bounty-glass-shine {
   position: absolute;
   inset: 0;
   overflow: hidden;
   border-radius: inherit;
   pointer-events: none;
-  z-index: 25;
+  z-index: 10;
 }
 
 .bounty-glass-beam {
   position: absolute;
-  top: -100%;
-  bottom: -100%;
+  top: -120%;
+  bottom: -120%;
   left: -120%;
-  width: 90px;
+  width: 50px;
   /* Thin, bright white glowing center with soft cyan glow bloom and subtle motion blur */
   background: linear-gradient(
     90deg,
     rgba(255, 255, 255, 0) 0%,
     rgba(127, 243, 240, 0.04) 20%,
-    rgba(127, 243, 240, 0.18) 35%,
-    rgba(220, 252, 255, 0.6) 46%,
-    rgba(255, 255, 255, 0.95) 50%,
-    rgba(220, 252, 255, 0.6) 54%,
-    rgba(127, 243, 240, 0.18) 65%,
+    rgba(127, 243, 240, 0.22) 36%,
+    rgba(220, 252, 255, 0.7) 46%,
+    rgba(255, 255, 255, 0.98) 50%,
+    rgba(220, 252, 255, 0.7) 54%,
+    rgba(127, 243, 240, 0.22) 64%,
     rgba(127, 243, 240, 0.04) 80%,
     rgba(255, 255, 255, 0) 100%
   );
-  box-shadow: 0 0 16px 4px rgba(127, 243, 240, 0.35);
+  box-shadow: 0 0 12px 3px rgba(127, 243, 240, 0.35);
   filter: blur(0.75px);
   will-change: transform, opacity;
-  animation: beamDiagonalSweep 4.5s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
+  animation: beamDiagonalSweep 4s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
 }
 
 @keyframes beamDiagonalSweep {
   0% {
-    transform: rotate(26deg) translate3d(-120%, 0, 0);
+    transform: rotate(26deg) translate3d(-150%, 0, 0);
     opacity: 0;
   }
-  10% {
+  12% {
     opacity: 0.95;
   }
   50% {
     opacity: 0.95;
   }
-  62% {
+  65% {
     transform: rotate(26deg) translate3d(700%, 0, 0);
     opacity: 0;
   }
