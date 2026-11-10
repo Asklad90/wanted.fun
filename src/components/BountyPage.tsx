@@ -539,8 +539,8 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
           {/* Box 2: DEADLINE (Top-Right) */}
           <div className="relative overflow-hidden border-[2.5px] border-[#111] rounded-2xl p-4 bg-black flex flex-col justify-between min-h-[96px] shadow-sm">
             <div className="bounty-glass-shine" aria-hidden="true">
-              <div className="bounty-glass-beam-bloom" style={{ animationDelay: '1.2s' }} />
-              <div className="bounty-glass-beam" style={{ animationDelay: '1.2s' }} />
+              <div className="bounty-glass-beam-bloom" style={{ animationDelay: '0.7s' }} />
+              <div className="bounty-glass-beam" style={{ animationDelay: '0.7s' }} />
             </div>
             <div className="flex items-center relative z-1">
               <ClockIcon size={22} className="text-[#A3E635]" />
@@ -558,8 +558,8 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
           {/* Box 3: SUBMISSIONS (Bottom-Left) */}
           <div className="relative overflow-hidden border-[2.5px] border-[#111] rounded-2xl p-4 bg-black flex flex-col justify-between min-h-[96px] shadow-sm">
             <div className="bounty-glass-shine" aria-hidden="true">
-              <div className="bounty-glass-beam-bloom" style={{ animationDelay: '2.4s' }} />
-              <div className="bounty-glass-beam" style={{ animationDelay: '2.4s' }} />
+              <div className="bounty-glass-beam-bloom" style={{ animationDelay: '1.4s' }} />
+              <div className="bounty-glass-beam" style={{ animationDelay: '1.4s' }} />
             </div>
             <div className="flex items-center relative z-1">
               <FolderIcon size={22} className="text-[#A3E635]" />
@@ -577,8 +577,8 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
           {/* Box 4: WINNERS (Bottom-Right) */}
           <div className="relative overflow-hidden border-[2.5px] border-[#111] rounded-2xl p-4 bg-black flex flex-col justify-between min-h-[96px] shadow-sm">
             <div className="bounty-glass-shine" aria-hidden="true">
-              <div className="bounty-glass-beam-bloom" style={{ animationDelay: '3.6s' }} />
-              <div className="bounty-glass-beam" style={{ animationDelay: '3.6s' }} />
+              <div className="bounty-glass-beam-bloom" style={{ animationDelay: '2.1s' }} />
+              <div className="bounty-glass-beam" style={{ animationDelay: '2.1s' }} />
             </div>
             <div className="flex items-center relative z-1">
               <LockIcon size={22} className="text-[#A3E635]" />
@@ -1047,6 +1047,16 @@ interface OffchainSubmissionListProps {
   onToggleVisibility?: () => void
 }
 
+function formatTimeAgo(epochSec?: number): string {
+  if (!epochSec) return ''
+  const diff = Math.floor(Date.now() / 1000) - Number(epochSec)
+  if (diff < 60) return 'just now'
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
+  if (diff < 86400 * 7) return `${Math.floor(diff / 86400)}d ago`
+  return new Date(epochSec * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
 function OffchainSubmissionList({
   submissions,
   bountyId,
@@ -1065,31 +1075,41 @@ function OffchainSubmissionList({
       ? 'SUBMISSIONS.EXE (PRIVATE)'
       : `SUBMISSIONS.EXE (${submissions.length})`
 
-  const PAGE = 5
-  const [visibleCount, setVisibleCount] = useState(PAGE)
-  const visibleSubs = submissions.slice(0, visibleCount)
-  const hasMore = submissions.length > visibleCount
-
   return (
     <WindowCard title={title} titleBarColor={isPrivateForViewer ? '#CCCCCC' : '#7FF3F0'}>
-      {/* Visibility toggle (poster only) */}
-      {isPoster && onToggleVisibility && (
-        <div className="flex items-center justify-between mb-3 pb-3 border-b-[2px] border-[#111]/20">
-          <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/60">
-            Submissions are <strong>{isPublic ? 'public' : 'private'}</strong>
+      {/* Comment Section Header Toolbar */}
+      <div className="flex items-center justify-between pb-3 mb-3 border-b-[2px] border-[#111]/15 gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] animate-pulse" />
+          <span className="font-mono-bold text-[11px] uppercase tracking-wider text-[#111]">
+            {submissions.length} {submissions.length === 1 ? 'Submission' : 'Submissions'}
           </span>
-          <button
-            onClick={onToggleVisibility}
-            className="font-mono-bold text-[10px] uppercase tracking-widest border-[2px] border-[#111] rounded-full px-3 py-1 transition-colors btn-press"
-            style={{
-              backgroundColor: isPublic ? '#1A1AE6' : '#FFFDF0',
-              color: isPublic ? '#fff' : '#111',
-            }}
-          >
-            {isPublic ? 'Make private' : 'Make public'}
-          </button>
+          {submissions.length > 0 && (
+            <span className="font-mono-ui text-[10px] text-[#111]/40 hidden sm:inline">
+              · Scroll feed
+            </span>
+          )}
         </div>
-      )}
+
+        {/* Visibility toggle (creator only) */}
+        {isPoster && onToggleVisibility && (
+          <div className="flex items-center gap-2 ml-auto">
+            <span className="font-mono-ui text-[10px] text-[#111]/60 hidden sm:inline">
+              Visibility: <strong>{isPublic ? 'Public' : 'Private'}</strong>
+            </span>
+            <button
+              onClick={onToggleVisibility}
+              className="font-mono-bold text-[10px] uppercase tracking-wider border-[2px] border-[#111] rounded-full px-3 py-1 transition-colors btn-press cursor-pointer"
+              style={{
+                backgroundColor: isPublic ? '#1A1AE6' : '#FFFDF0',
+                color: isPublic ? '#fff' : '#111',
+              }}
+            >
+              {isPublic ? 'Make private' : 'Make public'}
+            </button>
+          </div>
+        )}
+      </div>
 
       {loading ? (
         <div className="py-12 flex flex-col items-center gap-3">
@@ -1097,7 +1117,7 @@ function OffchainSubmissionList({
           <span className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111]/40">Loading submissions…</span>
         </div>
       ) : isPrivateForViewer ? (
-        <div className="checkerboard rounded-lg py-10 flex flex-col items-center gap-3 text-center px-4">
+        <div className="checkerboard rounded-xl py-10 flex flex-col items-center gap-3 text-center px-4">
           <LockIcon size={36} />
           <div className="font-mono-bold text-[12px] uppercase tracking-widest text-[#111]">
             The submissions for this bounty are private
@@ -1107,13 +1127,17 @@ function OffchainSubmissionList({
           </p>
         </div>
       ) : submissions.length === 0 ? (
-        <div className="checkerboard rounded-lg py-10 flex flex-col items-center gap-3">
+        <div className="checkerboard rounded-xl py-10 flex flex-col items-center gap-3 text-center px-4">
           <FolderIcon size={36} />
           <div className="font-mono-bold text-[12px] uppercase tracking-widest text-[#111]/50">No submissions yet</div>
+          <p className="font-mono-ui text-[11px] text-[#111]/60 max-w-xs">
+            Be the first hunter to submit proof of work and claim the bounty!
+          </p>
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
-          {visibleSubs.map(sub => (
+        /* Self-contained scrollable comment stream */
+        <div className="max-h-[520px] sm:max-h-[580px] overflow-y-auto overscroll-contain submissions-scroll pr-1.5 flex flex-col gap-3">
+          {submissions.map(sub => (
             <SingleOffchainSubmission
               key={sub.id}
               sub={sub}
@@ -1124,14 +1148,6 @@ function OffchainSubmissionList({
               onApproved={onApproved}
             />
           ))}
-          {hasMore && (
-            <button
-              onClick={() => setVisibleCount(c => c + PAGE)}
-              className="w-full py-2.5 font-mono-bold text-[11px] uppercase tracking-widest border-[2px] border-[#111]/20 rounded-xl text-[#111]/50 hover:border-[#111]/50 hover:text-[#111] hover:bg-[#FFFDF0] transition-all"
-            >
-              Show more ({submissions.length - visibleCount} remaining) ↓
-            </button>
-          )}
         </div>
       )}
     </WindowCard>
@@ -1183,53 +1199,80 @@ function SingleOffchainSubmission({ sub, bountyId, isPoster, rewardPerWinner, ca
 
   return (
     <>
-      <div className={`group border-[2px] border-[#111]/15 rounded-2xl overflow-hidden transition-all duration-200 hover:border-[#111]/40 hover:shadow-md ${isWinner ? 'bg-gradient-to-br from-[#C6F23A]/10 to-[#A3E635]/5 border-[#A3E635]/40' : 'bg-white'}`}>
-        {/* Header bar */}
-        <div className={`flex items-center justify-between gap-2 px-4 py-2.5 border-b-[2px] ${isWinner ? 'border-[#A3E635]/30 bg-[#C6F23A]/20' : 'border-[#111]/8 bg-[#FAFAFA]'}`}>
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="font-mono-bold text-[10px] text-[#111]/40 shrink-0">#{String(sub.id).padStart(2, '0')}</span>
-            <a href={`#/profile/${sub.submitter}`} className="font-mono-bold text-[11px] text-[#1A1AE6] hover:underline truncate">
-              {shortAddr}
-            </a>
-            {sub.created_at && (
-              <span className="font-mono-ui text-[9px] text-[#111]/30 hidden sm:inline">
-                · {new Date(Number(sub.created_at) * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-              </span>
-            )}
+      <div className={`border-[2px] border-[#111]/15 rounded-2xl p-3.5 transition-all duration-150 hover:border-[#111]/35 hover:shadow-xs ${isWinner ? 'bg-gradient-to-br from-[#C6F23A]/12 to-[#A3E635]/5 border-[#A3E635]/40' : 'bg-white'}`}>
+        {/* Author / Comment Row with Avatar */}
+        <div className="flex items-start gap-3">
+          <div className="border-[2px] border-[#111] rounded-xl overflow-hidden shrink-0 shadow-xs mt-0.5 bg-[#FFFDF0]">
+            <PixelAvatar address={sub.submitter} size={34} />
           </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            {isPaid && (
-              <span className="font-mono-bold text-[9px] uppercase bg-[#C6F23A] border border-[#A3E635] px-2 py-0.5 rounded-full text-[#111]">✓ Paid {formatUsdc(rewardPerWinner)}</span>
-            )}
-            {isPending && (
-              <span className="font-mono-bold text-[9px] uppercase bg-[#FFE600] border border-[#EAD000] px-2 py-0.5 rounded-full text-[#111]">Payout pending</span>
-            )}
-            {!isWinner && isPoster && canApprove && (
-              <PillButton size="sm" variant="lime" onClick={handleApprove} loading={approvePending || approveConfirming} disabled={approveSuccess} showArrow={false}>
-                Approve & pay →
-              </PillButton>
-            )}
-            {canExpand && (
-              <button
-                onClick={() => setExpanded(true)}
-                className="w-6 h-6 rounded-lg border-[1.5px] border-[#111]/20 bg-white hover:bg-[#A78BFA]/20 flex items-center justify-center font-mono-bold text-[9px] transition-colors"
-                aria-label="Expand submission"
-                title="View full submission"
-              >⤢</button>
+
+          <div className="flex-1 min-w-0">
+            {/* Header info */}
+            <div className="flex items-center justify-between gap-2 flex-wrap mb-1.5">
+              <div className="flex items-center gap-2 flex-wrap min-w-0">
+                <a
+                  href={`#/profile/${sub.submitter}`}
+                  className="font-heading font-black text-[13px] text-[#111] hover:text-[#1A1AE6] hover:underline truncate"
+                >
+                  {shortAddr}
+                </a>
+                {isOwnSub && (
+                  <span className="font-mono-bold text-[8.5px] uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-[#1A1AE6]/10 text-[#1A1AE6] border border-[#1A1AE6]/20">
+                    You
+                  </span>
+                )}
+                {sub.created_at && (
+                  <span className="font-mono-ui text-[10px] text-[#111]/45">
+                    {formatTimeAgo(Number(sub.created_at))}
+                  </span>
+                )}
+                <span className="font-mono-bold text-[9px] text-[#111]/30">
+                  #{String(sub.id).padStart(2, '0')}
+                </span>
+              </div>
+
+              {/* Badges & Actions */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                {isPaid && (
+                  <span className="font-mono-bold text-[9px] uppercase bg-[#C6F23A] border border-[#111] px-2 py-0.5 rounded-full text-[#111] shadow-xs">
+                    ✓ Paid {formatUsdc(rewardPerWinner)} USDC
+                  </span>
+                )}
+                {isPending && (
+                  <span className="font-mono-bold text-[9px] uppercase bg-[#FFE600] border border-[#111] px-2 py-0.5 rounded-full text-[#111] shadow-xs">
+                    Payout pending
+                  </span>
+                )}
+                {!isWinner && isPoster && canApprove && (
+                  <PillButton size="sm" variant="lime" onClick={handleApprove} loading={approvePending || approveConfirming} disabled={approveSuccess} showArrow={false}>
+                    Approve &amp; pay →
+                  </PillButton>
+                )}
+                {canExpand && (
+                  <button
+                    onClick={() => setExpanded(true)}
+                    className="w-6 h-6 rounded-lg border-[1.5px] border-[#111]/20 bg-white hover:bg-[#FFE600]/40 flex items-center justify-center font-mono-bold text-[11px] text-[#111] transition-colors shadow-xs cursor-pointer"
+                    aria-label="Expand submission"
+                    title="View full submission"
+                  >
+                    ⤢
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Content body */}
+            <div className="text-[#111]/90 pt-0.5">
+              <SubmissionViewer content={sub.content} />
+            </div>
+
+            {(approvePending || approveConfirming || approveSuccess || approveErr) && (
+              <div className="mt-2.5">
+                <TxStatus hash={approveHash} isPending={approvePending} isConfirming={approveConfirming} isSuccess={approveSuccess} isError={!!approveErr} error={approveErr ? parseOnchainError(approveErr) : undefined} successMessage="Winner approved & paid!" />
+              </div>
             )}
           </div>
         </div>
-
-        {/* Content */}
-        <div className="px-4 py-3">
-          <SubmissionViewer content={sub.content} />
-        </div>
-
-        {(approvePending || approveConfirming || approveSuccess || approveErr) && (
-          <div className="px-4 pb-3">
-            <TxStatus hash={approveHash} isPending={approvePending} isConfirming={approveConfirming} isSuccess={approveSuccess} isError={!!approveErr} error={approveErr ? parseOnchainError(approveErr) : undefined} successMessage="Winner approved & paid!" />
-          </div>
-        )}
       </div>
 
       {/* Expanded full-view modal */}
