@@ -574,7 +574,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
             </div>
           </div>
 
-          {/* Box 4: PAYMENT / ESCROW (Bottom-Right) */}
+          {/* Box 4: WINNERS (Bottom-Right) */}
           <div className="relative overflow-hidden border-[2.5px] border-[#111] rounded-2xl p-4 bg-black flex flex-col justify-between min-h-[96px] shadow-sm">
             <div className="bounty-glass-shine" aria-hidden="true">
               <div className="bounty-glass-beam-bloom" style={{ animationDelay: '3.3s' }} />
@@ -584,11 +584,11 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
               <LockIcon size={22} className="text-[#A3E635]" />
             </div>
             <div className="relative z-1 mt-2">
-              <div className="font-heading text-[22px] sm:text-[26px] font-black leading-tight text-white truncate">
-                {bounty.escrowRemaining > 0n ? 'in escrow' : 'paid out'}
+              <div className="font-heading text-[28px] sm:text-[34px] font-black leading-tight text-white tabular-nums">
+                {Number(bounty.maxWinners)}
               </div>
               <div className="font-mono-bold text-[10px] sm:text-[11px] uppercase tracking-wider text-white/60 mt-0.5">
-                PAYMENT
+                WINNER{Number(bounty.maxWinners) !== 1 ? 'S' : ''}
               </div>
             </div>
           </div>
@@ -1090,8 +1090,9 @@ function OffchainSubmissionList({
       )}
 
       {loading ? (
-        <div className="py-8 flex justify-center">
-          <span className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111]/50 animate-pulse">Loading...</span>
+        <div className="py-12 flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-[3px] border-[#111]/20 border-t-[#A3E635] rounded-full animate-spin" />
+          <span className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111]/40">Loading submissions…</span>
         </div>
       ) : isPrivateForViewer ? (
         <div className="checkerboard rounded-lg py-10 flex flex-col items-center gap-3 text-center px-4">
@@ -1172,41 +1173,50 @@ function SingleOffchainSubmission({ sub, bountyId, isPoster, rewardPerWinner, ca
 
   return (
     <>
-      <div className={`border-[3px] border-[#111] rounded-lg p-3 ${isWinner ? 'bg-[#C6F23A]/20' : 'bg-white'}`}>
-        {/* Header row */}
-        <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
-          <span className="font-mono-bold text-[10px] uppercase tracking-wider text-[#111]">
-            SUB #{String(sub.id).padStart(2, '0')} — <a href={`#/profile/${sub.submitter}`} className="hover:underline cursor-pointer text-[#1A1AE6]">{shortAddr}</a>
-          </span>
-          <div className="flex items-center gap-1.5 flex-wrap">
+      <div className={`group border-[2px] border-[#111]/15 rounded-2xl overflow-hidden transition-all duration-200 hover:border-[#111]/40 hover:shadow-md ${isWinner ? 'bg-gradient-to-br from-[#C6F23A]/10 to-[#A3E635]/5 border-[#A3E635]/40' : 'bg-white'}`}>
+        {/* Header bar */}
+        <div className={`flex items-center justify-between gap-2 px-4 py-2.5 border-b-[2px] ${isWinner ? 'border-[#A3E635]/30 bg-[#C6F23A]/20' : 'border-[#111]/8 bg-[#FAFAFA]'}`}>
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="font-mono-bold text-[10px] text-[#111]/40 shrink-0">#{String(sub.id).padStart(2, '0')}</span>
+            <a href={`#/profile/${sub.submitter}`} className="font-mono-bold text-[11px] text-[#1A1AE6] hover:underline truncate">
+              {shortAddr}
+            </a>
+            {sub.created_at && (
+              <span className="font-mono-ui text-[9px] text-[#111]/30 hidden sm:inline">
+                · {new Date(Number(sub.created_at) * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
             {isPaid && (
-              <span className="font-mono-bold text-[10px] uppercase bg-[#C6F23A] border-2 border-[#111] px-2 py-0.5 rounded-full">PAID {formatUsdc(rewardPerWinner)} USDC</span>
+              <span className="font-mono-bold text-[9px] uppercase bg-[#C6F23A] border border-[#A3E635] px-2 py-0.5 rounded-full text-[#111]">✓ Paid {formatUsdc(rewardPerWinner)}</span>
             )}
             {isPending && (
-              <span className="font-mono-bold text-[10px] uppercase bg-[#FFE600] border-2 border-[#111] px-2 py-0.5 rounded-full">PAYOUT PENDING</span>
+              <span className="font-mono-bold text-[9px] uppercase bg-[#FFE600] border border-[#EAD000] px-2 py-0.5 rounded-full text-[#111]">Payout pending</span>
             )}
             {!isWinner && isPoster && canApprove && (
               <PillButton size="sm" variant="lime" onClick={handleApprove} loading={approvePending || approveConfirming} disabled={approveSuccess} showArrow={false}>
-                Approve &amp; pay →
+                Approve & pay →
               </PillButton>
             )}
-            {/* Expand button — poster or own submission */}
             {canExpand && (
               <button
                 onClick={() => setExpanded(true)}
-                className="w-5 h-5 rounded-sm border-2 border-[#111] bg-white/80 hover:bg-[#A78BFA]/30 flex items-center justify-center font-mono-bold text-[9px] transition-colors"
+                className="w-6 h-6 rounded-lg border-[1.5px] border-[#111]/20 bg-white hover:bg-[#A78BFA]/20 flex items-center justify-center font-mono-bold text-[9px] transition-colors"
                 aria-label="Expand submission"
                 title="View full submission"
-              >□</button>
+              >⤢</button>
             )}
           </div>
         </div>
 
-        {/* Rich submission viewer */}
-        <SubmissionViewer content={sub.content} />
+        {/* Content */}
+        <div className="px-4 py-3">
+          <SubmissionViewer content={sub.content} />
+        </div>
 
         {(approvePending || approveConfirming || approveSuccess || approveErr) && (
-          <div className="mt-2">
+          <div className="px-4 pb-3">
             <TxStatus hash={approveHash} isPending={approvePending} isConfirming={approveConfirming} isSuccess={approveSuccess} isError={!!approveErr} error={approveErr ? parseOnchainError(approveErr) : undefined} successMessage="Winner approved & paid!" />
           </div>
         )}

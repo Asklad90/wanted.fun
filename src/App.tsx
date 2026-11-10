@@ -138,6 +138,8 @@ export default function App() {
   useEffect(() => {
     function handleRouteChange() {
       setRoute(parseRoute())
+      // Always scroll to the top when navigating to a new page
+      window.scrollTo({ top: 0, behavior: 'instant' })
     }
     window.addEventListener('hashchange', handleRouteChange)
     window.addEventListener('popstate', handleRouteChange)
