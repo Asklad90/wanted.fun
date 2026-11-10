@@ -120,22 +120,7 @@ export function ensureSchema(): Promise<void> {
       await pool.sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS github TEXT`
       await pool.sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS website TEXT`
       await pool.sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS created_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM NOW())::BIGINT`
-      // Backfill created_at: for every profile whose created_at is suspiciously recent (within 2 days of schema migration),
-      // replace it with the user's earliest submission or bounty timestamp instead.
-      // This corrects the Nov-9 mass-stamp that happened when the column was first added.
-      await pool.sql`
-        UPDATE profiles p
-        SET created_at = LEAST(
-          COALESCE((SELECT MIN(s.created_at) FROM submissions s WHERE LOWER(s.submitter) = p.address), 9999999999),
-          COALESCE((SELECT MIN(b.created_at) FROM bounties b WHERE LOWER(b.poster) = p.address), 9999999999)
-        )
-        WHERE (
-          SELECT MIN(v) FROM (VALUES
-            (COALESCE((SELECT MIN(s.created_at) FROM submissions s WHERE LOWER(s.submitter) = p.address), NULL)),
-            (COALESCE((SELECT MIN(b.created_at) FROM bounties b WHERE LOWER(b.poster) = p.address), NULL))
-          ) AS t(v)
-        ) IS NOT NULL
-      `
+      await pool.sql`UPDATE profiles SET created_at = EXTRACT(EPOCH FROM NOW())::BIGINT WHERE created_at IS NULL OR created_at = 0`
     })().catch((e) => {
       schemaReady = null // allow retry on next request
       throw e

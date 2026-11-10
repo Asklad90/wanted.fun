@@ -464,30 +464,34 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
       {/* Main bounty window */}
       <WindowCard
         title={`BOUNTY_${String(idNum).padStart(3, '0')}.EXE`}
-        titleBarColor={barColor(idNum)}
-        bodyClassName="flex flex-col gap-4"
+        titleBarColor="#4EFA96"
+        bodyClassName="flex flex-col gap-4 p-5 sm:p-6"
       >
+        {/* Status + Deadline row */}
         <div className="flex items-center justify-between flex-wrap gap-2">
           <StatusTag status={status} />
           <div className="flex items-center gap-1.5 text-[#111]">
-            <ClockIcon size={14} className="text-[#111]" />
-            <span className="font-mono-bold text-[11px] sm:text-[12px] uppercase tracking-wider">{timeLeft(bounty.deadline)}</span>
+            <ClockIcon size={16} className="text-[#111]" />
+            <span className="font-mono-bold text-[12px] sm:text-[13px] uppercase tracking-wider">{timeLeft(bounty.deadline)}</span>
           </div>
         </div>
 
+        {/* Huge Bold Title & Vibrant Lime Underline */}
         <div>
-          <h1 className="font-heading text-[28px] sm:text-[32px] font-black leading-tight text-[#111]">{titleStr}</h1>
-          <div className="w-20 sm:w-24 h-1.5 bg-[#C6F23A] rounded-full mt-2" />
+          <h1 className="font-heading font-black text-[36px] sm:text-[44px] leading-tight text-[#111] tracking-tight">
+            {titleStr}
+          </h1>
+          <div className="w-28 sm:w-36 h-2 bg-[#A3E635] rounded-full mt-1.5 mb-2" />
         </div>
-        <p className="font-body text-[14px] leading-relaxed text-[#111]/80 whitespace-pre-wrap">{linkify(descStr)}</p>
+        <p className="font-body text-[15px] sm:text-[16px] leading-relaxed text-[#111]/85 whitespace-pre-wrap">{linkify(descStr)}</p>
 
         {/* Inline preview of the first attachment, with a button to view them all */}
         {examples.length > 0 && (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 my-1">
             <button
               type="button"
               onClick={() => setShowAttachments(true)}
-              className="relative self-start border-[3px] border-[#111] rounded-lg overflow-hidden shadow-hard-sm btn-press cursor-pointer"
+              className="relative self-start border-[3px] border-[#111] rounded-xl overflow-hidden shadow-hard-sm btn-press cursor-pointer"
             >
               {examples[0].content.startsWith('data:video') ? (
                 // eslint-disable-next-line jsx-a11y/media-has-caption
@@ -503,7 +507,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
               <button
                 type="button"
                 onClick={() => setShowAttachments(true)}
-                className="self-start font-mono-bold text-[10px] uppercase tracking-widest text-[#1A1AE6] underline cursor-pointer"
+                className="self-start font-mono-bold text-[11px] uppercase tracking-widest text-[#1A1AE6] underline cursor-pointer"
               >
                 View all {examples.length} attachments →
               </button>
@@ -511,127 +515,127 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
           </div>
         )}
 
-        {/* 2x2 or 4-col Stat Grid with Glass Light Sweep on each box */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-          {/* Box 1: USDC / WINNER */}
-          <div className="relative overflow-hidden border-2 border-[#111] rounded-xl p-3 bg-[#EAFCDA] flex flex-col justify-between gap-1 shadow-xs">
+        {/* 2x2 Stat Grid strictly 2 columns as in reference */}
+        <div className="grid grid-cols-2 gap-3.5 my-1">
+          {/* Box 1: USDC / WINNER (Top-Left) */}
+          <div className="relative overflow-hidden border-[2.5px] border-[#111] rounded-2xl p-4 bg-[#EAFCDA] flex flex-col justify-between min-h-[96px] shadow-sm">
             <div className="bounty-glass-shine" aria-hidden="true">
               <div className="bounty-glass-beam" style={{ animationDelay: '0s' }} />
             </div>
             <div className="flex items-center relative z-1">
-              <CoinIcon size={18} />
+              <CoinIcon size={24} />
             </div>
-            <div className="relative z-1">
-              <div className="font-heading text-[20px] sm:text-[22px] font-black leading-none text-[#111] tabular-nums">
+            <div className="relative z-1 mt-2">
+              <div className="font-heading text-[28px] sm:text-[34px] font-black leading-tight text-[#111] tabular-nums">
                 {formatUsdc(bounty.rewardPerWinner)}
               </div>
-              <div className="font-mono-bold text-[9px] uppercase tracking-wider text-[#111]/70 mt-1">
+              <div className="font-mono-bold text-[10px] sm:text-[11px] uppercase tracking-wider text-[#111] mt-0.5">
                 USDC / WINNER
               </div>
             </div>
           </div>
 
-          {/* Box 2: DEADLINE */}
-          <div className="relative overflow-hidden border-2 border-[#111] rounded-xl p-3 bg-[#EDE4FF] flex flex-col justify-between gap-1 shadow-xs">
+          {/* Box 2: DEADLINE (Top-Right) */}
+          <div className="relative overflow-hidden border-[2.5px] border-[#111] rounded-2xl p-4 bg-[#EDE4FF] flex flex-col justify-between min-h-[96px] shadow-sm">
             <div className="bounty-glass-shine" aria-hidden="true">
               <div className="bounty-glass-beam" style={{ animationDelay: '0.8s' }} />
             </div>
             <div className="flex items-center relative z-1">
-              <ClockIcon size={16} className="text-[#111]" />
+              <ClockIcon size={22} className="text-[#111]" />
             </div>
-            <div className="relative z-1">
-              <div className="font-heading text-[18px] sm:text-[20px] font-black leading-none text-[#111] truncate">
+            <div className="relative z-1 mt-2">
+              <div className="font-heading text-[26px] sm:text-[32px] font-black leading-tight text-[#111] truncate">
                 {timeLeft(bounty.deadline)}
               </div>
-              <div className="font-mono-bold text-[9px] uppercase tracking-wider text-[#111]/70 mt-1">
+              <div className="font-mono-bold text-[10px] sm:text-[11px] uppercase tracking-wider text-[#111] mt-0.5">
                 DEADLINE
               </div>
             </div>
           </div>
 
-          {/* Box 3: SUBMISSIONS */}
-          <div className="relative overflow-hidden border-2 border-[#111] rounded-xl p-3 bg-[#FFF6E0] flex flex-col justify-between gap-1 shadow-xs">
+          {/* Box 3: SUBMISSIONS (Bottom-Left) */}
+          <div className="relative overflow-hidden border-[2.5px] border-[#111] rounded-2xl p-4 bg-[#FFF8E6] flex flex-col justify-between min-h-[96px] shadow-sm">
             <div className="bounty-glass-shine" aria-hidden="true">
               <div className="bounty-glass-beam" style={{ animationDelay: '1.6s' }} />
             </div>
             <div className="flex items-center relative z-1">
-              <FolderIcon size={16} />
+              <FolderIcon size={22} />
             </div>
-            <div className="relative z-1">
-              <div className="font-heading text-[20px] sm:text-[22px] font-black leading-none text-[#111] tabular-nums">
+            <div className="relative z-1 mt-2">
+              <div className="font-heading text-[28px] sm:text-[34px] font-black leading-tight text-[#111] tabular-nums">
                 {offchainSubs.length}
               </div>
-              <div className="font-mono-bold text-[9px] uppercase tracking-wider text-[#111]/70 mt-1">
+              <div className="font-mono-bold text-[10px] sm:text-[11px] uppercase tracking-wider text-[#111] mt-0.5">
                 SUBMISSIONS
               </div>
             </div>
           </div>
 
-          {/* Box 4: PAYMENT / ESCROW */}
-          <div className="relative overflow-hidden border-2 border-[#111] rounded-xl p-3 bg-[#D4FAF5] flex flex-col justify-between gap-1 shadow-xs">
+          {/* Box 4: PAYMENT / ESCROW (Bottom-Right) */}
+          <div className="relative overflow-hidden border-[2.5px] border-[#111] rounded-2xl p-4 bg-[#D4FAF5] flex flex-col justify-between min-h-[96px] shadow-sm">
             <div className="bounty-glass-shine" aria-hidden="true">
               <div className="bounty-glass-beam" style={{ animationDelay: '2.4s' }} />
             </div>
             <div className="flex items-center relative z-1">
-              <LockIcon size={16} className="text-[#111]" />
+              <LockIcon size={22} className="text-[#111]" />
             </div>
-            <div className="relative z-1">
-              <div className="font-heading text-[16px] sm:text-[18px] font-black leading-none text-[#111] truncate">
+            <div className="relative z-1 mt-2">
+              <div className="font-heading text-[22px] sm:text-[26px] font-black leading-tight text-[#111] truncate">
                 {bounty.escrowRemaining > 0n ? 'in escrow' : 'paid out'}
               </div>
-              <div className="font-mono-bold text-[9px] uppercase tracking-wider text-[#111]/70 mt-1">
+              <div className="font-mono-bold text-[10px] sm:text-[11px] uppercase tracking-wider text-[#111] mt-0.5">
                 PAYMENT
               </div>
             </div>
           </div>
         </div>
 
-        {/* Escrow panel */}
-        <div className="relative overflow-hidden border-2 border-[#111] rounded-xl p-3 bg-gradient-to-r from-[#E6FCD2] via-[#E8FCD8] to-[#DEFBAE]">
+        {/* Escrow panel with Halftone Texture */}
+        <div className="relative overflow-hidden border-[2.5px] border-[#111] rounded-2xl p-4 bg-gradient-to-r from-[#EAFCDA] via-[#E8FCD8] to-[#DEFBAE] shadow-sm my-1">
           <div className="bounty-glass-shine" aria-hidden="true">
             <div className="bounty-glass-beam" style={{ animationDelay: '3.2s' }} />
           </div>
           <div
             className="absolute right-0 top-0 bottom-0 w-2/5 opacity-20 pointer-events-none"
             style={{
-              backgroundImage: 'radial-gradient(#111 1.5px, transparent 1.5px)',
-              backgroundSize: '6px 6px',
+              backgroundImage: 'radial-gradient(#111 2px, transparent 2px)',
+              backgroundSize: '8px 8px',
             }}
           />
-          <div className="flex items-center gap-1.5 mb-2 relative z-1">
-            <LockIcon size={13} className="text-[#111]" />
-            <span className="font-mono-bold text-[10px] uppercase tracking-wider text-[#111]">ESCROW</span>
+          <div className="flex items-center gap-2 mb-2 relative z-1">
+            <LockIcon size={16} className="text-[#111]" />
+            <span className="font-mono-bold text-[12px] uppercase tracking-wider text-[#111]">ESCROW</span>
           </div>
           <div className="grid grid-cols-[1fr_auto_1fr] items-center relative z-1">
             <div className="flex flex-col">
-              <span className="font-mono-bold text-[9px] uppercase tracking-wider text-[#111]/60">LOCKED</span>
-              <span className="font-heading text-[16px] sm:text-[18px] font-black tabular-nums text-[#111]">
+              <span className="font-mono-bold text-[10px] uppercase tracking-wider text-[#111]/70">LOCKED</span>
+              <span className="font-heading text-[20px] sm:text-[24px] font-black tabular-nums text-[#111]">
                 {formatUsdc(bounty.escrowRemaining)} USDC
               </span>
             </div>
-            <div className="w-[1px] h-7 bg-[#111]/20 mx-3" />
+            <div className="w-[1.5px] h-10 bg-[#111]/20 mx-4" />
             <div className="flex flex-col">
-              <span className="font-mono-bold text-[9px] uppercase tracking-wider text-[#111]/60">PAID OUT</span>
-              <span className="font-heading text-[16px] sm:text-[18px] font-black tabular-nums text-[#111]">
+              <span className="font-mono-bold text-[10px] uppercase tracking-wider text-[#111]/70">PAID OUT</span>
+              <span className="font-heading text-[20px] sm:text-[24px] font-black tabular-nums text-[#111]">
                 {formatUsdc(paidOut)} USDC
               </span>
             </div>
           </div>
         </div>
 
-        {/* Winners Segmented Bar */}
-        <div>
-          <div className="font-mono-bold text-[10px] uppercase tracking-wider text-[#111] mb-1.5">
+        {/* Winners Segmented Bar matching reference */}
+        <div className="my-1">
+          <div className="font-heading font-black text-[13px] uppercase tracking-wider text-[#111] mb-2">
             WINNERS {Number(bounty.winnersApproved)}/{Number(bounty.maxWinners)}
           </div>
           {Number(bounty.maxWinners) <= 12 ? (
-            <div className="flex gap-1.5">
+            <div className="flex gap-2">
               {Array.from({ length: Number(bounty.maxWinners) }, (_, i) => {
                 const isFilled = i < Number(bounty.winnersApproved)
                 return (
                   <div
                     key={i}
-                    className={`h-4 flex-1 border-2 border-[#111] rounded-full transition-all ${
+                    className={`h-6 sm:h-7 flex-1 border-[2.5px] border-[#111] rounded-lg transition-all ${
                       isFilled ? 'bg-[#FF2E93]' : 'bg-white'
                     }`}
                   />
@@ -639,9 +643,9 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
               })}
             </div>
           ) : (
-            <div className="h-4 w-full border-2 border-[#111] rounded-full bg-white overflow-hidden p-0.5">
+            <div className="h-6 sm:h-7 w-full border-[2.5px] border-[#111] rounded-lg bg-white overflow-hidden p-0.5">
               <div
-                className="h-full bg-[#FF2E93] rounded-full transition-all duration-500"
+                className="h-full bg-[#FF2E93] rounded-md transition-all duration-500"
                 style={{
                   width: `${Number(bounty.maxWinners) > 0 ? Math.min(100, (Number(bounty.winnersApproved) / Number(bounty.maxWinners)) * 100) : 0}%`,
                 }}
@@ -650,28 +654,27 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
           )}
         </div>
 
-        <div className="flex items-center justify-between text-[#111]/75 font-mono-ui text-[11px] pt-1 border-t border-[#111]/10">
-          <span className="inline-flex items-center gap-1">
-            <span>Posted by</span>
-            <a
-              href={`#/profile/${bounty.poster}`}
-              className="text-[#111] font-mono-bold underline underline-offset-2 hover:text-[#1A1AE6] cursor-pointer"
-            >
-              {formatAddress(bounty.poster)}
-            </a>
-            <svg
-              className="w-3 h-3 text-[#111]/80 inline-block ml-0.5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <line x1="7" y1="17" x2="17" y2="7" />
-              <polyline points="7 7 17 7 17 17" />
-            </svg>
-          </span>
+        {/* Footer: Posted By with External Arrow */}
+        <div className="text-[#111] font-mono-ui text-[12px] pt-2 border-t border-[#111]/10 flex items-center gap-1.5">
+          <span>Posted by</span>
+          <a
+            href={`#/profile/${bounty.poster}`}
+            className="font-mono-bold text-[#111] hover:underline cursor-pointer"
+          >
+            {formatAddress(bounty.poster)}
+          </a>
+          <svg
+            className="w-3.5 h-3.5 text-[#111] inline-block"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <line x1="7" y1="17" x2="17" y2="7" />
+            <polyline points="7 7 17 7 17 17" />
+          </svg>
         </div>
       </WindowCard>
 
