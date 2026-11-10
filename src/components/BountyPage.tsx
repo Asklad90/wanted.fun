@@ -1068,6 +1068,11 @@ function OffchainSubmissionList({
       ? 'SUBMISSIONS.EXE (PRIVATE)'
       : `SUBMISSIONS.EXE (${submissions.length})`
 
+  const PAGE = 5
+  const [visibleCount, setVisibleCount] = useState(PAGE)
+  const visibleSubs = submissions.slice(0, visibleCount)
+  const hasMore = submissions.length > visibleCount
+
   return (
     <WindowCard title={title} titleBarColor={isPrivateForViewer ? '#CCCCCC' : '#7FF3F0'}>
       {/* Visibility toggle (poster only) */}
@@ -1111,7 +1116,7 @@ function OffchainSubmissionList({
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {submissions.map(sub => (
+          {visibleSubs.map(sub => (
             <SingleOffchainSubmission
               key={sub.id}
               sub={sub}
@@ -1122,6 +1127,14 @@ function OffchainSubmissionList({
               onApproved={onApproved}
             />
           ))}
+          {hasMore && (
+            <button
+              onClick={() => setVisibleCount(c => c + PAGE)}
+              className="w-full py-2.5 font-mono-bold text-[11px] uppercase tracking-widest border-[2px] border-[#111]/20 rounded-xl text-[#111]/50 hover:border-[#111]/50 hover:text-[#111] hover:bg-[#FFFDF0] transition-all"
+            >
+              Show more ({submissions.length - visibleCount} remaining) ↓
+            </button>
+          )}
         </div>
       )}
     </WindowCard>

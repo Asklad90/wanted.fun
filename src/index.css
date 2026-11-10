@@ -157,7 +157,7 @@ body::before {
 
 @keyframes beamDiagonalSweep {
   0% {
-    transform: rotate(28deg) translate3d(-180%, 0, 0);
+    transform: rotate(28deg) translate3d(-800px, 0, 0);
     opacity: 0;
   }
   8% {
@@ -167,11 +167,11 @@ body::before {
     opacity: 1;
   }
   70% {
-    transform: rotate(28deg) translate3d(750%, 0, 0);
+    transform: rotate(28deg) translate3d(1200px, 0, 0);
     opacity: 0;
   }
   100% {
-    transform: rotate(28deg) translate3d(750%, 0, 0);
+    transform: rotate(28deg) translate3d(1200px, 0, 0);
     opacity: 0;
   }
 }

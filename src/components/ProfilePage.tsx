@@ -108,12 +108,12 @@ function ReputationBadge({
 // ─── Stat card ────────────────────────────────────────────────────────────────
 function ProfileStatCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: string; color: string }) {
   return (
-    <div className="border-[3px] border-[#111] rounded-xl p-3 flex items-start justify-between gap-2 shadow-hard-sm" style={{ backgroundColor: color }}>
-      <div className="flex flex-col gap-0.5 min-w-0">
-        <span className="font-heading text-[20px] font-extrabold tabular-nums leading-none text-[#111] truncate">{value}</span>
-        <span className="font-mono-ui text-[9px] uppercase tracking-widest text-[#111]/70 mt-1">{label}</span>
+    <div className="border-[2px] border-[#111]/10 rounded-2xl p-4 flex flex-col gap-3 bg-white hover:border-[#111]/30 hover:shadow-sm transition-all" style={{ borderLeftColor: color, borderLeftWidth: '4px' }}>
+      <div className="flex items-center justify-between">
+        <span className="font-mono-ui text-[10px] uppercase tracking-widest text-[#111]/50">{label}</span>
+        <span className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: color + '30' }}>{icon}</span>
       </div>
-      <span className="shrink-0">{icon}</span>
+      <span className="font-heading text-[26px] font-extrabold tabular-nums leading-none text-[#111]">{value}</span>
     </div>
   )
 }
@@ -719,48 +719,114 @@ export function ProfilePage({ address, onBack, onSelectBounty, onCreateBounty, o
         </div>
       </WindowCard>
 
-      {/* ── Hunter Activity Stats ─────────────────────────────────────────── */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-2">
-          <span className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111]/70">
-            Hunter Activity
-          </span>
-          <div className="h-[2px] flex-1 bg-[#111]/15" />
+      {/* ── Activity Stats ─────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+        {/* Hunter stats panel */}
+        <div className="border-[2.5px] border-[#111]/12 rounded-2xl overflow-hidden bg-white shadow-sm">
+          <div className="bg-[#111] px-4 py-2.5 flex items-center gap-2">
+            <TrophyIcon size={14} className="text-[#FFE600]" />
+            <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#FFE600]">Hunter Activity</span>
+          </div>
+          <div className="p-4 flex flex-col gap-3">
+            {/* Win rate bar */}
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <span className="font-mono-ui text-[10px] uppercase tracking-widest text-[#111]/50">Win rate</span>
+                <span className="font-mono-bold text-[13px] text-[#111]">
+                  {submittedList.length > 0 ? `${Math.round(Number(wins * 100n) / submittedList.length)}%` : '—'}
+                </span>
+              </div>
+              <div className="h-2 rounded-full bg-[#111]/8 overflow-hidden border border-[#111]/10">
+                <div
+                  className="h-full rounded-full bg-[#A3E635] transition-all duration-500"
+                  style={{ width: submittedList.length > 0 ? `${Math.min(100, Math.round(Number(wins * 100n) / submittedList.length))}%` : '0%' }}
+                />
+              </div>
+            </div>
+            {/* Three inline stats */}
+            <div className="grid grid-cols-3 gap-2 pt-1 border-t border-[#111]/8">
+              <div className="flex flex-col gap-0.5 items-center text-center">
+                <span className="font-heading text-[22px] font-black text-[#111] tabular-nums">{submittedList.length}</span>
+                <span className="font-mono-ui text-[8px] uppercase tracking-widest text-[#111]/40">Submitted</span>
+              </div>
+              <div className="flex flex-col gap-0.5 items-center text-center border-x border-[#111]/8">
+                <span className="font-heading text-[22px] font-black text-[#A3E635] tabular-nums">{wins.toString()}</span>
+                <span className="font-mono-ui text-[8px] uppercase tracking-widest text-[#111]/40">Won</span>
+              </div>
+              <div className="flex flex-col gap-0.5 items-center text-center">
+                <span className="font-heading text-[22px] font-black text-[#111] tabular-nums">${formatUsdc(earned)}</span>
+                <span className="font-mono-ui text-[8px] uppercase tracking-widest text-[#111]/40">Earned</span>
+              </div>
+            </div>
+            {pendingEarnings > 0n && (
+              <div className="flex items-center gap-2 bg-[#FFE600]/20 border border-[#FFE600]/40 rounded-lg px-3 py-2">
+                <ClockIcon size={13} className="text-[#111]/60 shrink-0" />
+                <span className="font-mono-bold text-[10px] text-[#111]/70">
+                  ${formatUsdc(pendingEarnings)} USDC payout pending
+                </span>
+              </div>
+            )}
+          </div>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <ProfileStatCard icon={<CheckCircleIcon size={26} />} label="Submissions" value={submittedList.length.toString()} color="#7FF3F0" />
-          <ProfileStatCard icon={<TrophyIcon size={26} />} label="Bounties Won" value={wins.toString()} color="#FFE600" />
-          <ProfileStatCard
-            icon={<span className="font-heading font-extrabold text-[20px] text-[#111]">%</span>}
-            label="Win Rate"
-            value={submittedList.length > 0 ? `${Math.round(Number(wins * 100n) / submittedList.length)}%` : '—'}
-            color="#FFB3D9"
-          />
-          <ProfileStatCard icon={<CoinIcon size={26} />} label="Total Earned" value={`$${formatUsdc(earned)}`} color="#C6F23A" />
+
+        {/* Poster stats panel (always shown, greyed out if no posts) */}
+        <div className="border-[2.5px] border-[#111]/12 rounded-2xl overflow-hidden bg-white shadow-sm">
+          <div className="bg-[#111] px-4 py-2.5 flex items-center gap-2">
+            <FolderIcon size={14} className="text-[#FF3E9A]" />
+            <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#FF3E9A]">Poster Activity</span>
+          </div>
+          <div className="p-4 flex flex-col gap-3">
+            {hasPosted ? (
+              <>
+                {/* Payout rate bar */}
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono-ui text-[10px] uppercase tracking-widest text-[#111]/50">Payout rate</span>
+                    <span className="font-mono-bold text-[13px] text-[#111]">
+                      {isPromiseKeeper ? '100%' : allPostedStats.some(b => b.winnersApproved > 0n)
+                        ? `${Math.round(allPostedStats.filter(b => b.winnersApproved > 0n).length / allPostedStats.length * 100)}%` : '0%'}
+                    </span>
+                  </div>
+                  <div className="h-2 rounded-full bg-[#111]/8 overflow-hidden border border-[#111]/10">
+                    <div
+                      className="h-full rounded-full bg-[#FF3E9A] transition-all duration-500"
+                      style={{ width: isPromiseKeeper ? '100%' : `${Math.round(allPostedStats.filter(b => b.winnersApproved > 0n).length / Math.max(allPostedStats.length, 1) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 pt-1 border-t border-[#111]/8">
+                  <div className="flex flex-col gap-0.5 items-center text-center">
+                    <span className="font-heading text-[22px] font-black text-[#111] tabular-nums">{totalPosted?.length ?? 0}</span>
+                    <span className="font-mono-ui text-[8px] uppercase tracking-widest text-[#111]/40">Posted</span>
+                  </div>
+                  <div className="flex flex-col gap-0.5 items-center text-center border-x border-[#111]/8">
+                    <span className="font-heading text-[22px] font-black text-[#FF3E9A] tabular-nums">
+                      {allPostedStats.reduce((s, b) => s + Number(b.winnersApproved), 0)}
+                    </span>
+                    <span className="font-mono-ui text-[8px] uppercase tracking-widest text-[#111]/40">Paid out</span>
+                  </div>
+                  <div className="flex flex-col gap-0.5 items-center text-center">
+                    <span className="font-heading text-[22px] font-black text-[#111] tabular-nums">${formatUsdc(escrowTotal)}</span>
+                    <span className="font-mono-ui text-[8px] uppercase tracking-widest text-[#111]/40">In escrow</span>
+                  </div>
+                </div>
+                {isPromiseKeeper && (
+                  <div className="flex items-center gap-2 bg-[#C6F23A]/20 border border-[#C6F23A]/40 rounded-lg px-3 py-2">
+                    <span className="text-[12px]">🤝</span>
+                    <span className="font-mono-bold text-[10px] text-[#111]/70">Promise Keeper — 100% payout rate</span>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-6 gap-2 text-center">
+                <FolderIcon size={28} className="text-[#111]/20" />
+                <span className="font-mono-ui text-[11px] text-[#111]/30">No bounties posted yet</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-
-      {/* ── Poster Activity Stats (if posted bounties) ─────────────────────── */}
-      {hasPosted && (
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <span className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111]/70">
-              Poster Activity
-            </span>
-            <div className="h-[2px] flex-1 bg-[#111]/15" />
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <ProfileStatCard icon={<FolderIcon size={26} />} label="Bounties Posted" value={(totalPosted?.length ?? 0).toString()} color="#FFE600" />
-            <ProfileStatCard icon={<LockIcon size={26} />} label="In Escrow" value={`$${formatUsdc(escrowTotal)}`} color="#A78BFA" />
-            <ProfileStatCard
-              icon={<TrophyIcon size={26} />}
-              label="Payout Status"
-              value={isPromiseKeeper ? '100% Payout' : allPostedStats.some(b => b.winnersApproved > 0n) ? 'Active' : 'Open'}
-              color="#C6F23A"
-            />
-          </div>
-        </div>
-      )}
 
       {/* ── Wallet window (own profile only) ───────────────────────────────── */}
       {isOwn && (
