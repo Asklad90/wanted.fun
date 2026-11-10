@@ -70,6 +70,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       }
 
+      // If we have an existing profile but its created_at looks like a default recent timestamp (e.g., within the last day),
+      // recalculate based on earliest activity and update the row.
+      const nowSec = Math.floor(Date.now() / 1000);
+      const isStale = row.created_at && typeof row.created_at === 'number' && (nowSec - Number(row.created_at) < 86400);
+      if (isStale) {
+        const { rows: subRows } = await pool.sql`SELECT MIN(created_at) as earliest FROM submissions WHERE LOWER(submitter) = ${address}`;
+        const { rows: bountyRows } = await pool.sql`SELECT MIN(created_at) as earliest FROM bounties WHERE LOWER(poster) = ${address}`;
+        const subEarliest = subRows[0]?.earliest ? Number(subRows[0].earliest) : null;
+        const bountyEarliest = bountyRows[0]?.earliest ? Number(bountyRows[0].earliest) : null;
+        const candidates = [subEarliest, bountyEarliest].filter((x): x is number => typeof x === 'number' && x > 0);
+        const earliestTs = candidates.length > 0 ? Math.min(...candidates) : nowSec;
+        await pool.sql`UPDATE profiles SET created_at = ${earliestTs}, updated_at = ${nowSec} WHERE address = ${address}`;
+        row.created_at = earliestTs;
+      }
+
       return res.status(200).json({
         bio: row.bio ?? '',
         avatar_variant: row.avatar_variant ?? 0,
