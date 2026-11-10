@@ -539,8 +539,8 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
           {/* Box 2: DEADLINE (Top-Right) */}
           <div className="relative overflow-hidden border-[2.5px] border-[#111] rounded-2xl p-4 bg-black flex flex-col justify-between min-h-[96px] shadow-sm">
             <div className="bounty-glass-shine" aria-hidden="true">
-              <div className="bounty-glass-beam-bloom" style={{ animationDelay: '1.1s' }} />
-              <div className="bounty-glass-beam" style={{ animationDelay: '1.1s' }} />
+              <div className="bounty-glass-beam-bloom" style={{ animationDelay: '1.2s' }} />
+              <div className="bounty-glass-beam" style={{ animationDelay: '1.2s' }} />
             </div>
             <div className="flex items-center relative z-1">
               <ClockIcon size={22} className="text-[#A3E635]" />
@@ -558,8 +558,8 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
           {/* Box 3: SUBMISSIONS (Bottom-Left) */}
           <div className="relative overflow-hidden border-[2.5px] border-[#111] rounded-2xl p-4 bg-black flex flex-col justify-between min-h-[96px] shadow-sm">
             <div className="bounty-glass-shine" aria-hidden="true">
-              <div className="bounty-glass-beam-bloom" style={{ animationDelay: '2.2s' }} />
-              <div className="bounty-glass-beam" style={{ animationDelay: '2.2s' }} />
+              <div className="bounty-glass-beam-bloom" style={{ animationDelay: '2.4s' }} />
+              <div className="bounty-glass-beam" style={{ animationDelay: '2.4s' }} />
             </div>
             <div className="flex items-center relative z-1">
               <FolderIcon size={22} className="text-[#A3E635]" />
@@ -577,8 +577,8 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
           {/* Box 4: WINNERS (Bottom-Right) */}
           <div className="relative overflow-hidden border-[2.5px] border-[#111] rounded-2xl p-4 bg-black flex flex-col justify-between min-h-[96px] shadow-sm">
             <div className="bounty-glass-shine" aria-hidden="true">
-              <div className="bounty-glass-beam-bloom" style={{ animationDelay: '3.3s' }} />
-              <div className="bounty-glass-beam" style={{ animationDelay: '3.3s' }} />
+              <div className="bounty-glass-beam-bloom" style={{ animationDelay: '3.6s' }} />
+              <div className="bounty-glass-beam" style={{ animationDelay: '3.6s' }} />
             </div>
             <div className="flex items-center relative z-1">
               <LockIcon size={22} className="text-[#A3E635]" />
@@ -596,9 +596,6 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
 
         {/* Escrow panel with Halftone Texture */}
         <div className="relative overflow-hidden border-[2.5px] border-[#111] rounded-2xl p-4 bg-gradient-to-r from-[#EAFCDA] via-[#E8FCD8] to-[#DEFBAE] shadow-sm my-1">
-          <div className="bounty-glass-shine" aria-hidden="true">
-            <div className="bounty-glass-beam" style={{ animationDelay: '3.2s' }} />
-          </div>
           <div
             className="absolute right-0 top-0 bottom-0 w-2/5 opacity-20 pointer-events-none"
             style={{
@@ -658,9 +655,9 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
           )}
         </div>
 
-        {/* Footer: Posted By with External Arrow */}
+        {/* Footer: Created By with External Arrow */}
         <div className="text-[#111] font-mono-ui text-[12px] pt-2 border-t border-[#111]/10 flex items-center gap-1.5">
-          <span>Posted by</span>
+          <span>Created by</span>
           <a
             href={`#/profile/${bounty.poster}`}
             className="font-mono-bold text-[#111] hover:underline cursor-pointer"
@@ -800,7 +797,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
       {/* Already submitted notice */}
       {!isPoster && alreadySubmitted && (userPayoutStatus === 0 || userPayoutStatus === undefined) && (
         <WindowCard title="SUBMITTED.EXE" titleBarColor="#7FF3F0">
-          <div className="font-mono-bold text-[12px] uppercase tracking-wider text-[#111]/70">You submitted to this bounty. Waiting for poster review.</div>
+          <div className="font-mono-bold text-[12px] uppercase tracking-wider text-[#111]/70">You submitted to this bounty. Waiting for creator review.</div>
         </WindowCard>
       )}
 
@@ -882,10 +879,10 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
           </div>
         </WindowCard>
 
-        {/* Posted by card */}
+        {/* Creator card */}
         <PosterCard poster={bounty.poster} />
 
-        {/* Requirements card — shows ONLY what the poster chose */}
+        {/* Requirements card — shows ONLY what the creator chose */}
         <WindowCard title="REQUIREMENTS.EXE" titleBarColor="#7FF3F0" bodyClassName="flex flex-col gap-3">
           <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/50">
             Hunter Requirements
@@ -967,7 +964,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
                     onClick={() => setShowAttachments(true)}
                     className="font-mono-bold text-[11px] text-[#1A1AE6] underline text-left hover:text-[#111] transition-colors"
                   >
-                    View {examples.length} reference attachment{examples.length === 1 ? '' : 's'} provided by poster →
+                    View {examples.length} reference attachment{examples.length === 1 ? '' : 's'} provided by creator →
                   </button>
                 </div>
               </div>
@@ -1306,14 +1303,14 @@ function PosterCard({ poster }: { poster: string }) {
   const shortAddr = `${poster.slice(0, 6)}…${poster.slice(-4)}`
 
   return (
-    <WindowCard title="POSTED_BY.EXE" titleBarColor="#FF3E9A" bodyClassName="flex flex-col gap-3">
+    <WindowCard title="CREATOR.EXE" titleBarColor="#FF3E9A" bodyClassName="flex flex-col gap-3">
       <div className="flex items-center gap-3">
         <div className="border-[2px] border-[#111] rounded-lg overflow-hidden shrink-0">
           <PixelAvatar address={poster} size={44} variant={profile.avatar_variant} />
         </div>
         <div className="flex flex-col min-w-0">
           <span className="font-heading text-[14px] font-extrabold text-[#111] truncate">{shortAddr}</span>
-          <span className="font-mono-ui text-[10px] text-[#111]/50">{(postedIds?.length ?? 0)} bount{(postedIds?.length ?? 0) === 1 ? 'y' : 'ies'} posted</span>
+          <span className="font-mono-ui text-[10px] text-[#111]/50">{(postedIds?.length ?? 0)} bount{(postedIds?.length ?? 0) === 1 ? 'y' : 'ies'} created</span>
         </div>
       </div>
       {profile.bio && (

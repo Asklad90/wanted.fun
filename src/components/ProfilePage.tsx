@@ -471,7 +471,7 @@ export function ProfilePage({ address, onBack, onSelectBounty, onCreateBounty, o
   const TABS: { id: ProfileTab; label: string; color: string }[] = [
     { id: 'participating', label: 'PARTICIPATING', color: '#7FF3F0' },
     { id: 'past', label: 'PAST', color: '#8B5CF6' },
-    { id: 'posted', label: 'POSTED', color: '#FF3E9A' },
+    { id: 'posted', label: 'CREATED', color: '#FF3E9A' },
   ]
 
   const cleanTwitter = profile.twitter?.replace(/^@/, '').trim()
@@ -533,13 +533,13 @@ export function ProfilePage({ address, onBack, onSelectBounty, onCreateBounty, o
                   <ReputationBadge label="First Catch" icon="🚀" bg="#FFE600" title="First bounty won on Want.fun" />
                 )}
                 {hasPosted && (
-                  <ReputationBadge label="Want Creator" icon="✦" bg="#FF3E9A" textColor="#fff" title="Has posted bounties on Want.fun" />
+                  <ReputationBadge label="Want Creator" icon="✦" bg="#FF3E9A" textColor="#fff" title="Has created bounties on Want.fun" />
                 )}
                 {isHeavyHitter && (
                   <ReputationBadge label="Heavy Hitter" icon="⚡" bg="#FF3E9A" textColor="#FFFDF0" title="Earned > $500 USDC on Want.fun" />
                 )}
                 {isPromiseKeeper && (
-                  <ReputationBadge label="Promise Keeper" icon="🤝" bg="#C6F23A" title="100% payout rate on posted bounties" />
+                  <ReputationBadge label="Promise Keeper" icon="🤝" bg="#C6F23A" title="100% payout rate on created bounties" />
                 )}
               </div>
 
@@ -770,11 +770,11 @@ export function ProfilePage({ address, onBack, onSelectBounty, onCreateBounty, o
           </div>
         </div>
 
-        {/* Poster stats panel (always shown, greyed out if no posts) */}
+        {/* Creator stats panel (always shown, greyed out if no posts) */}
         <div className="border-[2.5px] border-[#111]/12 rounded-2xl overflow-hidden bg-white shadow-sm">
           <div className="bg-[#111] px-4 py-2.5 flex items-center gap-2">
             <FolderIcon size={14} className="text-[#FF3E9A]" />
-            <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#FF3E9A]">Poster Activity</span>
+            <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#FF3E9A]">Creator Activity</span>
           </div>
           <div className="p-4 flex flex-col gap-3">
             {hasPosted ? (
@@ -798,7 +798,7 @@ export function ProfilePage({ address, onBack, onSelectBounty, onCreateBounty, o
                 <div className="grid grid-cols-3 gap-2 pt-1 border-t border-[#111]/8">
                   <div className="flex flex-col gap-0.5 items-center text-center">
                     <span className="font-heading text-[22px] font-black text-[#111] tabular-nums">{totalPosted?.length ?? 0}</span>
-                    <span className="font-mono-ui text-[8px] uppercase tracking-widest text-[#111]/40">Posted</span>
+                    <span className="font-mono-ui text-[8px] uppercase tracking-widest text-[#111]/40">Created</span>
                   </div>
                   <div className="flex flex-col gap-0.5 items-center text-center border-x border-[#111]/8">
                     <span className="font-heading text-[22px] font-black text-[#FF3E9A] tabular-nums">
@@ -821,7 +821,7 @@ export function ProfilePage({ address, onBack, onSelectBounty, onCreateBounty, o
             ) : (
               <div className="flex flex-col items-center justify-center py-6 gap-2 text-center">
                 <FolderIcon size={28} className="text-[#111]/20" />
-                <span className="font-mono-ui text-[11px] text-[#111]/30">No bounties posted yet</span>
+                <span className="font-mono-ui text-[11px] text-[#111]/30">No bounties created yet</span>
               </div>
             )}
           </div>
@@ -916,7 +916,7 @@ export function ProfilePage({ address, onBack, onSelectBounty, onCreateBounty, o
               ids={postedList as bigint[]}
               profileAddr={address}
               onSelect={onSelectBounty}
-              emptyMsg="No bounties posted yet."
+              emptyMsg="No bounties created yet."
               tabMode="posted"
               onBrowseWall={onBrowseWall}
               onCreateBounty={onCreateBounty}
@@ -967,7 +967,7 @@ function BountyList({ ids, profileAddr, onSelect, emptyMsg, tabMode, onBrowseWal
       return (
         <div className="checkerboard rounded-lg py-10 flex flex-col items-center justify-center gap-3 text-center px-4">
           <span className="font-mono-bold text-[13px] uppercase tracking-wider text-[#111] bg-[#FFFDF0] border-[2px] border-[#111] px-3 py-1.5 rounded-lg shadow-hard-sm">
-            No bounties posted yet
+            No bounties created yet
           </span>
           <p className="font-mono-ui text-[11px] text-[#111]/70 max-w-sm">
             Put your tasks onchain with automated USDC escrow and let the world build for you.

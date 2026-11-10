@@ -129,7 +129,7 @@ function WallBountyCard({ bounty, onClick }: { bounty: BountyData; onClick: () =
               <PixelAvatar address={bounty.poster} size={26} />
             </span>
             <span className="flex flex-col min-w-0">
-              <span className="font-mono-ui text-[10px] text-[#111]/70 truncate">Posted by {formatAddress(bounty.poster)}</span>
+              <span className="font-mono-ui text-[10px] text-[#111]/70 truncate">Created by {formatAddress(bounty.poster)}</span>
               <span className="font-mono-ui text-[10px] text-[#111]/50 truncate">{meta}</span>
             </span>
           </span>
@@ -518,9 +518,9 @@ function StatItem({ icon, value, label }: { icon: React.ReactNode; value: string
 }
 
 const HOW_STEPS: { n: string; title: string; text: string; color: string }[] = [
-  { n: '01', title: 'Post',     text: 'Poster locks the full USDC prize in escrow.',          color: '#FFE600' },
+  { n: '01', title: 'Post',     text: 'Creator locks the full USDC prize in escrow.',          color: '#FFE600' },
   { n: '02', title: 'Submit',   text: 'Workers send in their work. No gas needed.',      color: '#FF3E9A' },
-  { n: '03', title: 'Approve',  text: 'Poster reviews every submission and picks the winners.',   color: '#A78BFA' },
+  { n: '03', title: 'Approve',  text: 'Creator reviews every submission and picks the winners.',   color: '#A78BFA' },
   { n: '04', title: 'Get paid', text: 'Winners get their USDC straight from escrow.',             color: '#C6F23A' },
 ]
 
