@@ -1075,6 +1075,14 @@ function OffchainSubmissionList({
       ? 'SUBMISSIONS.EXE (PRIVATE)'
       : `SUBMISSIONS.EXE (${submissions.length})`
 
+  const [query, setQuery] = useState('')
+  const [newestFirst, setNewestFirst] = useState(true)
+  const q = query.trim().toLowerCase()
+  const shown = submissions
+    .filter(s => !q || s.submitter.toLowerCase().includes(q))
+    .slice()
+    .sort((a, b) => (newestFirst ? (b.created_at ?? 0) - (a.created_at ?? 0) : (a.created_at ?? 0) - (b.created_at ?? 0)))
+
   return (
     <WindowCard title={title} titleBarColor={isPrivateForViewer ? '#CCCCCC' : '#7FF3F0'}>
       {/* Comment Section Header Toolbar */}
@@ -1135,20 +1143,45 @@ function OffchainSubmissionList({
           </p>
         </div>
       ) : (
-        /* Self-contained scrollable comment stream */
-        <div className="max-h-[520px] sm:max-h-[580px] overflow-y-auto overscroll-contain submissions-scroll pr-1.5 flex flex-col gap-3">
-          {submissions.map(sub => (
-            <SingleOffchainSubmission
-              key={sub.id}
-              sub={sub}
-              bountyId={bountyId}
-              isPoster={isPoster}
-              rewardPerWinner={rewardPerWinner}
-              canApprove={!afterReviewWindow}
-              onApproved={onApproved}
-            />
-          ))}
-        </div>
+        <>
+          {/* Search + sort (shown once the feed gets long) */}
+          {submissions.length > 3 && (
+            <div className="flex items-center gap-2 mb-3">
+              <input
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                placeholder="Search by wallet address…"
+                className="flex-1 min-w-0 border-[2px] border-[#111]/20 rounded-full px-3.5 py-1.5 font-mono-ui text-[12px] bg-[#FFFDF0] focus:outline-none focus:border-[#111]"
+              />
+              <button
+                type="button"
+                onClick={() => setNewestFirst(v => !v)}
+                className="shrink-0 font-mono-bold text-[10px] uppercase tracking-wider border-[2px] border-[#111] rounded-full px-3 py-1.5 bg-white hover:bg-[#FFE600]/40 transition-colors btn-press cursor-pointer"
+              >
+                {newestFirst ? 'Newest ↓' : 'Oldest ↑'}
+              </button>
+            </div>
+          )}
+
+          {shown.length === 0 ? (
+            <div className="py-8 text-center font-mono-ui text-[12px] text-[#111]/50">No submissions match “{query}”.</div>
+          ) : (
+            /* Self-contained scrollable comment stream */
+            <div className="max-h-[520px] sm:max-h-[580px] overflow-y-auto overscroll-contain submissions-scroll pr-1.5 pb-7 flex flex-col gap-3">
+              {shown.map(sub => (
+                <SingleOffchainSubmission
+                  key={sub.id}
+                  sub={sub}
+                  bountyId={bountyId}
+                  isPoster={isPoster}
+                  rewardPerWinner={rewardPerWinner}
+                  canApprove={!afterReviewWindow}
+                  onApproved={onApproved}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
     </WindowCard>
   )
@@ -1168,6 +1201,15 @@ function SingleOffchainSubmission({ sub, bountyId, isPoster, rewardPerWinner, ca
   const { switchChain } = useSwitchChain()
   const isWrongChain = chainId !== CHAIN_ID
   const [expanded, setExpanded] = useState(false)
+  const bodyRef = useRef<HTMLDivElement>(null)
+  const [bodyOpen, setBodyOpen] = useState(false)
+  const [bodyOverflowing, setBodyOverflowing] = useState(false)
+  const hasMedia = /data:(image|video)\/|\.(png|jpe?g|gif|webp|svg)|youtu/i.test(sub.content)
+
+  useEffect(() => {
+    const el = bodyRef.current
+    if (el && !hasMedia) setBodyOverflowing(el.scrollHeight > 220)
+  }, [sub.content, hasMedia])
 
   const { data: winnerStatus } = useReadContract({
     address: CONTRACT_ADDRESS, abi: BOUNTY_BOARD_ABI, functionName: 'payoutStatus',
@@ -1261,10 +1303,25 @@ function SingleOffchainSubmission({ sub, bountyId, isPoster, rewardPerWinner, ca
               </div>
             </div>
 
-            {/* Content body */}
-            <div className="text-[#111]/90 pt-0.5">
+            {/* Content body — long text is clamped with a Show more toggle */}
+            <div
+              ref={bodyRef}
+              className={`text-[#111]/90 pt-0.5 relative ${!bodyOpen && bodyOverflowing ? 'max-h-[200px] overflow-hidden' : ''}`}
+            >
               <SubmissionViewer content={sub.content} />
+              {!bodyOpen && bodyOverflowing && (
+                <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+              )}
             </div>
+            {bodyOverflowing && (
+              <button
+                type="button"
+                onClick={() => setBodyOpen(v => !v)}
+                className="mt-1.5 font-mono-bold text-[10px] uppercase tracking-wider text-[#1A1AE6] hover:underline cursor-pointer"
+              >
+                {bodyOpen ? 'Show less ↑' : 'Show more ↓'}
+              </button>
+            )}
 
             {(approvePending || approveConfirming || approveSuccess || approveErr) && (
               <div className="mt-2.5">

@@ -97,7 +97,9 @@ body::before {
   .skeleton-shimmer { animation: none; background: #e8e6d8; }
 }
 
-/* ── Premium Futuristic Glass Shimmer Sweep (for Stat Cards) ── */
+/* ── Premium Glass Shimmer Sweep (black stat cards) ──
+   Beam travel is sized to the card (percentages are relative to each layer's own
+   width), so the light enters, crosses the whole card visibly, and exits cleanly. */
 .bounty-glass-shine {
   position: absolute;
   inset: 0;
@@ -105,81 +107,80 @@ body::before {
   border-radius: inherit;
   pointer-events: none;
   z-index: 5;
+  isolation: isolate;
+  transform: translateZ(0);
 }
 
-/* Atmospheric cyan ambient glow */
+/* Static glass sheen along the top edge */
+.bounty-glass-shine::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 45%);
+}
+
+/* Soft cyan atmosphere trailing the beam (concentric with the core) */
 .bounty-glass-beam-bloom {
   position: absolute;
-  inset: -30% -50%;
+  top: -40%;
+  bottom: -40%;
+  left: 0;
+  width: 90%;
   background: linear-gradient(
     90deg,
-    transparent 0%,
-    transparent 30%,
-    rgba(56, 189, 248, 0.0) 38%,
-    rgba(56, 189, 248, 0.12) 46%,
-    rgba(186, 230, 253, 0.28) 49%,
-    rgba(255, 255, 255, 0.35) 50%,
-    rgba(186, 230, 253, 0.28) 51%,
-    rgba(56, 189, 248, 0.12) 54%,
-    rgba(56, 189, 248, 0.0) 62%,
-    transparent 70%,
-    transparent 100%
+    rgba(56, 189, 248, 0) 0%,
+    rgba(56, 189, 248, 0.07) 25%,
+    rgba(125, 211, 252, 0.2) 45%,
+    rgba(186, 230, 253, 0.26) 50%,
+    rgba(125, 211, 252, 0.2) 55%,
+    rgba(56, 189, 248, 0.07) 75%,
+    rgba(56, 189, 248, 0) 100%
   );
-  filter: blur(10px);
-  transform: translateX(-120%) skewX(-24deg);
+  mix-blend-mode: screen;
   opacity: 0;
+  transform: translateX(-128%) skewX(-20deg);
   will-change: transform, opacity;
-  animation: glassShimmerSweep 3.6s cubic-bezier(0.35, 0.05, 0.2, 1) infinite;
-  animation-fill-mode: both;
+  animation: glassSweepBloom 4.4s cubic-bezier(0.45, 0.05, 0.25, 1) infinite both;
 }
 
-/* Sharp bright core reflection beam */
+/* Bright, thin reflection core */
 .bounty-glass-beam {
   position: absolute;
-  inset: -30% -50%;
+  top: -40%;
+  bottom: -40%;
+  left: 0;
+  width: 40%;
   background: linear-gradient(
     90deg,
-    transparent 0%,
-    transparent 42%,
-    rgba(127, 243, 240, 0.06) 47%,
-    rgba(180, 245, 255, 0.5) 49.3%,
-    rgba(255, 255, 255, 0.98) 50%,
-    rgba(180, 245, 255, 0.5) 50.7%,
-    rgba(127, 243, 240, 0.06) 53%,
-    transparent 58%,
-    transparent 100%
+    rgba(255, 255, 255, 0) 0%,
+    rgba(165, 243, 252, 0.1) 30%,
+    rgba(207, 250, 254, 0.5) 45%,
+    rgba(255, 255, 255, 0.95) 50%,
+    rgba(207, 250, 254, 0.5) 55%,
+    rgba(165, 243, 252, 0.1) 70%,
+    rgba(255, 255, 255, 0) 100%
   );
-  box-shadow:
-    0 0 10px 1px rgba(160, 240, 255, 0.4),
-    0 0 20px 2px rgba(100, 220, 255, 0.2);
-  filter: blur(0.4px);
-  transform: translateX(-120%) skewX(-24deg);
+  mix-blend-mode: screen;
   opacity: 0;
+  transform: translateX(-225%) skewX(-20deg);
   will-change: transform, opacity;
-  animation: glassShimmerSweep 3.6s cubic-bezier(0.35, 0.05, 0.2, 1) infinite;
-  animation-fill-mode: both;
+  animation: glassSweepCore 4.4s cubic-bezier(0.45, 0.05, 0.25, 1) infinite both;
 }
 
-@keyframes glassShimmerSweep {
-  0% {
-    transform: translateX(-120%) skewX(-24deg);
-    opacity: 0;
-  }
-  8% {
-    opacity: 0.95;
-  }
-  50% {
-    transform: translateX(120%) skewX(-24deg);
-    opacity: 0.95;
-  }
-  56% {
-    transform: translateX(120%) skewX(-24deg);
-    opacity: 0;
-  }
-  100% {
-    transform: translateX(120%) skewX(-24deg);
-    opacity: 0;
-  }
+@keyframes glassSweepCore {
+  0%   { transform: translateX(-225%) skewX(-20deg); opacity: 0; }
+  8%   { opacity: 1; }
+  44%  { opacity: 1; }
+  52%  { transform: translateX(375%) skewX(-20deg); opacity: 0; }
+  100% { transform: translateX(375%) skewX(-20deg); opacity: 0; }
+}
+
+@keyframes glassSweepBloom {
+  0%   { transform: translateX(-128%) skewX(-20deg); opacity: 0; }
+  8%   { opacity: 1; }
+  44%  { opacity: 1; }
+  52%  { transform: translateX(139%) skewX(-20deg); opacity: 0; }
+  100% { transform: translateX(139%) skewX(-20deg); opacity: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -192,6 +193,8 @@ body::before {
 
 /* Submissions internal comment-feed scrollbar */
 .submissions-scroll {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
   scrollbar-width: thin;
   scrollbar-color: rgba(17, 17, 17, 0.25) transparent;
 }
