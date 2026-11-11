@@ -8,7 +8,8 @@ import { PillButton } from './PillButton'
 import { StatusTag } from './StatusTag'
 import { PixelAvatar } from './PixelAvatar'
 import { TrophyIcon, CoinIcon, ClockIcon, ArrowRightIcon } from './Icons'
-import { NotepadIcon, UsdcCoinIcon, TrophyBigIcon } from './StatIcons'
+import { TrophyBigIcon, NotepadIcon, UsdcCoinIcon } from './StatIcons'
+import { AnimatedCounter } from './AnimatedCounter'
 import { MyBounties, MySubmissions } from './MyBounties'
 import { BOUNTY_BOARD_ABI } from '../bounty-abi'
 import { CHAIN_ID, CONTRACT_ADDRESS, CONTRACT_DEPLOYED } from '../bounty-config'
@@ -83,6 +84,7 @@ const cardVariants = {
 
 // ─── Desktop wall card (mobile keeps the original BountyCard) ───────────────
 function WallBountyCard({ bounty, onClick }: { bounty: BountyData; onClick: () => void }) {
+  const [spotlight, setSpotlight] = useState<{ x: number; y: number; opacity: number }>({ x: 0, y: 0, opacity: 0 })
   const idNum = Number(bounty.id)
   const title = decodeBytes(bounty.title) || `Bounty #${idNum}`
   const description = decodeBytes(bounty.description)
@@ -96,12 +98,36 @@ function WallBountyCard({ bounty, onClick }: { bounty: BountyData; onClick: () =
   const subCount = bounty.submissionCount !== undefined ? Number(bounty.submissionCount) : null
   const meta = `${bounty.winnersApproved}/${bounty.maxWinners} winners${subCount !== null ? ` · ${subCount} submission${subCount === 1 ? '' : 's'}` : ''}`
 
+  const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    setSpotlight({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+      opacity: 1,
+    })
+  }
+
+  const handleMouseLeave = () => {
+    setSpotlight(s => ({ ...s, opacity: 0 }))
+  }
+
   return (
     <button
       type="button"
       onClick={onClick}
-      className="text-left w-full h-full flex flex-col gap-3 rounded-lg border-[2px] border-[#111] bg-[#FFFDF0] p-4 shadow-hard-sm transition-all hover:shadow-[6px_6px_0_#111] hover:-translate-y-0.5"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      className="relative overflow-hidden text-left w-full h-full flex flex-col gap-3 rounded-lg border-[2px] border-[#111] bg-[#FFFDF0] p-4 shadow-hard-sm transition-all hover:shadow-[6px_6px_0_#111] hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0_#111]"
     >
+      {/* Interactive cursor spotlight sheen */}
+      <div
+        className="pointer-events-none absolute inset-0 transition-opacity duration-300"
+        style={{
+          opacity: spotlight.opacity,
+          background: `radial-gradient(240px circle at ${spotlight.x}px ${spotlight.y}px, rgba(127, 243, 240, 0.18), transparent 70%)`,
+        }}
+        aria-hidden="true"
+      />
       <div className="flex items-center justify-between gap-2">
         <StatusTag status={status} />
         <span className="flex items-center gap-1 text-[#111]/70">
@@ -340,9 +366,9 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
               {/* Stats row on mobile */}
               {CONTRACT_DEPLOYED && (
                 <div className="flex gap-8 flex-wrap pt-4 mt-1 border-t-[3px] border-[#111] desk:hidden">
-                  <Stat value={totalBounties.toString()} label="Bounties" />
-                  <Stat value={`$${formatUsdc(totalEscrowed)}`} label="In escrow" />
-                  <Stat value={`$${formatUsdc(totalPaid)}`} label="Paid out" icon={<CoinIcon size={28} />} />
+                  <Stat value={totalBounties.toString()} numericValue={totalBounties} label="Bounties" />
+                  <Stat value={`$${formatUsdc(totalEscrowed)}`} numericValue={Number(totalEscrowed) / 1e6} prefix="$" label="In escrow" />
+                  <Stat value={`$${formatUsdc(totalPaid)}`} numericValue={Number(totalPaid) / 1e6} prefix="$" label="Paid out" icon={<CoinIcon size={28} />} />
                 </div>
               )}
             </div>
@@ -354,11 +380,11 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
       {/* Stats row — desktop only (mobile keeps the stats inside the hero) */}
       {CONTRACT_DEPLOYED && (
         <div className="hidden desk:flex items-center justify-between w-full max-w-[1040px] mx-auto px-6">
-          <StatItem icon={<NotepadIcon size={54} />} value={totalBounties.toString()} label="Bounties" />
+          <StatItem icon={<NotepadIcon size={54} />} value={totalBounties.toString()} numericValue={totalBounties} label="Bounties" />
           <span className="h-14 w-px bg-[#111]/30" />
-          <StatItem icon={<UsdcCoinIcon size={54} />} value={`$${formatUsdc(totalEscrowed)}`} label="In escrow" />
+          <StatItem icon={<UsdcCoinIcon size={54} />} value={`$${formatUsdc(totalEscrowed)}`} numericValue={Number(totalEscrowed) / 1e6} prefix="$" label="In escrow" />
           <span className="h-14 w-px bg-[#111]/30" />
-          <StatItem icon={<TrophyBigIcon size={54} />} value={`$${formatUsdc(totalPaid)}`} label="Paid out" />
+          <StatItem icon={<TrophyBigIcon size={54} />} value={`$${formatUsdc(totalPaid)}`} numericValue={Number(totalPaid) / 1e6} prefix="$" label="Paid out" />
         </div>
       )}
 
@@ -493,11 +519,23 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
   )
 }
 
-function Stat({ value, label, icon }: { value: string; label: string; icon?: React.ReactNode }) {
+function Stat({ value, label, icon, numericValue, prefix = '' }: {
+  value: string
+  label: string
+  icon?: React.ReactNode
+  numericValue?: number
+  prefix?: string
+}) {
   return (
     <div className="flex flex-col gap-0.5">
       <div className="flex items-center gap-1.5">
-        <span className="font-heading text-[28px] font-extrabold tabular-nums text-[#111]" style={{ letterSpacing: '-0.02em' }}>{value}</span>
+        <span className="font-heading text-[28px] font-extrabold tabular-nums text-[#111]" style={{ letterSpacing: '-0.02em' }}>
+          {numericValue !== undefined ? (
+            <AnimatedCounter value={numericValue} prefix={prefix} decimals={prefix === '$' ? 2 : 0} />
+          ) : (
+            value
+          )}
+        </span>
         {icon}
       </div>
       <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/70">{label}</span>
@@ -505,12 +543,24 @@ function Stat({ value, label, icon }: { value: string; label: string; icon?: Rea
   )
 }
 
-function StatItem({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {
+function StatItem({ icon, value, label, numericValue, prefix = '' }: {
+  icon: React.ReactNode
+  value: string
+  label: string
+  numericValue?: number
+  prefix?: string
+}) {
   return (
     <div className="flex items-center gap-4 min-w-0">
       <span className="shrink-0">{icon}</span>
       <div className="flex flex-col gap-1 min-w-0">
-        <span className="font-heading text-[40px] font-extrabold tabular-nums text-[#111] leading-none truncate" style={{ letterSpacing: '-0.02em' }}>{value}</span>
+        <span className="font-heading text-[40px] font-extrabold tabular-nums text-[#111] leading-none truncate" style={{ letterSpacing: '-0.02em' }}>
+          {numericValue !== undefined ? (
+            <AnimatedCounter value={numericValue} prefix={prefix} decimals={prefix === '$' ? 2 : 0} />
+          ) : (
+            value
+          )}
+        </span>
         <span className="font-mono-bold text-[12px] uppercase tracking-widest text-[#111]/70">{label}</span>
       </div>
     </div>

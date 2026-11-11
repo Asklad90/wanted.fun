@@ -9,7 +9,7 @@ import { ProfilePage } from './components/ProfilePage'
 import { HowItWorksPage } from './components/HowItWorksPage'
 import { NotFoundPage } from './components/NotFoundPage'
 import { PrivacyPage } from './components/PrivacyPage'
-import { Doodles } from './components/Doodles'
+import { ReactiveBackground } from './components/ReactiveBackground'
 import { CHAIN_NAME, CONTRACT_ADDRESS, CONTRACT_DEPLOYED, getAddressUrl } from './bounty-config'
 import { updatePageMeta } from './lib/meta'
 
@@ -130,6 +130,18 @@ export default function App() {
   const { address: connectedAddr } = useAccount()
   const [route, setRoute] = useState<ParsedRoute>(parseRoute)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [scrollProgress, setScrollProgress] = useState(0)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const totalHeight = document.documentElement.scrollHeight - window.innerHeight
+      if (totalHeight > 0) {
+        setScrollProgress(Math.min(100, Math.max(0, (window.scrollY / totalHeight) * 100)))
+      }
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   const view = route.view
   const activeBountyId = route.bountyId
@@ -247,7 +259,7 @@ export default function App() {
 
   return (
     <div className="min-h-dvh flex flex-col">
-      <Doodles />
+      <ReactiveBackground />
       {/* ─── Header ───────────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 border-b-[3px] border-[#111] bg-[#111] px-4 py-3 relative">
         {/* Logo + buttons */}
@@ -370,6 +382,13 @@ export default function App() {
             Built on Arc
           </span>
         </a>
+
+        {/* Reactive scroll progress bar along the header's lower edge */}
+        <div
+          className="absolute -bottom-[3px] left-0 h-[3px] bg-gradient-to-r from-[#FFE600] via-[#FF3E9A] to-[#7FF3F0] transition-[width] duration-75 ease-out z-50 pointer-events-none"
+          style={{ width: `${scrollProgress}%` }}
+          aria-hidden="true"
+        />
       </header>
 
       {/* ─── Main ─────────────────────────────────────────────────────────────── */}
