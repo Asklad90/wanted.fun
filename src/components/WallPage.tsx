@@ -212,7 +212,7 @@ interface BountyItemProps {
   onSelect: (id: bigint) => void
   filter: StatusFilter
   query: string
-  onReport: (id: string, hiddenForAge: boolean, shown: boolean) => void
+  onReport: (id: string, hiddenForAge: boolean, shown: boolean, isActive: boolean) => void
 }
 
 function BountyItem({ bountyId, index, onSelect, filter, query, onReport }: BountyItemProps) {
@@ -222,11 +222,12 @@ function BountyItem({ bountyId, index, onSelect, filter, query, onReport }: Boun
   // Work out whether this bounty should be on the wall (before any early return so hook order stays fixed)
   let shown = true
   let hiddenForAge = false
+  let isActive = false
   if (bounty) {
     const nowSec = _wallNowSec()
     const deadlineSec = Number(bounty.deadline)
     const isInactive = bounty.cancelled || nowSec > deadlineSec
-    hiddenForAge = isInactive && nowSec > deadlineSec + HIDE_AFTER_SEC
+    hiddenForAge = bounty.cancelled || (isInactive && nowSec > deadlineSec + HIDE_AFTER_SEC)
     const status = bountyStatus({
       winnersApproved: bounty.winnersApproved,
       maxWinners: bounty.maxWinners,
@@ -234,6 +235,7 @@ function BountyItem({ bountyId, index, onSelect, filter, query, onReport }: Boun
       cancelled: bounty.cancelled,
       reclaimedUnused: bounty.reclaimedUnused,
     })
+    isActive = !hiddenForAge && status === 'OPEN'
     const q = query.trim().toLowerCase()
     const haystack = `${decodeBytes(bounty.title)} ${decodeBytes(bounty.description)}`.toLowerCase()
     shown = !hiddenForAge && matchesFilter(status, filter) && (q === '' || haystack.includes(q))
@@ -241,8 +243,8 @@ function BountyItem({ bountyId, index, onSelect, filter, query, onReport }: Boun
   const loaded = bounty !== null
 
   useEffect(() => {
-    if (loaded) onReport(idKey, hiddenForAge, shown)
-  }, [loaded, hiddenForAge, shown, idKey, onReport])
+    if (loaded) onReport(idKey, hiddenForAge, shown, isActive)
+  }, [loaded, hiddenForAge, shown, isActive, idKey, onReport])
 
   if (!bounty) return <SkeletonBountyCard />
   if (!shown) return null
@@ -273,16 +275,18 @@ function BountyGrid({ total, onSelectBounty, filter, query, onResetFilters, onAl
   filter: StatusFilter
   query: string
   onResetFilters: () => void
-  onAllHiddenChange: (hidden: boolean) => void
+  onAllHiddenChange: (hidden: boolean, activeCount: number) => void
 }) {
   const ids = Array.from({ length: Math.min(total, 24) }, (_, i) => BigInt(total - i))
   const [agedOffMap, setAgedOffMap] = useState<Record<string, boolean>>({})
+  const [activeMap, setActiveMap] = useState<Record<string, boolean>>({})
   const [visibleMap, setVisibleMap] = useState<Record<string, boolean>>({})
 
   const filterKey = `${filter}::${query.trim().toLowerCase()}`
 
-  const report = useCallback((id: string, hiddenForAge: boolean, shown: boolean) => {
+  const report = useCallback((id: string, hiddenForAge: boolean, shown: boolean, isActive: boolean) => {
     setAgedOffMap(prev => (prev[id] === hiddenForAge ? prev : { ...prev, [id]: hiddenForAge }))
+    setActiveMap(prev => (prev[id] === isActive ? prev : { ...prev, [id]: isActive }))
     const scopedKey = `${filterKey}::${id}`
     setVisibleMap(prev => (prev[scopedKey] === shown ? prev : { ...prev, [scopedKey]: shown }))
   }, [filterKey])
@@ -291,14 +295,17 @@ function BountyGrid({ total, onSelectBounty, filter, query, onResetFilters, onAl
   // A wall is only "all hidden" (swapping to the "Be the first to post a bounty" card)
   // if every single bounty has aged off (>3 days past deadline), completely independent of filter/search!
   const allHidden = allAgedReported && ids.every(id => agedOffMap[id.toString()] === true)
+  const activeCount = allAgedReported
+    ? ids.filter(id => activeMap[id.toString()] === true).length
+    : Math.max(0, total - Object.values(agedOffMap).filter(Boolean).length)
 
   const allFilterReported = ids.length > 0 && ids.every(id => visibleMap[`${filterKey}::${id.toString()}`] !== undefined)
   const noMatches = allFilterReported && ids.every(id => visibleMap[`${filterKey}::${id.toString()}`] === false)
   const noActiveFilter = filter === 'all' && query.trim() === ''
 
   useEffect(() => {
-    onAllHiddenChange(allHidden)
-  }, [allHidden, onAllHiddenChange])
+    onAllHiddenChange(allHidden, activeCount)
+  }, [allHidden, activeCount, onAllHiddenChange])
 
   if (allHidden) return null
 
@@ -337,7 +344,7 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
   const [tab, setTab] = useState<Tab>('wall')
   const [filter, setFilter] = useState<StatusFilter>('all')
   const [query, setQuery] = useState('')
-  const [hiddenSnapshot, setHiddenSnapshot] = useState<{ hidden: boolean; totalBounties: number } | null>(null)
+  const [hiddenSnapshot, setHiddenSnapshot] = useState<{ hidden: boolean; activeCount: number; totalBounties: number } | null>(null)
 
   const { data: totalBountiesRaw, isLoading: totalBountiesLoading } = useReadContract({
     address: CONTRACT_ADDRESS, abi: BOUNTY_BOARD_ABI, functionName: 'totalBounties',
@@ -359,8 +366,12 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
     && hiddenSnapshot.totalBounties === totalBounties
     && hiddenSnapshot.hidden
 
-  const handleAllHiddenChange = useCallback((hidden: boolean) => {
-    setHiddenSnapshot({ hidden, totalBounties })
+  const activeBountiesCount = hiddenSnapshot && hiddenSnapshot.totalBounties === totalBounties
+    ? hiddenSnapshot.activeCount
+    : totalBounties
+
+  const handleAllHiddenChange = useCallback((hidden: boolean, activeCount: number) => {
+    setHiddenSnapshot({ hidden, activeCount, totalBounties })
   }, [totalBounties])
   const totalPaid = (totalPaidRaw) ?? 0n
 
@@ -418,7 +429,7 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
               {/* Stats row on mobile */}
               {CONTRACT_DEPLOYED && (
                 <div className="grid grid-cols-3 gap-2 pt-4 mt-1 border-t-[3px] border-[#111] desk:hidden">
-                  <Stat value={totalBounties.toString()} numericValue={totalBounties} label="Bounties" />
+                  <Stat value={activeBountiesCount.toString()} numericValue={activeBountiesCount} label="Bounties" />
                   <Stat value={`$${formatUsdc(totalEscrowed)}`} numericValue={Number(totalEscrowed) / 1e6} prefix="$" label="In escrow" />
                   <Stat value={`$${formatUsdc(totalPaid)}`} numericValue={Number(totalPaid) / 1e6} prefix="$" label="Paid out" icon={<CoinIcon size={20} />} />
                 </div>
@@ -434,9 +445,9 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
         <div className="hidden desk:grid grid-cols-3 gap-5 w-full">
           <StatItem
             icon={<NotepadIcon size={44} />}
-            value={totalBounties.toString()}
-            numericValue={totalBounties}
-            label="Total Bounties Posted"
+            value={activeBountiesCount.toString()}
+            numericValue={activeBountiesCount}
+            label="Active Bounties"
             accent="#FFE600"
           />
           <StatItem
@@ -532,7 +543,7 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
                     Bounty Wall
                   </span>
                   <span className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111] bg-white/90 border-[2px] border-[#111] rounded-full px-3 py-1">
-                    {totalBounties} total
+                    {activeBountiesCount} active
                   </span>
                 </div>
 
