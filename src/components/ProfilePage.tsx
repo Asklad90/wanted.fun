@@ -139,6 +139,7 @@ function AvatarPicker({ address, selected, onPick }: { address: string; selected
 
 // ─── Reads one bounty's stats and reports it up ───────────────────────────────
 interface BountyStatInfo {
+  rewardPerWinner: bigint
   escrowRemaining: bigint
   winnersApproved: bigint
   maxWinners: bigint
@@ -149,11 +150,12 @@ function BountyStatsReader({ bountyId, onValue }: { bountyId: bigint; onValue: (
   const { data: bounty } = useReadContract({
     address: CONTRACT_ADDRESS, abi: BOUNTY_BOARD_ABI, functionName: 'getBounty',
     args: [bountyId], chainId: CHAIN_ID,
-  }) as { data: { escrowRemaining: bigint; winnersApproved: bigint; maxWinners: bigint; cancelled: boolean } | undefined }
+  }) as { data: { rewardPerWinner: bigint; escrowRemaining: bigint; winnersApproved: bigint; maxWinners: bigint; cancelled: boolean } | undefined }
 
   useEffect(() => {
     if (bounty) {
       onValue(bountyId.toString(), {
+        rewardPerWinner: bounty.rewardPerWinner,
         escrowRemaining: bounty.escrowRemaining,
         winnersApproved: bounty.winnersApproved,
         maxWinners: bounty.maxWinners,
@@ -449,6 +451,11 @@ export function ProfilePage({ address, onBack, onSelectBounty, onCreateBounty, o
     [bountyStats],
   )
 
+  const paidOutTotal = useMemo(
+    () => Object.values(bountyStats).reduce((sum, v) => sum + v.winnersApproved * v.rewardPerWinner, 0n),
+    [bountyStats],
+  )
+
   // ── Reputation Badges ────────────────────────────────────────────────────────
   // 1. "First Catch": First bounty won
   const isFirstCatch = wins >= 1n
@@ -514,8 +521,8 @@ export function ProfilePage({ address, onBack, onSelectBounty, onCreateBounty, o
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
-          {isOwn && !editingProfile && (
+        {isOwn && !editingProfile && (
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={startEditingProfile}
@@ -526,16 +533,8 @@ export function ProfilePage({ address, onBack, onSelectBounty, onCreateBounty, o
               </svg>
               <span>Edit Profile</span>
             </button>
-          )}
-          <button
-            type="button"
-            onClick={() => { void navigator.clipboard.writeText(profileUrl) }}
-            className="inline-flex items-center gap-1.5 font-mono-bold text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-full border-[2px] border-[#111] bg-[#FFE600] hover:bg-[#111] hover:text-[#FFE600] text-[#111] shadow-hard-xs transition-colors btn-press cursor-pointer"
-          >
-            <span>Share Profile</span>
-            <span>↗</span>
-          </button>
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Hidden readers — collect stats across every bounty this address posted */}
@@ -665,7 +664,7 @@ export function ProfilePage({ address, onBack, onSelectBounty, onCreateBounty, o
             </div>
 
             {/* Right quick-earned showcase box inside the hero card */}
-            <div className="w-full md:w-auto dark-grid-surface bg-[#111] border-[2.5px] border-[#111] rounded-xl p-3.5 sm:px-5 flex items-center justify-between md:flex-col md:items-end gap-2 shadow-hard-xs shrink-0">
+            <div className="w-full md:w-auto dark-grid-surface bg-[#111] border-[2.5px] border-[#111] rounded-xl p-3.5 sm:px-5 flex items-center justify-between md:flex-col md:items-end gap-1.5 shadow-hard-xs shrink-0">
               <span className="font-mono-bold text-[9px] uppercase tracking-widest text-white/60">Total Earned</span>
               <div className="flex items-center gap-2">
                 <CoinIcon size={22} />
@@ -674,9 +673,6 @@ export function ProfilePage({ address, onBack, onSelectBounty, onCreateBounty, o
                 </span>
                 <span className="font-mono-bold text-[10px] uppercase tracking-wider text-white/70">USDC</span>
               </div>
-              <span className="font-mono-bold text-[10px] text-[#C6F23A]">
-                {wins.toString()} bounty win{wins === 1n ? '' : 's'}
-              </span>
             </div>
           </div>
         </div>
@@ -874,9 +870,9 @@ export function ProfilePage({ address, onBack, onSelectBounty, onCreateBounty, o
                     <span className="font-heading text-[22px] sm:text-[24px] font-black text-[#111] tabular-nums leading-none">{totalPosted?.length ?? 0}</span>
                     <span className="font-mono-bold text-[9px] uppercase tracking-widest text-[#111]/60">Created</span>
                   </div>
-                  <div className="border-[2px] border-[#111] rounded-xl p-2.5 bg-[#FF3E9A]/15 shadow-hard-xs flex flex-col gap-0.5 items-center text-center">
-                    <span className="font-heading text-[22px] sm:text-[24px] font-black text-[#FF3E9A] tabular-nums leading-none">
-                      {allPostedStats.reduce((s, b) => s + Number(b.winnersApproved), 0)}
+                  <div className="border-[2px] border-[#111] rounded-xl p-2.5 bg-[#C6F23A]/25 shadow-hard-xs flex flex-col gap-0.5 items-center text-center">
+                    <span className="font-heading text-[22px] sm:text-[24px] font-black text-[#16a34a] tabular-nums leading-none">
+                      ${formatUsdc(paidOutTotal)}
                     </span>
                     <span className="font-mono-bold text-[9px] uppercase tracking-widest text-[#111]/60">Paid out</span>
                   </div>
