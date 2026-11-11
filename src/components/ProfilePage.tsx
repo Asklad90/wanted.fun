@@ -309,22 +309,38 @@ function BountyRow({ bountyId, profileAddr, onSelect, tabMode }: {
   return (
     <button
       onClick={() => onSelect(bountyId)}
-      className="w-full text-left border-[3px] border-[#111] rounded-lg p-3 bg-[#FFFDF0] shadow-hard-sm hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-hard transition-transform flex items-center justify-between gap-2 cursor-pointer"
+      className="group w-full text-left border-[3px] border-[#111] rounded-xl p-3.5 bg-white shadow-hard-sm hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-hard transition-all flex items-center justify-between gap-3 cursor-pointer"
     >
-      <div className="flex flex-col gap-0.5 min-w-0">
-        <span className="font-heading text-[14px] font-bold text-[#111] truncate">{titleStr || '(untitled)'}</span>
-        <span className="font-mono-ui text-[10px] uppercase tracking-wider text-[#111]/50">
-          {formatUsdc(bounty.rewardPerWinner)} USDC · {timeLeft(bounty.deadline)}
+      <div className="flex items-center gap-3 min-w-0 flex-1">
+        <span className="shrink-0 font-mono-bold text-[10px] uppercase tracking-wider px-2.5 py-1.5 rounded-lg bg-[#111] text-[#FFE600] border-[2px] border-[#111]">
+          #{bountyId.toString().padStart(3, '0')}
         </span>
+        <div className="flex flex-col gap-1 min-w-0 flex-1">
+          <span className="font-heading text-[15px] font-extrabold text-[#111] group-hover:text-[#1A1AE6] truncate">{titleStr || '(untitled)'}</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center gap-1 font-mono-bold text-[10px] uppercase tracking-wider bg-[#FFE600] text-[#111] border-[1.5px] border-[#111] rounded-md px-2 py-0.5">
+              <CoinIcon size={11} />
+              {formatUsdc(bounty.rewardPerWinner)} USDC
+            </span>
+            <span className="font-mono-bold text-[10px] uppercase tracking-wider text-[#111]/60">
+              {timeLeft(bounty.deadline)}
+            </span>
+          </div>
+        </div>
       </div>
-      <div className="flex flex-col items-end gap-1 shrink-0">
-        <StatusTag status={status} />
-        {myStatus !== MY_STATUS_NONE && (
-          <span
-            className="font-mono-bold text-[9px] uppercase tracking-widest border-[2px] border-[#111] rounded-full px-1.5 py-0.5"
-            style={{ backgroundColor: myStatusInfo.color }}
-          >{myStatusInfo.label}</span>
-        )}
+      <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-col items-end gap-1">
+          <StatusTag status={status} />
+          {myStatus !== MY_STATUS_NONE && (
+            <span
+              className="font-mono-bold text-[9px] uppercase tracking-widest border-[2px] border-[#111] rounded-full px-2 py-0.5 shadow-hard-xs"
+              style={{ backgroundColor: myStatusInfo.color }}
+            >{myStatusInfo.label}</span>
+          )}
+        </div>
+        <span className="hidden sm:flex w-8 h-8 rounded-full bg-[#FFFDF0] group-hover:bg-[#FFE600] border-[2px] border-[#111] items-center justify-center font-mono-bold text-[12px] text-[#111] transition-colors">
+          →
+        </span>
       </div>
     </button>
   )
@@ -481,14 +497,46 @@ export function ProfilePage({ address, onBack, onSelectBounty, onCreateBounty, o
 
   return (
     <div className="flex flex-col gap-5">
-      <button
-        type="button"
-        onClick={onBack}
-        className="self-start inline-flex items-center gap-1.5 font-mono-bold text-[11px] uppercase tracking-wider text-[#111] bg-white hover:bg-[#FFE600] border-[2.5px] border-[#111] px-3.5 py-1.5 rounded-full shadow-hard-sm transition-colors btn-press cursor-pointer"
-      >
-        <span aria-hidden="true">←</span>
-        <span>Back to Wall</span>
-      </button>
+      {/* Top action control bar */}
+      <div className="flex items-center justify-between gap-3 flex-wrap border-[3px] border-[#111] rounded-2xl bg-white shadow-hard px-4 py-3">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex items-center gap-1.5 font-mono-bold text-[11px] uppercase tracking-wider text-[#111] bg-[#FFFDF0] hover:bg-[#FFE600] border-[2.5px] border-[#111] px-3.5 py-1.5 rounded-full shadow-hard-xs transition-colors btn-press cursor-pointer"
+          >
+            <span aria-hidden="true">←</span>
+            <span>Back to Wall</span>
+          </button>
+          <span className="hidden sm:inline-flex items-center gap-1.5 font-mono-bold text-[10px] uppercase tracking-widest px-3 py-1 rounded-full bg-[#111] text-[#7FF3F0] border-[2px] border-[#111]">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#C6F23A]" />
+            Onchain Identity · Arc
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {isOwn && !editingProfile && (
+            <button
+              type="button"
+              onClick={startEditingProfile}
+              className="inline-flex items-center gap-1.5 font-mono-bold text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-full border-[2px] border-[#111] bg-[#7FF3F0] hover:bg-[#FFE600] text-[#111] shadow-hard-xs transition-colors btn-press cursor-pointer"
+            >
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M11.5 2.5L13.5 4.5L5.5 12.5H3.5V10.5L11.5 2.5Z" stroke="#111" strokeWidth="1.5" strokeLinejoin="round" fill="none" />
+              </svg>
+              <span>Edit Profile</span>
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => { void navigator.clipboard.writeText(profileUrl) }}
+            className="inline-flex items-center gap-1.5 font-mono-bold text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-full border-[2px] border-[#111] bg-[#FFE600] hover:bg-[#111] hover:text-[#FFE600] text-[#111] shadow-hard-xs transition-colors btn-press cursor-pointer"
+          >
+            <span>Share Profile</span>
+            <span>↗</span>
+          </button>
+        </div>
+      </div>
 
       {/* Hidden readers — collect stats across every bounty this address posted */}
       {totalPosted?.map(id => <BountyStatsReader key={id.toString()} bountyId={id} onValue={onBountyStat} />)}
@@ -496,134 +544,148 @@ export function ProfilePage({ address, onBack, onSelectBounty, onCreateBounty, o
       {/* ── Header window ─────────────────────────────────────────────────── */}
       <WindowCard title="USER_PROFILE.EXE" titleBarColor="#7FF3F0" bodyClassName="flex flex-col gap-0 !p-0">
 
-        {/* ── TOP: checkerboard zone — avatar + address + badges + bio ───── */}
-        <div className="checkerboard p-4 rounded-t-[5px]">
-          <div className="flex items-start gap-4">
-            {/* Avatar with edit pencil */}
-            <div className="relative shrink-0">
-              <div className="border-[3px] border-[#111] rounded-xl overflow-hidden shadow-hard bg-[#FFFDF0]">
-                <PixelAvatar address={address} size={80} variant={profile.avatar_variant} />
+        {/* ── TOP: checkerboard zone — framed white identity card ───── */}
+        <div className="checkerboard p-4 sm:p-5 border-b-[3px] border-[#111]">
+          <div className="bg-white border-[3px] border-[#111] rounded-2xl p-4 sm:p-5 shadow-hard-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-start sm:items-center gap-4 min-w-0 flex-1">
+              {/* Avatar with edit pencil */}
+              <div className="relative shrink-0">
+                <div className="border-[3px] border-[#111] rounded-2xl overflow-hidden shadow-hard-sm bg-[#FFFDF0]">
+                  <PixelAvatar address={address} size={84} variant={profile.avatar_variant} />
+                </div>
+                {isOwn && !editingProfile && (
+                  <button
+                    onClick={startEditingProfile}
+                    className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-full bg-[#FFE600] border-[2px] border-[#111] flex items-center justify-center shadow-hard-xs cursor-pointer hover:bg-[#111] hover:text-[#FFE600] text-[#111] transition-colors"
+                    title="Edit profile"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <path d="M11.5 2.5L13.5 4.5L5.5 12.5H3.5V10.5L11.5 2.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" fill="none" />
+                    </svg>
+                  </button>
+                )}
               </div>
-              {isOwn && !editingProfile && (
-                <button
-                  onClick={startEditingProfile}
-                  className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-full bg-[#111] border-[2px] border-white flex items-center justify-center shadow-hard-sm cursor-pointer hover:bg-[#333] transition-colors"
-                  title="Edit profile"
-                >
-                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                    <path d="M11.5 2.5L13.5 4.5L5.5 12.5H3.5V10.5L11.5 2.5Z" stroke="white" strokeWidth="1.5" strokeLinejoin="round" fill="none" />
-                  </svg>
-                </button>
-              )}
+
+              {/* Address + badges + bio */}
+              <div className="flex flex-col gap-2 min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-mono-bold text-[9px] uppercase tracking-widest px-2 py-0.5 rounded-md bg-[#111] text-[#FFE600] border-[1.5px] border-[#111]">
+                    {isOwn ? 'YOUR WALLET' : 'HUNTER / CREATOR'}
+                  </span>
+                  <span className="font-mono-ui text-[11px] text-[#111]/60">
+                    Joined {formatJoinedDate(profile.created_at || Math.floor(Date.now() / 1000))}
+                  </span>
+                </div>
+
+                {/* Address + copy */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-heading text-[22px] sm:text-[26px] font-extrabold text-[#111] truncate leading-none">{formatAddress(address)}</span>
+                  <button
+                    onClick={() => { void navigator.clipboard.writeText(address) }}
+                    className="inline-flex items-center gap-1 border-[2px] border-[#111] rounded-lg px-2 py-1 bg-[#FFFDF0] shadow-hard-xs hover:bg-[#FFE600] transition-colors cursor-pointer shrink-0 font-mono-bold text-[10px] uppercase tracking-wider text-[#111]"
+                    title="Copy address"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <rect x="5" y="5" width="9" height="9" rx="1.5" stroke="#111" strokeWidth="1.5" fill="none"/>
+                      <path d="M4 11H3C2.4 11 2 10.6 2 10V3C2 2.4 2.4 2 3 2H10C10.6 2 11 2.4 11 3V4" stroke="#111" strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                    <span>Copy</span>
+                  </button>
+                </div>
+
+                {/* Reputation badges row */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {isFirstCatch && (
+                    <ReputationBadge
+                      label="First Catch"
+                      icon={
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                          <path d="M12 2L15 9L22 12L15 15L12 22L9 15L2 12L9 9L12 2Z" />
+                        </svg>
+                      }
+                      bg="#FFE600"
+                      title="First bounty won on Want.fun"
+                    />
+                  )}
+                  {hasPosted && (
+                    <ReputationBadge
+                      label="Want Creator"
+                      icon={
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                          <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" />
+                        </svg>
+                      }
+                      bg="#FF3E9A"
+                      textColor="#fff"
+                      title="Has created bounties on Want.fun"
+                    />
+                  )}
+                  {isHeavyHitter && (
+                    <ReputationBadge
+                      label="Heavy Hitter"
+                      icon={
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                        </svg>
+                      }
+                      bg="#FF3E9A"
+                      textColor="#FFFDF0"
+                      title="Earned > $500 USDC on Want.fun"
+                    />
+                  )}
+                  {isPromiseKeeper && (
+                    <ReputationBadge
+                      label="Promise Keeper"
+                      icon={
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="M20 6L9 17l-5-5" />
+                        </svg>
+                      }
+                      bg="#C6F23A"
+                      title="100% payout rate on created bounties"
+                    />
+                  )}
+                </div>
+
+                {/* Bio pill */}
+                {!editingProfile && (profile.bio ? (
+                  <div className="inline-flex items-center gap-2 bg-[#FFFDF0] border-[2px] border-[#111] rounded-xl px-3 py-1.5 shadow-hard-xs w-fit max-w-full">
+                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" className="shrink-0" aria-hidden="true">
+                      <rect x="2" y="2" width="12" height="12" rx="2" stroke="#111" strokeWidth="1.5" fill="none"/>
+                      <path d="M5 6h6M5 9h4" stroke="#111" strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                    <span className="font-mono-ui text-[12px] font-bold text-[#111]">{profile.bio}</span>
+                  </div>
+                ) : isOwn ? (
+                  <button onClick={startEditingProfile} className="font-mono-bold text-[11px] uppercase tracking-widest text-[#1A1AE6] underline self-start cursor-pointer">
+                    + Add bio &amp; socials
+                  </button>
+                ) : null)}
+              </div>
             </div>
 
-            {/* Address + badges + bio */}
-            <div className="flex flex-col gap-2 min-w-0 flex-1 pt-0.5">
-              {/* Address + copy */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-heading text-[20px] font-extrabold text-[#111] truncate">{formatAddress(address)}</span>
-                <button
-                  onClick={() => { void navigator.clipboard.writeText(address) }}
-                  className="border-[2px] border-[#111] rounded-md p-1 bg-white shadow-hard-sm hover:bg-[#FFFDF0] transition-colors cursor-pointer shrink-0"
-                  title="Copy address"
-                >
-                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                    <rect x="5" y="5" width="9" height="9" rx="1.5" stroke="#111" strokeWidth="1.5" fill="none"/>
-                    <path d="M4 11H3C2.4 11 2 10.6 2 10V3C2 2.4 2.4 2 3 2H10C10.6 2 11 2.4 11 3V4" stroke="#111" strokeWidth="1.5" strokeLinecap="round"/>
-                  </svg>
-                </button>
+            {/* Right quick-earned showcase box inside the hero card */}
+            <div className="w-full md:w-auto dark-grid-surface bg-[#111] border-[2.5px] border-[#111] rounded-xl p-3.5 sm:px-5 flex items-center justify-between md:flex-col md:items-end gap-2 shadow-hard-xs shrink-0">
+              <span className="font-mono-bold text-[9px] uppercase tracking-widest text-white/60">Total Earned</span>
+              <div className="flex items-center gap-2">
+                <CoinIcon size={22} />
+                <span className="font-heading text-[24px] sm:text-[28px] font-extrabold tabular-nums text-[#FFE600] leading-none">
+                  ${formatUsdc(earned)}
+                </span>
+                <span className="font-mono-bold text-[10px] uppercase tracking-wider text-white/70">USDC</span>
               </div>
-
-              {/* Reputation badges row */}
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {isFirstCatch && (
-                  <ReputationBadge
-                    label="First Catch"
-                    icon={
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                        <path d="M12 2L15 9L22 12L15 15L12 22L9 15L2 12L9 9L12 2Z" />
-                      </svg>
-                    }
-                    bg="#FFE600"
-                    title="First bounty won on Want.fun"
-                  />
-                )}
-                {hasPosted && (
-                  <ReputationBadge
-                    label="Want Creator"
-                    icon={
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                        <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" />
-                      </svg>
-                    }
-                    bg="#FF3E9A"
-                    textColor="#fff"
-                    title="Has created bounties on Want.fun"
-                  />
-                )}
-                {isHeavyHitter && (
-                  <ReputationBadge
-                    label="Heavy Hitter"
-                    icon={
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-                      </svg>
-                    }
-                    bg="#FF3E9A"
-                    textColor="#FFFDF0"
-                    title="Earned > $500 USDC on Want.fun"
-                  />
-                )}
-                {isPromiseKeeper && (
-                  <ReputationBadge
-                    label="Promise Keeper"
-                    icon={
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <path d="M20 6L9 17l-5-5" />
-                      </svg>
-                    }
-                    bg="#C6F23A"
-                    title="100% payout rate on created bounties"
-                  />
-                )}
-              </div>
-
-              {/* Bio pill */}
-              {!editingProfile && (profile.bio ? (
-                <div className="inline-flex items-center gap-2 bg-white border-[2px] border-[#111] rounded-full px-3 py-1.5 shadow-hard-sm w-fit max-w-full">
-                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                    <rect x="2" y="2" width="12" height="12" rx="2" stroke="#111" strokeWidth="1.5" fill="none"/>
-                    <path d="M5 6h6M5 9h4" stroke="#111" strokeWidth="1.5" strokeLinecap="round"/>
-                  </svg>
-                  <span className="font-mono-ui text-[12px] font-bold text-[#111] truncate">{profile.bio}</span>
-                </div>
-              ) : isOwn ? (
-                <button onClick={startEditingProfile} className="font-mono-bold text-[11px] uppercase tracking-widest text-[#1A1AE6] underline self-start cursor-pointer">
-                  + Add bio &amp; socials
-                </button>
-              ) : null)}
+              <span className="font-mono-bold text-[10px] text-[#C6F23A]">
+                {wins.toString()} bounty win{wins === 1n ? '' : 's'}
+              </span>
             </div>
           </div>
         </div>
 
-        {/* ── MIDDLE: dark card — socials + joined date (no purple bubble) ─ */}
-        <div className="bg-[#111] px-4 py-4 flex flex-col gap-3">
-          {/* Edit profile row (own only, view mode) */}
-          {isOwn && !editingProfile && (
-            <button
-              onClick={startEditingProfile}
-              className="self-start inline-flex items-center gap-2 font-mono-bold text-[11px] uppercase tracking-widest text-[#FFE600] border-[2px] border-[#FFE600]/40 rounded-full px-3 py-1.5 hover:border-[#FFE600] transition-colors cursor-pointer"
-            >
-              <svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path d="M11.5 2.5L13.5 4.5L5.5 12.5H3.5V10.5L11.5 2.5Z" stroke="#FFE600" strokeWidth="1.5" strokeLinejoin="round" fill="none" />
-              </svg>
-              Edit profile
-            </button>
-          )}
-
+        {/* ── MIDDLE: dark card — socials + editor + share bar ───────────── */}
+        <div className="dark-grid-surface bg-[#111] px-4 sm:px-5 py-4 flex flex-col gap-3">
           {/* Profile editor (own only) */}
           {editingProfile && (
-            <div className="flex flex-col gap-3 border-[2px] border-white/20 rounded-xl p-3 bg-white/5">
+            <div className="flex flex-col gap-3 border-[2px] border-white/20 rounded-xl p-3.5 bg-white/5">
               <div className="flex flex-col gap-1">
                 <label className="font-mono-bold text-[10px] uppercase tracking-widest text-white/50">Bio</label>
                 <textarea
@@ -670,97 +732,58 @@ export function ProfilePage({ address, onBack, onSelectBounty, onCreateBounty, o
             </div>
           )}
 
-          {/* Connected socials */}
-          {!editingProfile && hasSocials && (
-            <div className="flex items-center gap-2 flex-wrap">
-              {cleanTwitter && (
-                <a href={`https://x.com/${cleanTwitter}`} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 bg-[#1a1a1a] border-[2px] border-white/20 rounded-full px-3 py-1.5 font-mono-bold text-[12px] text-white tracking-wide hover:border-white/50 transition-colors shadow-hard-sm"
-                >
-                  <XIcon size={12} />
-                  <span>{cleanTwitter}</span>
-                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 10L10 2M10 2H5M10 2V7" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                </a>
-              )}
-              {cleanGithub && (
-                <a href={`https://github.com/${cleanGithub}`} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 bg-[#24292e] border-[2px] border-white/20 rounded-full px-3 py-1.5 font-mono-bold text-[12px] text-white tracking-wide hover:border-white/50 transition-colors shadow-hard-sm"
-                >
-                  <GithubIcon size={13} />
-                  <span>{cleanGithub}</span>
-                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 10L10 2M10 2H5M10 2V7" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                </a>
-              )}
-              {cleanWebsite && (
-                <a href={cleanWebsite.startsWith('http') ? cleanWebsite : `https://${cleanWebsite}`} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 bg-[#7FF3F0]/20 border-[2px] border-[#7FF3F0]/40 rounded-full px-3 py-1.5 font-mono-bold text-[12px] text-[#7FF3F0] tracking-wide hover:border-[#7FF3F0] transition-colors shadow-hard-sm"
-                >
-                  <GlobeIcon size={13} />
-                  <span>{cleanWebsite.replace(/^https?:\/\//, '').replace(/\/$/, '')}</span>
-                </a>
-              )}
-            </div>
-          )}
-
-          {/* Joined date */}
+          {/* Connected socials + shareable profile link row */}
           {!editingProfile && (
-            <div className="flex items-start gap-2.5 text-white/70">
-              {/* Calendar icon */}
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="mt-0.5 shrink-0" aria-hidden="true">
-                <rect x="1.5" y="3" width="13" height="11.5" rx="2" stroke="currentColor" strokeWidth="1.4" fill="none"/>
-                <path d="M5 1.5V4M11 1.5V4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
-                <path d="M1.5 7h13" stroke="currentColor" strokeWidth="1.4"/>
-              </svg>
-              <span className="font-mono-ui text-[12px] leading-snug">
-                User joined WANT.fun on{' '}
-                <strong className="font-mono-bold text-white">
-                  {formatJoinedDate(profile.created_at || Math.floor(Date.now() / 1000))}
-                </strong>
-              </span>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                {hasSocials ? (
+                  <>
+                    {cleanTwitter && (
+                      <a href={`https://x.com/${cleanTwitter}`} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 bg-white text-[#111] border-[2px] border-[#111] rounded-full px-3 py-1 font-mono-bold text-[11px] tracking-wide hover:bg-[#FFE600] transition-colors shadow-hard-xs"
+                      >
+                        <XIcon size={11} />
+                        <span>@{cleanTwitter}</span>
+                        <span>↗</span>
+                      </a>
+                    )}
+                    {cleanGithub && (
+                      <a href={`https://github.com/${cleanGithub}`} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 bg-[#24292e] border-[2px] border-white/30 rounded-full px-3 py-1 font-mono-bold text-[11px] text-white tracking-wide hover:border-[#FFE600] transition-colors"
+                      >
+                        <GithubIcon size={12} />
+                        <span>{cleanGithub}</span>
+                        <span>↗</span>
+                      </a>
+                    )}
+                    {cleanWebsite && (
+                      <a href={cleanWebsite.startsWith('http') ? cleanWebsite : `https://${cleanWebsite}`} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 bg-[#7FF3F0] border-[2px] border-[#111] rounded-full px-3 py-1 font-mono-bold text-[11px] text-[#111] tracking-wide hover:bg-[#FFE600] transition-colors shadow-hard-xs"
+                      >
+                        <GlobeIcon size={12} />
+                        <span>{cleanWebsite.replace(/^https?:\/\//, '').replace(/\/$/, '')}</span>
+                      </a>
+                    )}
+                  </>
+                ) : (
+                  <span className="font-mono-ui text-[11px] text-white/60">
+                    No social accounts linked yet.
+                  </span>
+                )}
+              </div>
+
+              {/* Shareable link bar */}
+              <div className="flex items-center gap-2 border-[2px] border-[#111] rounded-xl px-2.5 py-1.5 bg-[#FFFDF0] sm:max-w-xs w-full">
+                <span className="font-mono-ui text-[10px] text-[#111]/60 flex-1 truncate">{profileUrl}</span>
+                <button
+                  onClick={() => { void navigator.clipboard.writeText(profileUrl) }}
+                  className="inline-flex items-center gap-1 font-mono-bold text-[9px] uppercase tracking-widest border-[1.5px] border-[#111] rounded-full px-2.5 py-0.5 bg-[#FFE600] text-[#111] hover:bg-[#111] hover:text-[#FFE600] transition-colors cursor-pointer shrink-0"
+                >
+                  Copy URL
+                </button>
+              </div>
             </div>
           )}
-        </div>
-
-        {/* ── BOTTOM: total earned + share link ───────────────────────────── */}
-        <div className="p-4 flex flex-col gap-3">
-          {/* Total earned */}
-          <div className="bg-[#111] border-[3px] border-[#111] rounded-xl p-4 flex items-center gap-4 shadow-hard">
-            <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-              <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#FFFDF0]/50">Total Earned</span>
-              <div className="flex items-baseline gap-2">
-                <CoinIcon size={22} />
-                <span className="font-heading text-[28px] font-extrabold tabular-nums text-[#FFFDF0] leading-none">{formatUsdc(earned)}</span>
-              </div>
-            </div>
-            <div className="border-l border-white/20 pl-4 flex flex-col gap-0.5 shrink-0">
-              <div className="flex items-center gap-1.5">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                  <circle cx="8" cy="8" r="6.5" stroke="#C6F23A" strokeWidth="1.5" fill="none"/>
-                  <path d="M5 8.5L7 10.5L11 6" stroke="#C6F23A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                <span className="font-mono-bold text-[12px] text-white">{wins.toString()} successful</span>
-              </div>
-              <span className="font-mono-ui text-[10px] text-white/40">submission{wins === 1n ? '' : 's'}</span>
-            </div>
-          </div>
-
-          {/* Shareable link */}
-          <div className="flex items-center gap-2 border-[2px] border-[#111] rounded-xl p-2.5 bg-[#FFFDF0]">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="shrink-0 text-[#111]/50" aria-hidden="true">
-              <path d="M6.5 9.5L9.5 6.5M7 4.5H4.5C3.4 4.5 2.5 5.4 2.5 6.5v5C2.5 12.6 3.4 13.5 4.5 13.5h5c1.1 0 2-.9 2-2V9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-              <path d="M9.5 2.5h4v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            <span className="font-mono-ui text-[10px] text-[#111]/50 flex-1 truncate">{profileUrl}</span>
-            <button
-              onClick={() => { void navigator.clipboard.writeText(profileUrl) }}
-              className="inline-flex items-center gap-1.5 font-mono-bold text-[10px] uppercase tracking-widest border-[2px] border-[#111] rounded-full px-3 py-1 bg-[#FFE600] text-[#111] shadow-hard-sm hover:shadow-hard btn-press cursor-pointer whitespace-nowrap"
-            >
-              <svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path d="M12 7L8 3L4 7M8 3V13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              Share
-            </button>
-          </div>
         </div>
       </WindowCard>
 
@@ -793,18 +816,18 @@ export function ProfilePage({ address, onBack, onSelectBounty, onCreateBounty, o
               </div>
             </div>
             {/* Three inline stats */}
-            <div className="grid grid-cols-3 gap-2 pt-2 border-t-[2px] border-[#111]/12">
-              <div className="flex flex-col gap-0.5 items-center text-center">
-                <span className="font-heading text-[24px] font-black text-[#111] tabular-nums">{submittedList.length}</span>
-                <span className="font-mono-bold text-[9px] uppercase tracking-widest text-[#111]/55">Submitted</span>
+            <div className="grid grid-cols-3 gap-2.5 pt-1">
+              <div className="border-[2px] border-[#111] rounded-xl p-2.5 bg-[#FFFDF0] shadow-hard-xs flex flex-col gap-0.5 items-center text-center">
+                <span className="font-heading text-[22px] sm:text-[24px] font-black text-[#111] tabular-nums leading-none">{submittedList.length}</span>
+                <span className="font-mono-bold text-[9px] uppercase tracking-widest text-[#111]/60">Submitted</span>
               </div>
-              <div className="flex flex-col gap-0.5 items-center text-center border-x-[2px] border-[#111]/12">
-                <span className="font-heading text-[24px] font-black text-[#16a34a] tabular-nums">{wins.toString()}</span>
-                <span className="font-mono-bold text-[9px] uppercase tracking-widest text-[#111]/55">Won</span>
+              <div className="border-[2px] border-[#111] rounded-xl p-2.5 bg-[#C6F23A]/25 shadow-hard-xs flex flex-col gap-0.5 items-center text-center">
+                <span className="font-heading text-[22px] sm:text-[24px] font-black text-[#16a34a] tabular-nums leading-none">{wins.toString()}</span>
+                <span className="font-mono-bold text-[9px] uppercase tracking-widest text-[#111]/60">Won</span>
               </div>
-              <div className="flex flex-col gap-0.5 items-center text-center">
-                <span className="font-heading text-[24px] font-black text-[#111] tabular-nums">${formatUsdc(earned)}</span>
-                <span className="font-mono-bold text-[9px] uppercase tracking-widest text-[#111]/55">Earned</span>
+              <div className="border-[2px] border-[#111] rounded-xl p-2.5 bg-[#FFE600]/30 shadow-hard-xs flex flex-col gap-0.5 items-center text-center">
+                <span className="font-heading text-[22px] sm:text-[24px] font-black text-[#111] tabular-nums leading-none">${formatUsdc(earned)}</span>
+                <span className="font-mono-bold text-[9px] uppercase tracking-widest text-[#111]/60">Earned</span>
               </div>
             </div>
             {pendingEarnings > 0n && (
@@ -846,20 +869,20 @@ export function ProfilePage({ address, onBack, onSelectBounty, onCreateBounty, o
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-2 pt-2 border-t-[2px] border-[#111]/12">
-                  <div className="flex flex-col gap-0.5 items-center text-center">
-                    <span className="font-heading text-[24px] font-black text-[#111] tabular-nums">{totalPosted?.length ?? 0}</span>
-                    <span className="font-mono-bold text-[9px] uppercase tracking-widest text-[#111]/55">Created</span>
+                <div className="grid grid-cols-3 gap-2.5 pt-1">
+                  <div className="border-[2px] border-[#111] rounded-xl p-2.5 bg-[#FFFDF0] shadow-hard-xs flex flex-col gap-0.5 items-center text-center">
+                    <span className="font-heading text-[22px] sm:text-[24px] font-black text-[#111] tabular-nums leading-none">{totalPosted?.length ?? 0}</span>
+                    <span className="font-mono-bold text-[9px] uppercase tracking-widest text-[#111]/60">Created</span>
                   </div>
-                  <div className="flex flex-col gap-0.5 items-center text-center border-x-[2px] border-[#111]/12">
-                    <span className="font-heading text-[24px] font-black text-[#FF3E9A] tabular-nums">
+                  <div className="border-[2px] border-[#111] rounded-xl p-2.5 bg-[#FF3E9A]/15 shadow-hard-xs flex flex-col gap-0.5 items-center text-center">
+                    <span className="font-heading text-[22px] sm:text-[24px] font-black text-[#FF3E9A] tabular-nums leading-none">
                       {allPostedStats.reduce((s, b) => s + Number(b.winnersApproved), 0)}
                     </span>
-                    <span className="font-mono-bold text-[9px] uppercase tracking-widest text-[#111]/55">Paid out</span>
+                    <span className="font-mono-bold text-[9px] uppercase tracking-widest text-[#111]/60">Paid out</span>
                   </div>
-                  <div className="flex flex-col gap-0.5 items-center text-center">
-                    <span className="font-heading text-[24px] font-black text-[#111] tabular-nums">${formatUsdc(escrowTotal)}</span>
-                    <span className="font-mono-bold text-[9px] uppercase tracking-widest text-[#111]/55">In escrow</span>
+                  <div className="border-[2px] border-[#111] rounded-xl p-2.5 bg-[#7FF3F0]/25 shadow-hard-xs flex flex-col gap-0.5 items-center text-center">
+                    <span className="font-heading text-[22px] sm:text-[24px] font-black text-[#111] tabular-nums leading-none">${formatUsdc(escrowTotal)}</span>
+                    <span className="font-mono-bold text-[9px] uppercase tracking-widest text-[#111]/60">In escrow</span>
                   </div>
                 </div>
                 {isPromiseKeeper && (

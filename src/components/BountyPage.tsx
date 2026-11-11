@@ -425,7 +425,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
       : ''
 
     const parts = [
-      `Check out this bounty on @wanteddotfun:\n"${titleStr}"`,
+      `Check out this bounty on @wantdotfun:\n"${titleStr}"`,
       descSnippet,
       `💰 ${formatUsdc(bounty.rewardPerWinner)} USDC prize locked in escrow!\n\n${url}`,
     ].filter(Boolean)
@@ -435,21 +435,29 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
   }
 
   return (
-    <div className="flex flex-col gap-5 max-w-2xl desk:max-w-[1120px] mx-auto">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex items-center gap-1.5 font-mono-bold text-[11px] uppercase tracking-wider text-[#111] bg-white hover:bg-[#FFE600] border-[2.5px] border-[#111] px-3.5 py-1.5 rounded-full shadow-hard-sm transition-colors btn-press cursor-pointer"
-        >
-          <span aria-hidden="true">←</span>
-          <span>Back to Wall</span>
-        </button>
+    <div className="flex flex-col gap-6 max-w-2xl desk:max-w-[1120px] mx-auto">
+      {/* Neo-Brutalist Top Action Bar */}
+      <div className="border-[3px] border-[#111] rounded-2xl bg-white shadow-hard px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex items-center gap-1.5 font-mono-bold text-[11px] uppercase tracking-wider text-[#111] bg-[#FFE600] hover:bg-[#FFE600]/85 border-[2.5px] border-[#111] px-3.5 py-1.5 rounded-full shadow-hard-xs transition-colors btn-press cursor-pointer"
+          >
+            <span aria-hidden="true">←</span>
+            <span>Back to Wall</span>
+          </button>
+          <span className="hidden sm:inline-flex items-center gap-1.5 font-mono-bold text-[10px] uppercase tracking-widest text-[#111] bg-[#FFFDF0] border-[2px] border-[#111] rounded-full px-3 py-1">
+            <span className="w-2 h-2 rounded-full bg-[#10B981] border border-[#111]" />
+            Bounty #{String(idNum).padStart(3, '0')} · Onchain Escrow
+          </span>
+        </div>
+
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={handleCopyLink}
-            className="inline-flex items-center gap-1.5 font-mono-bold text-[11px] uppercase tracking-wider bg-white border-[2.5px] border-[#111] px-3.5 py-1.5 rounded-full shadow-hard-sm hover:bg-[#FFE600] transition-colors btn-press cursor-pointer"
+            className="inline-flex items-center gap-1.5 font-mono-bold text-[11px] uppercase tracking-wider bg-[#FFFDF0] border-[2.5px] border-[#111] px-3.5 py-1.5 rounded-full shadow-hard-xs hover:bg-[#FFE600] transition-colors btn-press cursor-pointer"
             title="Copy link to this bounty"
           >
             {copied ? (
@@ -467,7 +475,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
           <button
             type="button"
             onClick={handleShareX}
-            className="inline-flex items-center gap-1.5 font-mono-bold text-[11px] uppercase tracking-wider bg-[#111] text-white border-[2.5px] border-[#111] px-3.5 py-1.5 rounded-full shadow-hard-sm hover:bg-[#222] hover:text-[#FFE600] transition-colors btn-press cursor-pointer"
+            className="inline-flex items-center gap-1.5 font-mono-bold text-[11px] uppercase tracking-wider bg-[#111] text-white border-[2.5px] border-[#111] px-3.5 py-1.5 rounded-full shadow-hard-xs hover:bg-[#222] hover:text-[#FFE600] transition-colors btn-press cursor-pointer"
             title="Share on X"
           >
             <XIcon size={11} />
@@ -476,224 +484,292 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
         </div>
       </div>
 
-      <div className="flex flex-col gap-5 desk:grid desk:grid-cols-[1fr_320px] desk:gap-6 desk:items-start">
-      <div className="flex flex-col gap-5 min-w-0">
+      <div className="flex flex-col gap-6 desk:grid desk:grid-cols-[1fr_340px] desk:gap-6 desk:items-start">
+      <div className="flex flex-col gap-6 min-w-0">
 
       {/* Main bounty window */}
       <WindowCard
         title={`BOUNTY_${String(idNum).padStart(3, '0')}.EXE`}
         titleBarColor="#4EFA96"
-        bodyClassName="flex flex-col gap-4 p-5 sm:p-6"
+        bodyClassName="flex flex-col gap-0 !p-0"
       >
-        {/* Status + Deadline row */}
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <StatusTag status={status} />
-          <div className="flex items-center gap-1.5 text-[#111]">
-            <ClockIcon size={16} className="text-[#111]" />
-            <span className="font-mono-bold text-[12px] sm:text-[13px] uppercase tracking-wider">{timeLeft(bounty.deadline)}</span>
+        {/* Hero Checkerboard Header Zone */}
+        <div className="checkerboard border-b-[3px] border-[#111] p-4 sm:p-6 flex flex-col gap-3.5">
+          {/* Status + Deadline row */}
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <StatusTag status={status} />
+              <span className="inline-flex items-center gap-1.5 border-[2px] border-[#111] rounded-full px-2.5 py-1 bg-[#C6F23A] font-mono-bold text-[10px] uppercase tracking-wider text-[#111] shadow-hard-xs">
+                <LockIcon size={11} />
+                ${formatUsdc(totalPrize)} Pool Locked
+              </span>
+            </div>
+            <div className="inline-flex items-center gap-1.5 border-[2px] border-[#111] rounded-full px-3 py-1 bg-white text-[#111] shadow-hard-xs">
+              <ClockIcon size={14} className="text-[#111]" />
+              <span className="font-mono-bold text-[11px] sm:text-[12px] uppercase tracking-wider">{timeLeft(bounty.deadline)}</span>
+            </div>
+          </div>
+
+          {/* Framed White Headline Card */}
+          <div className="bg-white border-[3px] border-[#111] rounded-2xl p-4 sm:p-6 shadow-hard-sm flex flex-col gap-3">
+            <div>
+              <h1 className="font-heading font-black text-[30px] sm:text-[40px] leading-[1.08] text-[#111] tracking-tight text-balance">
+                {titleStr}
+              </h1>
+              <div className="w-28 sm:w-36 h-2 bg-[#A3E635] border border-[#111] rounded-full mt-2.5" />
+            </div>
+
+            {/* Creator attribution pill */}
+            <div className="flex items-center justify-between gap-2 flex-wrap pt-2 border-t-[2px] border-[#111]/10">
+              <a
+                href={`#/profile/${bounty.poster}`}
+                className="inline-flex items-center gap-2 group cursor-pointer"
+              >
+                <span className="inline-flex rounded-lg overflow-hidden border-[2px] border-[#111] shadow-hard-xs">
+                  <PixelAvatar address={bounty.poster} size={24} />
+                </span>
+                <span className="font-mono-ui text-[11px] text-[#111]/70">
+                  Created by <strong className="font-mono-bold text-[#111] group-hover:text-[#1A1AE6] group-hover:underline">{formatAddress(bounty.poster)}</strong>
+                </span>
+                <span className="font-mono-bold text-[11px] text-[#111] group-hover:translate-x-0.5 transition-transform">↗</span>
+              </a>
+              <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/60 bg-[#FFFDF0] border-[1.5px] border-[#111] rounded-md px-2 py-0.5">
+                ID #{idNum}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Huge Bold Title & Vibrant Lime Underline */}
-        <div>
-          <h1 className="font-heading font-black text-[36px] sm:text-[44px] leading-tight text-[#111] tracking-tight">
-            {titleStr}
-          </h1>
-          <div className="w-28 sm:w-36 h-2 bg-[#A3E635] rounded-full mt-1.5 mb-2" />
-        </div>
-        <p className="font-body text-[15px] sm:text-[16px] leading-relaxed text-[#111]/85 whitespace-pre-wrap">{linkify(descStr)}</p>
-
-        {/* Inline preview of the first attachment, with a button to view them all */}
-        {examples.length > 0 && (
-          <div className="flex flex-col gap-2 my-1">
-            <button
-              type="button"
-              onClick={() => setShowAttachments(true)}
-              className="relative self-start border-[3px] border-[#111] rounded-xl overflow-hidden shadow-hard-sm btn-press cursor-pointer"
-            >
-              {examples[0].content.startsWith('data:video') ? (
-                // eslint-disable-next-line jsx-a11y/media-has-caption
-                <video src={examples[0].content} className="w-full max-w-sm max-h-56 object-cover bg-black" muted />
-              ) : (
-                <img src={examples[0].content} alt="Bounty requirement attachment preview" className="w-full max-w-sm max-h-56 object-cover" />
-              )}
-              <span className="absolute top-2 right-2 w-6 h-6 rounded-md border-2 border-[#111] bg-white/90 flex items-center justify-center">
-                <AttachmentIcon />
+        {/* Body Content inside BOUNTY.EXE */}
+        <div className="p-4 sm:p-6 flex flex-col gap-5 bg-[#FFFDF0]">
+          {/* Framed Task Brief Document Box */}
+          <div className="border-[2.5px] border-[#111] rounded-2xl bg-white shadow-hard-sm overflow-hidden">
+            <div className="bg-[#111] text-[#FFFDF0] px-4 py-2 flex items-center justify-between border-b-[2.5px] border-[#111]">
+              <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#FFE600]">
+                TASK_BRIEF.TXT — Instructions &amp; Deliverables
               </span>
-            </button>
-            {examples.length > 1 && (
-              <button
-                type="button"
-                onClick={() => setShowAttachments(true)}
-                className="self-start font-mono-bold text-[11px] uppercase tracking-widest text-[#1A1AE6] underline cursor-pointer"
-              >
-                View all {examples.length} attachments →
-              </button>
+              {examples.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAttachments(true)}
+                  className="font-mono-bold text-[10px] uppercase tracking-wider text-[#7FF3F0] hover:underline cursor-pointer"
+                >
+                  {examples.length} Reference File{examples.length === 1 ? '' : 's'} ↗
+                </button>
+              )}
+            </div>
+            <div className="p-4 sm:p-5 flex flex-col gap-4">
+              <p className="font-body text-[15px] sm:text-[16px] leading-relaxed text-[#111]/90 whitespace-pre-wrap">
+                {linkify(descStr)}
+              </p>
+
+              {/* Inline preview of the first attachment, with a button to view them all */}
+              {examples.length > 0 && (
+                <div className="flex flex-col gap-2 pt-3 border-t-[2px] border-dashed border-[#111]/15">
+                  <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/60">
+                    Attached Reference Material
+                  </span>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => setShowAttachments(true)}
+                      className="relative self-start border-[3px] border-[#111] rounded-xl overflow-hidden shadow-hard-sm btn-press cursor-pointer"
+                    >
+                      {examples[0].content.startsWith('data:video') ? (
+                        // eslint-disable-next-line jsx-a11y/media-has-caption
+                        <video src={examples[0].content} className="w-full max-w-xs max-h-48 object-cover bg-black" muted />
+                      ) : (
+                        <img src={examples[0].content} alt="Bounty requirement attachment preview" className="w-full max-w-xs max-h-48 object-cover" />
+                      )}
+                      <span className="absolute top-2 right-2 w-6 h-6 rounded-md border-2 border-[#111] bg-[#FFE600] flex items-center justify-center shadow-hard-xs">
+                        <AttachmentIcon />
+                      </span>
+                    </button>
+                    {examples.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAttachments(true)}
+                        className="font-mono-bold text-[11px] uppercase tracking-wider bg-[#FFFDF0] border-[2px] border-[#111] px-3.5 py-2 rounded-full shadow-hard-xs hover:bg-[#FFE600] transition-colors cursor-pointer"
+                      >
+                        View all {examples.length} files →
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 2x2 Stat Grid with Neo-Brutalist Icon Badges & Hard Shadows */}
+          <div className="grid grid-cols-2 gap-3.5">
+            {/* Box 1: USDC / WINNER (Top-Left) */}
+            <div className="relative overflow-hidden border-[3px] border-[#111] rounded-2xl p-4 bg-[#111] flex flex-col justify-between min-h-[108px] shadow-hard-sm">
+              <div className="bounty-glass-shine" aria-hidden="true">
+                <div className="bounty-glass-beam-bloom" style={{ animationDelay: '0s' }} />
+                <div className="bounty-glass-beam" style={{ animationDelay: '0s' }} />
+              </div>
+              <div className="flex items-center justify-between relative z-1">
+                <span className="w-8 h-8 rounded-lg bg-[#FFE600] border-[2px] border-white flex items-center justify-center">
+                  <CoinIcon size={18} className="text-[#111]" />
+                </span>
+                <span className="font-mono-bold text-[9px] uppercase tracking-widest px-2 py-0.5 rounded bg-white/10 text-[#FFE600] border border-white/15">
+                  PRIZE
+                </span>
+              </div>
+              <div className="relative z-1 mt-3">
+                <div className="font-heading text-[28px] sm:text-[34px] font-black leading-tight text-white tabular-nums">
+                  ${formatUsdc(bounty.rewardPerWinner)}
+                </div>
+                <div className="font-mono-bold text-[10px] sm:text-[11px] uppercase tracking-wider text-white/70 mt-0.5">
+                  USDC / WINNER
+                </div>
+              </div>
+            </div>
+
+            {/* Box 2: DEADLINE (Top-Right) */}
+            <div className="relative overflow-hidden border-[3px] border-[#111] rounded-2xl p-4 bg-[#111] flex flex-col justify-between min-h-[108px] shadow-hard-sm">
+              <div className="bounty-glass-shine" aria-hidden="true">
+                <div className="bounty-glass-beam-bloom" style={{ animationDelay: '0.7s' }} />
+                <div className="bounty-glass-beam" style={{ animationDelay: '0.7s' }} />
+              </div>
+              <div className="flex items-center justify-between relative z-1">
+                <span className="w-8 h-8 rounded-lg bg-[#7FF3F0] border-[2px] border-white flex items-center justify-center">
+                  <ClockIcon size={18} className="text-[#111]" />
+                </span>
+                <span className="font-mono-bold text-[9px] uppercase tracking-widest px-2 py-0.5 rounded bg-white/10 text-[#7FF3F0] border border-white/15">
+                  TIMER
+                </span>
+              </div>
+              <div className="relative z-1 mt-3">
+                <div className="font-heading text-[24px] sm:text-[30px] font-black leading-tight text-white truncate">
+                  {timeLeft(bounty.deadline)}
+                </div>
+                <div className="font-mono-bold text-[10px] sm:text-[11px] uppercase tracking-wider text-white/70 mt-0.5">
+                  DEADLINE
+                </div>
+              </div>
+            </div>
+
+            {/* Box 3: SUBMISSIONS (Bottom-Left) */}
+            <div className="relative overflow-hidden border-[3px] border-[#111] rounded-2xl p-4 bg-[#111] flex flex-col justify-between min-h-[108px] shadow-hard-sm">
+              <div className="bounty-glass-shine" aria-hidden="true">
+                <div className="bounty-glass-beam-bloom" style={{ animationDelay: '1.4s' }} />
+                <div className="bounty-glass-beam" style={{ animationDelay: '1.4s' }} />
+              </div>
+              <div className="flex items-center justify-between relative z-1">
+                <span className="w-8 h-8 rounded-lg bg-[#A78BFA] border-[2px] border-white flex items-center justify-center">
+                  <FolderIcon size={18} className="text-[#111]" />
+                </span>
+                <span className="font-mono-bold text-[9px] uppercase tracking-widest px-2 py-0.5 rounded bg-white/10 text-[#A78BFA] border border-white/15">
+                  ENTRIES
+                </span>
+              </div>
+              <div className="relative z-1 mt-3">
+                <div className="font-heading text-[28px] sm:text-[34px] font-black leading-tight text-white tabular-nums">
+                  {offchainSubs.length}
+                </div>
+                <div className="font-mono-bold text-[10px] sm:text-[11px] uppercase tracking-wider text-white/70 mt-0.5">
+                  SUBMISSIONS
+                </div>
+              </div>
+            </div>
+
+            {/* Box 4: WINNERS (Bottom-Right) */}
+            <div className="relative overflow-hidden border-[3px] border-[#111] rounded-2xl p-4 bg-[#111] flex flex-col justify-between min-h-[108px] shadow-hard-sm">
+              <div className="bounty-glass-shine" aria-hidden="true">
+                <div className="bounty-glass-beam-bloom" style={{ animationDelay: '2.1s' }} />
+                <div className="bounty-glass-beam" style={{ animationDelay: '2.1s' }} />
+              </div>
+              <div className="flex items-center justify-between relative z-1">
+                <span className="w-8 h-8 rounded-lg bg-[#C6F23A] border-[2px] border-white flex items-center justify-center">
+                  <LockIcon size={18} className="text-[#111]" />
+                </span>
+                <span className="font-mono-bold text-[9px] uppercase tracking-widest px-2 py-0.5 rounded bg-white/10 text-[#C6F23A] border border-white/15">
+                  SLOTS
+                </span>
+              </div>
+              <div className="relative z-1 mt-3">
+                <div className="font-heading text-[28px] sm:text-[34px] font-black leading-tight text-white tabular-nums">
+                  {Number(bounty.maxWinners)}
+                </div>
+                <div className="font-mono-bold text-[10px] sm:text-[11px] uppercase tracking-wider text-white/70 mt-0.5">
+                  WINNER{Number(bounty.maxWinners) !== 1 ? 'S' : ''}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Escrow Vault Panel with Halftone Texture & Framed Sub-Boxes */}
+          <div className="relative overflow-hidden border-[3px] border-[#111] rounded-2xl p-4 sm:p-5 bg-gradient-to-r from-[#EAFCDA] via-[#E8FCD8] to-[#DEFBAE] shadow-hard-sm">
+            <div
+              className="absolute right-0 top-0 bottom-0 w-2/5 opacity-20 pointer-events-none"
+              style={{
+                backgroundImage: 'radial-gradient(#111 2px, transparent 2px)',
+                backgroundSize: '8px 8px',
+              }}
+            />
+            <div className="flex items-center justify-between gap-2 mb-3 relative z-1 flex-wrap">
+              <div className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-md bg-[#111] text-[#C6F23A] flex items-center justify-center">
+                  <LockIcon size={13} />
+                </span>
+                <span className="font-mono-bold text-[12px] uppercase tracking-wider text-[#111]">ONCHAIN ESCROW VAULT</span>
+              </div>
+              <span className="font-mono-bold text-[9px] uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-white border-[2px] border-[#111] text-[#111] shadow-hard-xs">
+                100% Funded Upfront
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-1">
+              <div className="bg-white/95 border-[2px] border-[#111] rounded-xl p-3 shadow-hard-xs flex flex-col">
+                <span className="font-mono-bold text-[10px] uppercase tracking-wider text-[#111]/60">LOCKED IN CONTRACT</span>
+                <span className="font-heading text-[22px] sm:text-[26px] font-black tabular-nums text-[#111] mt-0.5">
+                  ${formatUsdc(bounty.escrowRemaining)} <span className="text-[14px] font-bold">USDC</span>
+                </span>
+              </div>
+              <div className="bg-white/95 border-[2px] border-[#111] rounded-xl p-3 shadow-hard-xs flex flex-col">
+                <span className="font-mono-bold text-[10px] uppercase tracking-wider text-[#111]/60">PAID TO WINNERS</span>
+                <span className="font-heading text-[22px] sm:text-[26px] font-black tabular-nums text-[#16a34a] mt-0.5">
+                  ${formatUsdc(paidOut)} <span className="text-[14px] font-bold text-[#111]">USDC</span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Framed Winners Segmented Bar */}
+          <div className="border-[2.5px] border-[#111] rounded-2xl p-4 bg-white shadow-hard-xs">
+            <div className="flex items-center justify-between gap-2 mb-2.5">
+              <span className="font-heading font-black text-[13px] uppercase tracking-wider text-[#111]">
+                WINNERS APPROVED ({Number(bounty.winnersApproved)} / {Number(bounty.maxWinners)})
+              </span>
+              <span className="font-mono-bold text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#FF2E93]/15 text-[#111] border border-[#111]/30">
+                {Number(bounty.maxWinners) > 0 ? Math.round((Number(bounty.winnersApproved) / Number(bounty.maxWinners)) * 100) : 0}% Filled
+              </span>
+            </div>
+            {Number(bounty.maxWinners) <= 12 ? (
+              <div className="flex gap-2">
+                {Array.from({ length: Number(bounty.maxWinners) }, (_, i) => {
+                  const isFilled = i < Number(bounty.winnersApproved)
+                  return (
+                    <div
+                      key={i}
+                      className={`h-6 sm:h-7 flex-1 border-[2.5px] border-[#111] rounded-lg transition-all ${
+                        isFilled ? 'bg-[#FF2E93] shadow-[2px_2px_0_#111]' : 'bg-[#FFFDF0]'
+                      }`}
+                    />
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="h-6 sm:h-7 w-full border-[2.5px] border-[#111] rounded-lg bg-[#FFFDF0] overflow-hidden p-0.5">
+                <div
+                  className="h-full bg-[#FF2E93] rounded-md transition-all duration-500"
+                  style={{
+                    width: `${Number(bounty.maxWinners) > 0 ? Math.min(100, (Number(bounty.winnersApproved) / Number(bounty.maxWinners)) * 100) : 0}%`,
+                  }}
+                />
+              </div>
             )}
           </div>
-        )}
-
-        {/* 2x2 Stat Grid strictly 2 columns as in reference */}
-        <div className="grid grid-cols-2 gap-3.5 my-1">
-          {/* Box 1: USDC / WINNER (Top-Left) */}
-          <div className="relative overflow-hidden border-[2.5px] border-[#111] rounded-2xl p-4 bg-black flex flex-col justify-between min-h-[96px] shadow-sm">
-            <div className="bounty-glass-shine" aria-hidden="true">
-              <div className="bounty-glass-beam-bloom" style={{ animationDelay: '0s' }} />
-              <div className="bounty-glass-beam" style={{ animationDelay: '0s' }} />
-            </div>
-            <div className="flex items-center relative z-1">
-              <CoinIcon size={24} className="text-[#A3E635]" />
-            </div>
-            <div className="relative z-1 mt-2">
-              <div className="font-heading text-[28px] sm:text-[34px] font-black leading-tight text-white tabular-nums">
-                {formatUsdc(bounty.rewardPerWinner)}
-              </div>
-              <div className="font-mono-bold text-[10px] sm:text-[11px] uppercase tracking-wider text-white/60 mt-0.5">
-                USDC / WINNER
-              </div>
-            </div>
-          </div>
-
-          {/* Box 2: DEADLINE (Top-Right) */}
-          <div className="relative overflow-hidden border-[2.5px] border-[#111] rounded-2xl p-4 bg-black flex flex-col justify-between min-h-[96px] shadow-sm">
-            <div className="bounty-glass-shine" aria-hidden="true">
-              <div className="bounty-glass-beam-bloom" style={{ animationDelay: '0.7s' }} />
-              <div className="bounty-glass-beam" style={{ animationDelay: '0.7s' }} />
-            </div>
-            <div className="flex items-center relative z-1">
-              <ClockIcon size={22} className="text-[#A3E635]" />
-            </div>
-            <div className="relative z-1 mt-2">
-              <div className="font-heading text-[26px] sm:text-[32px] font-black leading-tight text-white truncate">
-                {timeLeft(bounty.deadline)}
-              </div>
-              <div className="font-mono-bold text-[10px] sm:text-[11px] uppercase tracking-wider text-white/60 mt-0.5">
-                DEADLINE
-              </div>
-            </div>
-          </div>
-
-          {/* Box 3: SUBMISSIONS (Bottom-Left) */}
-          <div className="relative overflow-hidden border-[2.5px] border-[#111] rounded-2xl p-4 bg-black flex flex-col justify-between min-h-[96px] shadow-sm">
-            <div className="bounty-glass-shine" aria-hidden="true">
-              <div className="bounty-glass-beam-bloom" style={{ animationDelay: '1.4s' }} />
-              <div className="bounty-glass-beam" style={{ animationDelay: '1.4s' }} />
-            </div>
-            <div className="flex items-center relative z-1">
-              <FolderIcon size={22} className="text-[#A3E635]" />
-            </div>
-            <div className="relative z-1 mt-2">
-              <div className="font-heading text-[28px] sm:text-[34px] font-black leading-tight text-white tabular-nums">
-                {offchainSubs.length}
-              </div>
-              <div className="font-mono-bold text-[10px] sm:text-[11px] uppercase tracking-wider text-white/60 mt-0.5">
-                SUBMISSIONS
-              </div>
-            </div>
-          </div>
-
-          {/* Box 4: WINNERS (Bottom-Right) */}
-          <div className="relative overflow-hidden border-[2.5px] border-[#111] rounded-2xl p-4 bg-black flex flex-col justify-between min-h-[96px] shadow-sm">
-            <div className="bounty-glass-shine" aria-hidden="true">
-              <div className="bounty-glass-beam-bloom" style={{ animationDelay: '2.1s' }} />
-              <div className="bounty-glass-beam" style={{ animationDelay: '2.1s' }} />
-            </div>
-            <div className="flex items-center relative z-1">
-              <LockIcon size={22} className="text-[#A3E635]" />
-            </div>
-            <div className="relative z-1 mt-2">
-              <div className="font-heading text-[28px] sm:text-[34px] font-black leading-tight text-white tabular-nums">
-                {Number(bounty.maxWinners)}
-              </div>
-              <div className="font-mono-bold text-[10px] sm:text-[11px] uppercase tracking-wider text-white/60 mt-0.5">
-                WINNER{Number(bounty.maxWinners) !== 1 ? 'S' : ''}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Escrow panel with Halftone Texture */}
-        <div className="relative overflow-hidden border-[2.5px] border-[#111] rounded-2xl p-4 bg-gradient-to-r from-[#EAFCDA] via-[#E8FCD8] to-[#DEFBAE] shadow-sm my-1">
-          <div
-            className="absolute right-0 top-0 bottom-0 w-2/5 opacity-20 pointer-events-none"
-            style={{
-              backgroundImage: 'radial-gradient(#111 2px, transparent 2px)',
-              backgroundSize: '8px 8px',
-            }}
-          />
-          <div className="flex items-center gap-2 mb-2 relative z-1">
-            <LockIcon size={16} className="text-[#111]" />
-            <span className="font-mono-bold text-[12px] uppercase tracking-wider text-[#111]">ESCROW</span>
-          </div>
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center relative z-1">
-            <div className="flex flex-col">
-              <span className="font-mono-bold text-[10px] uppercase tracking-wider text-[#111]/70">LOCKED</span>
-              <span className="font-heading text-[20px] sm:text-[24px] font-black tabular-nums text-[#111]">
-                {formatUsdc(bounty.escrowRemaining)} USDC
-              </span>
-            </div>
-            <div className="w-[1.5px] h-10 bg-[#111]/20 mx-4" />
-            <div className="flex flex-col">
-              <span className="font-mono-bold text-[10px] uppercase tracking-wider text-[#111]/70">PAID OUT</span>
-              <span className="font-heading text-[20px] sm:text-[24px] font-black tabular-nums text-[#111]">
-                {formatUsdc(paidOut)} USDC
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Winners Segmented Bar matching reference */}
-        <div className="my-1">
-          <div className="font-heading font-black text-[13px] uppercase tracking-wider text-[#111] mb-2">
-            WINNERS {Number(bounty.winnersApproved)}/{Number(bounty.maxWinners)}
-          </div>
-          {Number(bounty.maxWinners) <= 12 ? (
-            <div className="flex gap-2">
-              {Array.from({ length: Number(bounty.maxWinners) }, (_, i) => {
-                const isFilled = i < Number(bounty.winnersApproved)
-                return (
-                  <div
-                    key={i}
-                    className={`h-6 sm:h-7 flex-1 border-[2.5px] border-[#111] rounded-lg transition-all ${
-                      isFilled ? 'bg-[#FF2E93]' : 'bg-white'
-                    }`}
-                  />
-                )
-              })}
-            </div>
-          ) : (
-            <div className="h-6 sm:h-7 w-full border-[2.5px] border-[#111] rounded-lg bg-white overflow-hidden p-0.5">
-              <div
-                className="h-full bg-[#FF2E93] rounded-md transition-all duration-500"
-                style={{
-                  width: `${Number(bounty.maxWinners) > 0 ? Math.min(100, (Number(bounty.winnersApproved) / Number(bounty.maxWinners)) * 100) : 0}%`,
-                }}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Footer: Created By with External Arrow */}
-        <div className="text-[#111] font-mono-ui text-[12px] pt-2 border-t border-[#111]/10 flex items-center gap-1.5">
-          <span>Created by</span>
-          <a
-            href={`#/profile/${bounty.poster}`}
-            className="font-mono-bold text-[#111] hover:underline cursor-pointer"
-          >
-            {formatAddress(bounty.poster)}
-          </a>
-          <svg
-            className="w-3.5 h-3.5 text-[#111] inline-block"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <line x1="7" y1="17" x2="17" y2="7" />
-            <polyline points="7 7 17 7 17 17" />
-          </svg>
         </div>
       </WindowCard>
 
@@ -872,13 +948,24 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
       {/* ── Sidebar (desktop) ──────────────────────────────────────────────── */}
       <div className="flex flex-col gap-5">
         {/* Reward card */}
-        <WindowCard title="REWARD.EXE" titleBarColor="#A78BFA" bodyClassName="flex flex-col gap-3">
-          <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/50">Reward</span>
-          <div className="flex items-center gap-2">
-            <CoinIcon size={30} />
-            <span className="font-heading text-[26px] font-extrabold tabular-nums text-[#111]">{formatUsdc(bounty.rewardPerWinner)} USDC</span>
+        <WindowCard title="REWARD.EXE" titleBarColor="#A78BFA" bodyClassName="flex flex-col gap-3.5">
+          <div className="dark-grid-surface bg-[#111] border-[2.5px] border-[#111] rounded-xl p-4 flex flex-col gap-2 text-white shadow-hard-sm">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-mono-bold text-[10px] uppercase tracking-widest text-white/60">Reward Payout</span>
+              <span className="font-mono-bold text-[9px] uppercase tracking-widest px-2 py-0.5 rounded-full bg-[#FFE600] text-[#111] border-[1.5px] border-[#111]">
+                FIXED PER WINNER
+              </span>
+            </div>
+            <div className="flex items-center gap-2.5 pt-0.5">
+              <div className="w-9 h-9 rounded-lg bg-[#FFE600] border-[2px] border-[#111] flex items-center justify-center shrink-0">
+                <CoinIcon size={24} />
+              </div>
+              <div className="flex items-baseline gap-1.5">
+                <span className="font-heading text-[28px] font-extrabold tabular-nums text-[#FFE600] leading-none">{formatUsdc(bounty.rewardPerWinner)}</span>
+                <span className="font-mono-bold text-[12px] uppercase tracking-wider text-white/80">USDC</span>
+              </div>
+            </div>
           </div>
-          <span className="font-mono-ui text-[11px] text-[#111]/50">Fixed payment, per winner</span>
 
           {isPoster ? (
             <PillButton onClick={() => document.getElementById('submissions-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} variant="lime">
@@ -890,10 +977,12 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
             </PillButton>
           ) : null}
 
-          <div className="flex items-start gap-2 border-[2px] border-[#111] rounded-lg p-2.5 bg-[#C6F23A]/20">
-            <LockIcon size={16} className="shrink-0 mt-0.5" />
-            <p className="font-mono-ui text-[11px] leading-snug text-[#111]/70">
-              <strong className="text-[#111]">Funds are held in escrow.</strong> You'll get paid once your submission is approved.
+          <div className="flex items-start gap-2.5 border-[2px] border-[#111] rounded-xl p-3 bg-[#C6F23A]/30 shadow-hard-xs">
+            <div className="w-6 h-6 rounded-md bg-[#C6F23A] border-[1.5px] border-[#111] flex items-center justify-center shrink-0 mt-0.5">
+              <LockIcon size={13} className="shrink-0 text-[#111]" />
+            </div>
+            <p className="font-mono-ui text-[11px] leading-snug text-[#111]/80">
+              <strong className="font-mono-bold text-[#111]">Escrow Guaranteed.</strong> Smart contract releases USDC immediately on approval.
             </p>
           </div>
         </WindowCard>
@@ -903,17 +992,22 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
 
         {/* Requirements card — shows ONLY what the creator chose */}
         <WindowCard title="REQUIREMENTS.EXE" titleBarColor="#7FF3F0" bodyClassName="flex flex-col gap-3">
-          <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/50">
-            Hunter Requirements
-          </span>
+          <div className="flex items-center justify-between">
+            <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/60">
+              Hunter Requirements
+            </span>
+            <span className="font-mono-bold text-[9px] uppercase tracking-widest px-2 py-0.5 rounded-full bg-[#7FF3F0] border-[1.5px] border-[#111] text-[#111]">
+              VERIFIED GATE
+            </span>
+          </div>
 
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2.5">
             {bountyRequirements?.require_social && (
-              <div className="flex items-start gap-2.5">
-                <div className="w-5 h-5 rounded bg-black flex items-center justify-center text-white shrink-0 mt-0.5 shadow-sm">
-                  <XIcon size={11} />
+              <div className="flex items-start gap-2.5 border-[2px] border-[#111] rounded-xl p-3 bg-white shadow-hard-xs">
+                <div className="w-6 h-6 rounded-md bg-[#111] flex items-center justify-center text-white shrink-0 mt-0.5">
+                  <XIcon size={12} />
                 </div>
-                <div className="flex flex-col">
+                <div className="flex flex-col gap-0.5">
                   <span className="font-mono-bold text-[11px] uppercase tracking-wider text-[#111]">
                     Connected Social Account
                   </span>
@@ -925,9 +1019,11 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
             )}
 
             {bountyRequirements?.min_account_age_days ? (
-              <div className="flex items-start gap-2.5">
-                <ClockIcon size={16} className="shrink-0 mt-0.5 text-[#111]" />
-                <div className="flex flex-col">
+              <div className="flex items-start gap-2.5 border-[2px] border-[#111] rounded-xl p-3 bg-white shadow-hard-xs">
+                <div className="w-6 h-6 rounded-md bg-[#FFE600] border-[1.5px] border-[#111] flex items-center justify-center text-[#111] shrink-0 mt-0.5">
+                  <ClockIcon size={13} className="shrink-0 text-[#111]" />
+                </div>
+                <div className="flex flex-col gap-0.5">
                   <span className="font-mono-bold text-[11px] uppercase tracking-wider text-[#111]">
                     Minimum Account Age: {bountyRequirements.min_account_age_days} Day{bountyRequirements.min_account_age_days === 1 ? '' : 's'}
                   </span>
@@ -939,9 +1035,11 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
             ) : null}
 
             {bountyRequirements?.min_onchain_tx && (
-              <div className="flex items-start gap-2.5">
-                <WalletIcon size={16} className="shrink-0 mt-0.5 text-[#111]" />
-                <div className="flex flex-col">
+              <div className="flex items-start gap-2.5 border-[2px] border-[#111] rounded-xl p-3 bg-white shadow-hard-xs">
+                <div className="w-6 h-6 rounded-md bg-[#A78BFA] border-[1.5px] border-[#111] flex items-center justify-center text-[#111] shrink-0 mt-0.5">
+                  <WalletIcon size={13} className="shrink-0 text-[#111]" />
+                </div>
+                <div className="flex flex-col gap-0.5">
                   <span className="font-mono-bold text-[11px] uppercase tracking-wider text-[#111]">
                     Active Onchain History
                   </span>
@@ -955,9 +1053,11 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
             {!bountyRequirements?.require_social &&
              !bountyRequirements?.min_account_age_days &&
              !bountyRequirements?.min_onchain_tx && (
-              <div className="flex items-start gap-2.5">
-                <CheckCircleIcon size={16} className="shrink-0 mt-0.5 text-[#111]" />
-                <div className="flex flex-col">
+              <div className="flex items-start gap-2.5 border-[2px] border-[#111] rounded-xl p-3 bg-white shadow-hard-xs">
+                <div className="w-6 h-6 rounded-md bg-[#C6F23A] border-[1.5px] border-[#111] flex items-center justify-center text-[#111] shrink-0 mt-0.5">
+                  <CheckCircleIcon size={14} className="shrink-0 text-[#111]" />
+                </div>
+                <div className="flex flex-col gap-0.5">
                   <span className="font-mono-bold text-[11px] uppercase tracking-wider text-[#111]">
                     Open to All Hunters
                   </span>
@@ -968,24 +1068,24 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
               </div>
             )}
 
-            <div className="border-t-[1.5px] border-[#111]/15 pt-2 flex items-center justify-between text-[#111]/60 font-mono-ui text-[10px] uppercase tracking-wider">
-              <span>1 submission per wallet</span>
-              <span>Free &amp; Gasless</span>
+            <div className="border-[2px] border-[#111] rounded-xl px-3 py-2 bg-[#111] flex items-center justify-between text-white font-mono-bold text-[10px] uppercase tracking-wider">
+              <span className="text-white/80">1 Entry / Wallet</span>
+              <span className="text-[#C6F23A]">Free &amp; Gasless</span>
             </div>
 
             {examples.length > 0 && (
-              <div className="flex items-start gap-2.5 pt-2 border-t-2 border-[#111]/10">
-                <span className="mt-0.5 shrink-0 inline-flex items-center justify-center w-5 h-5 rounded border-[1.5px] border-[#111] bg-[#FFE600]">
+              <div className="flex items-start gap-2.5 border-[2px] border-[#111] rounded-xl p-3 bg-[#FFE600]/20 shadow-hard-xs">
+                <span className="mt-0.5 shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-md border-[1.5px] border-[#111] bg-[#FFE600]">
                   <AttachmentIcon />
                 </span>
-                <div className="flex flex-col">
+                <div className="flex flex-col gap-0.5">
                   <span className="font-mono-bold text-[11px] uppercase tracking-wider text-[#111]">Reference Files</span>
                   <button
                     type="button"
                     onClick={() => setShowAttachments(true)}
                     className="font-mono-bold text-[11px] text-[#1A1AE6] underline text-left hover:text-[#111] transition-colors cursor-pointer"
                   >
-                    View {examples.length} reference attachment{examples.length === 1 ? '' : 's'} provided by creator →
+                    View {examples.length} reference attachment{examples.length === 1 ? '' : 's'} →
                   </button>
                 </div>
               </div>
@@ -1427,41 +1527,46 @@ function PosterCard({ poster }: { poster: string }) {
   const shortAddr = `${poster.slice(0, 6)}…${poster.slice(-4)}`
 
   return (
-    <WindowCard title="CREATOR.EXE" titleBarColor="#FF3E9A" bodyClassName="flex flex-col gap-3">
-      <a
-        href={`#/profile/${poster}`}
-        className="group flex items-center gap-3 p-1.5 -m-1.5 rounded-xl hover:bg-[#111]/5 transition-colors"
-      >
-        <div className="border-[2px] border-[#111] rounded-xl overflow-hidden shrink-0 shadow-hard-xs">
-          <PixelAvatar address={poster} size={44} variant={profile.avatar_variant} />
-        </div>
-        <div className="flex flex-col min-w-0 flex-1">
-          <span className="font-heading text-[15px] font-extrabold text-[#111] group-hover:text-[#1A1AE6] group-hover:underline truncate">
-            {shortAddr}
-          </span>
-          <span className="font-mono-ui text-[10px] text-[#111]/60">
-            {(postedIds?.length ?? 0)} bount{(postedIds?.length ?? 0) === 1 ? 'y' : 'ies'} created
-          </span>
-        </div>
-        <span className="font-mono-bold text-[10px] text-[#111]/60 group-hover:text-[#111] group-hover:translate-x-0.5 transition-transform">
-          →
-        </span>
-      </a>
-      {profile.bio && (
-        <p className="font-mono-ui text-[11px] font-bold text-[#111] bg-[#FFFDF0] border-[2px] border-[#111] rounded-xl px-3 py-2 leading-snug shadow-hard-xs">
-          {profile.bio}
-        </p>
-      )}
-      <div className="flex items-center justify-between gap-2 pt-1">
-        <span className="font-mono-bold text-[9px] uppercase tracking-widest border-[2px] border-[#111] rounded-full px-2.5 py-0.5 bg-[#A78BFA] text-[#111] shadow-hard-xs">
-          WANT CREATOR
-        </span>
+    <WindowCard title="CREATOR.EXE" titleBarColor="#FF3E9A" bodyClassName="flex flex-col gap-0 !p-0">
+      <div className="checkerboard p-3.5 border-b-[2.5px] border-[#111]">
         <a
           href={`#/profile/${poster}`}
-          className="font-mono-bold text-[10px] uppercase tracking-wider text-[#111] hover:text-[#1A1AE6] underline underline-offset-2"
+          className="group flex items-center gap-3 p-2.5 bg-white border-[2.5px] border-[#111] rounded-xl shadow-hard-xs hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform"
         >
-          View Profile ↗
+          <div className="border-[2px] border-[#111] rounded-xl overflow-hidden shrink-0 shadow-hard-xs bg-[#FFFDF0]">
+            <PixelAvatar address={poster} size={46} variant={profile.avatar_variant} />
+          </div>
+          <div className="flex flex-col min-w-0 flex-1">
+            <span className="font-heading text-[15px] font-extrabold text-[#111] group-hover:text-[#1A1AE6] truncate">
+              {shortAddr}
+            </span>
+            <span className="font-mono-bold text-[10px] uppercase tracking-wider text-[#111]/60">
+              {(postedIds?.length ?? 0)} bount{(postedIds?.length ?? 0) === 1 ? 'y' : 'ies'} created
+            </span>
+          </div>
+          <span className="w-7 h-7 rounded-full bg-[#FFE600] border-[2px] border-[#111] flex items-center justify-center font-mono-bold text-[11px] text-[#111] group-hover:translate-x-0.5 transition-transform">
+            →
+          </span>
         </a>
+      </div>
+      <div className="p-3.5 flex flex-col gap-3">
+        {profile.bio && (
+          <p className="font-mono-ui text-[11px] font-bold text-[#111] bg-white border-[2px] border-[#111] rounded-xl px-3 py-2 leading-snug shadow-hard-xs">
+            {profile.bio}
+          </p>
+        )}
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-mono-bold text-[9px] uppercase tracking-widest border-[2px] border-[#111] rounded-full px-2.5 py-0.5 bg-[#FF3E9A] text-white shadow-hard-xs">
+            WANT CREATOR
+          </span>
+          <a
+            href={`#/profile/${poster}`}
+            className="inline-flex items-center gap-1 font-mono-bold text-[10px] uppercase tracking-wider text-[#111] bg-[#FFE600] hover:bg-[#111] hover:text-[#FFE600] border-[2px] border-[#111] rounded-full px-3 py-1 shadow-hard-xs transition-colors"
+          >
+            <span>Creator Profile</span>
+            <span>↗</span>
+          </a>
+        </div>
       </div>
     </WindowCard>
   )

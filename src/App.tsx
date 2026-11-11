@@ -121,7 +121,7 @@ const pageVariants = {
 function PageView({ children, narrow = false }: { children: React.ReactNode; narrow?: boolean }) {
   return (
     <motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit">
-      {narrow ? <div className="max-w-[992px] mx-auto w-full">{children}</div> : children}
+      {narrow ? <div className="max-w-[1120px] mx-auto w-full">{children}</div> : children}
     </motion.div>
   )
 }
@@ -457,6 +457,19 @@ export default function App() {
           </div>
 
           <div className="font-mono-ui text-[11px] text-[#FFFDF0]/80 flex items-center gap-3 flex-wrap justify-center md:justify-end">
+            <a
+              href="https://x.com/wantdotfun"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white text-[#111] border-[2px] border-white shadow-[2px_2px_0_#FF3E9A] hover:bg-[#FFE600] hover:border-[#FFE600] transition-colors font-mono-bold text-[11px] cursor-pointer"
+              title="Follow @wantdotfun on X"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+              </svg>
+              <span>@wantdotfun</span>
+            </a>
+            <span className="text-[#FFFDF0]/30">·</span>
             <button
               onClick={() => goTo('wall')}
               className="text-[#FFFDF0]/80 hover:text-[#FFE600] transition-colors font-mono-ui font-bold uppercase cursor-pointer"
@@ -497,7 +510,7 @@ export default function App() {
             Notice: Data posted onchain is permanent and public. Always review before submitting.
           </span>
           <span className="font-mono-ui text-[10px] text-[#FFFDF0]/60 uppercase tracking-wider">
-            100% Upfront Escrow · Zero Platform Fee
+            Official X: <a href="https://x.com/wantdotfun" target="_blank" rel="noopener noreferrer" className="text-[#FFE600] hover:underline font-bold">@wantdotfun</a> · 100% Upfront Escrow · Zero Platform Fee
           </span>
         </div>
       </footer>
