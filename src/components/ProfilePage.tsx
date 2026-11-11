@@ -88,7 +88,7 @@ function ReputationBadge({
   title,
 }: {
   label: string
-  icon: string
+  icon: React.ReactNode
   bg: string
   textColor?: string
   title: string
@@ -99,7 +99,7 @@ function ReputationBadge({
       className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border-[2px] border-[#111] shadow-hard-sm font-mono-bold text-[10px] uppercase tracking-wider select-none cursor-help"
       style={{ backgroundColor: bg, color: textColor }}
     >
-      <span>{icon}</span>
+      <span className="inline-flex items-center shrink-0">{icon}</span>
       <span>{label}</span>
     </div>
   )
@@ -481,7 +481,14 @@ export function ProfilePage({ address, onBack, onSelectBounty, onCreateBounty, o
 
   return (
     <div className="flex flex-col gap-5">
-      <button onClick={onBack} className="font-mono-bold text-[12px] uppercase tracking-widest text-[#1A1AE6] hover:underline self-start cursor-pointer">← Back</button>
+      <button
+        type="button"
+        onClick={onBack}
+        className="self-start inline-flex items-center gap-1.5 font-mono-bold text-[11px] uppercase tracking-wider text-[#111] bg-white hover:bg-[#FFE600] border-[2.5px] border-[#111] px-3.5 py-1.5 rounded-full shadow-hard-sm transition-colors btn-press cursor-pointer"
+      >
+        <span aria-hidden="true">←</span>
+        <span>Back to Wall</span>
+      </button>
 
       {/* Hidden readers — collect stats across every bounty this address posted */}
       {totalPosted?.map(id => <BountyStatsReader key={id.toString()} bountyId={id} onValue={onBountyStat} />)}
@@ -530,16 +537,54 @@ export function ProfilePage({ address, onBack, onSelectBounty, onCreateBounty, o
               {/* Reputation badges row */}
               <div className="flex items-center gap-1.5 flex-wrap">
                 {isFirstCatch && (
-                  <ReputationBadge label="First Catch" icon="🚀" bg="#FFE600" title="First bounty won on Want.fun" />
+                  <ReputationBadge
+                    label="First Catch"
+                    icon={
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M12 2L15 9L22 12L15 15L12 22L9 15L2 12L9 9L12 2Z" />
+                      </svg>
+                    }
+                    bg="#FFE600"
+                    title="First bounty won on Want.fun"
+                  />
                 )}
                 {hasPosted && (
-                  <ReputationBadge label="Want Creator" icon="✦" bg="#FF3E9A" textColor="#fff" title="Has created bounties on Want.fun" />
+                  <ReputationBadge
+                    label="Want Creator"
+                    icon={
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" />
+                      </svg>
+                    }
+                    bg="#FF3E9A"
+                    textColor="#fff"
+                    title="Has created bounties on Want.fun"
+                  />
                 )}
                 {isHeavyHitter && (
-                  <ReputationBadge label="Heavy Hitter" icon="⚡" bg="#FF3E9A" textColor="#FFFDF0" title="Earned > $500 USDC on Want.fun" />
+                  <ReputationBadge
+                    label="Heavy Hitter"
+                    icon={
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                      </svg>
+                    }
+                    bg="#FF3E9A"
+                    textColor="#FFFDF0"
+                    title="Earned > $500 USDC on Want.fun"
+                  />
                 )}
                 {isPromiseKeeper && (
-                  <ReputationBadge label="Promise Keeper" icon="🤝" bg="#C6F23A" title="100% payout rate on created bounties" />
+                  <ReputationBadge
+                    label="Promise Keeper"
+                    icon={
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M20 6L9 17l-5-5" />
+                      </svg>
+                    }
+                    bg="#C6F23A"
+                    title="100% payout rate on created bounties"
+                  />
                 )}
               </div>
 
@@ -720,49 +765,52 @@ export function ProfilePage({ address, onBack, onSelectBounty, onCreateBounty, o
       </WindowCard>
 
       {/* ── Activity Stats ─────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
 
         {/* Hunter stats panel */}
-        <div className="border-[2.5px] border-[#111]/12 rounded-2xl overflow-hidden bg-white shadow-sm">
-          <div className="bg-[#111] px-4 py-2.5 flex items-center gap-2">
-            <TrophyIcon size={14} className="text-[#FFE600]" />
-            <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#FFE600]">Hunter Activity</span>
+        <div className="border-[3px] border-[#111] rounded-2xl overflow-hidden bg-white shadow-hard">
+          <div className="bg-[#111] border-b-[3px] border-[#111] px-4 py-2.5 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <TrophyIcon size={15} className="text-[#FFE600]" />
+              <span className="font-mono-bold text-[11px] uppercase tracking-widest text-[#FFE600]">Hunter Activity</span>
+            </div>
+            <span className="w-2.5 h-2.5 rounded-full bg-[#C6F23A] border border-white/40" />
           </div>
-          <div className="p-4 flex flex-col gap-3">
+          <div className="p-4 flex flex-col gap-3.5">
             {/* Win rate bar */}
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
-                <span className="font-mono-ui text-[10px] uppercase tracking-widest text-[#111]/50">Win rate</span>
+                <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/60">Win rate</span>
                 <span className="font-mono-bold text-[13px] text-[#111]">
                   {submittedList.length > 0 ? `${Math.round(Number(wins * 100n) / submittedList.length)}%` : '—'}
                 </span>
               </div>
-              <div className="h-2 rounded-full bg-[#111]/8 overflow-hidden border border-[#111]/10">
+              <div className="h-3 rounded-full bg-[#FFFDF0] overflow-hidden border-[2px] border-[#111]">
                 <div
-                  className="h-full rounded-full bg-[#A3E635] transition-all duration-500"
+                  className="h-full bg-[#C6F23A] transition-all duration-500"
                   style={{ width: submittedList.length > 0 ? `${Math.min(100, Math.round(Number(wins * 100n) / submittedList.length))}%` : '0%' }}
                 />
               </div>
             </div>
             {/* Three inline stats */}
-            <div className="grid grid-cols-3 gap-2 pt-1 border-t border-[#111]/8">
+            <div className="grid grid-cols-3 gap-2 pt-2 border-t-[2px] border-[#111]/12">
               <div className="flex flex-col gap-0.5 items-center text-center">
-                <span className="font-heading text-[22px] font-black text-[#111] tabular-nums">{submittedList.length}</span>
-                <span className="font-mono-ui text-[8px] uppercase tracking-widest text-[#111]/40">Submitted</span>
+                <span className="font-heading text-[24px] font-black text-[#111] tabular-nums">{submittedList.length}</span>
+                <span className="font-mono-bold text-[9px] uppercase tracking-widest text-[#111]/55">Submitted</span>
               </div>
-              <div className="flex flex-col gap-0.5 items-center text-center border-x border-[#111]/8">
-                <span className="font-heading text-[22px] font-black text-[#A3E635] tabular-nums">{wins.toString()}</span>
-                <span className="font-mono-ui text-[8px] uppercase tracking-widest text-[#111]/40">Won</span>
+              <div className="flex flex-col gap-0.5 items-center text-center border-x-[2px] border-[#111]/12">
+                <span className="font-heading text-[24px] font-black text-[#16a34a] tabular-nums">{wins.toString()}</span>
+                <span className="font-mono-bold text-[9px] uppercase tracking-widest text-[#111]/55">Won</span>
               </div>
               <div className="flex flex-col gap-0.5 items-center text-center">
-                <span className="font-heading text-[22px] font-black text-[#111] tabular-nums">${formatUsdc(earned)}</span>
-                <span className="font-mono-ui text-[8px] uppercase tracking-widest text-[#111]/40">Earned</span>
+                <span className="font-heading text-[24px] font-black text-[#111] tabular-nums">${formatUsdc(earned)}</span>
+                <span className="font-mono-bold text-[9px] uppercase tracking-widest text-[#111]/55">Earned</span>
               </div>
             </div>
             {pendingEarnings > 0n && (
-              <div className="flex items-center gap-2 bg-[#FFE600]/20 border border-[#FFE600]/40 rounded-lg px-3 py-2">
-                <ClockIcon size={13} className="text-[#111]/60 shrink-0" />
-                <span className="font-mono-bold text-[10px] text-[#111]/70">
+              <div className="flex items-center gap-2 bg-[#FFE600]/30 border-[2px] border-[#111] rounded-xl px-3 py-2 shadow-hard-xs">
+                <ClockIcon size={13} className="text-[#111] shrink-0" />
+                <span className="font-mono-bold text-[10px] text-[#111]">
                   ${formatUsdc(pendingEarnings)} USDC payout pending
                 </span>
               </div>
@@ -771,57 +819,60 @@ export function ProfilePage({ address, onBack, onSelectBounty, onCreateBounty, o
         </div>
 
         {/* Creator stats panel (always shown, greyed out if no posts) */}
-        <div className="border-[2.5px] border-[#111]/12 rounded-2xl overflow-hidden bg-white shadow-sm">
-          <div className="bg-[#111] px-4 py-2.5 flex items-center gap-2">
-            <FolderIcon size={14} className="text-[#FF3E9A]" />
-            <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#FF3E9A]">Creator Activity</span>
+        <div className="border-[3px] border-[#111] rounded-2xl overflow-hidden bg-white shadow-hard">
+          <div className="bg-[#111] border-b-[3px] border-[#111] px-4 py-2.5 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <FolderIcon size={15} className="text-[#FF3E9A]" />
+              <span className="font-mono-bold text-[11px] uppercase tracking-widest text-[#FF3E9A]">Creator Activity</span>
+            </div>
+            <span className="w-2.5 h-2.5 rounded-full bg-[#FF3E9A] border border-white/40" />
           </div>
-          <div className="p-4 flex flex-col gap-3">
+          <div className="p-4 flex flex-col gap-3.5">
             {hasPosted ? (
               <>
                 {/* Payout rate bar */}
                 <div className="flex flex-col gap-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono-ui text-[10px] uppercase tracking-widest text-[#111]/50">Payout rate</span>
+                    <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/60">Payout rate</span>
                     <span className="font-mono-bold text-[13px] text-[#111]">
                       {isPromiseKeeper ? '100%' : allPostedStats.some(b => b.winnersApproved > 0n)
                         ? `${Math.round(allPostedStats.filter(b => b.winnersApproved > 0n).length / allPostedStats.length * 100)}%` : '0%'}
                     </span>
                   </div>
-                  <div className="h-2 rounded-full bg-[#111]/8 overflow-hidden border border-[#111]/10">
+                  <div className="h-3 rounded-full bg-[#FFFDF0] overflow-hidden border-[2px] border-[#111]">
                     <div
-                      className="h-full rounded-full bg-[#FF3E9A] transition-all duration-500"
+                      className="h-full bg-[#FF3E9A] transition-all duration-500"
                       style={{ width: isPromiseKeeper ? '100%' : `${Math.round(allPostedStats.filter(b => b.winnersApproved > 0n).length / Math.max(allPostedStats.length, 1) * 100)}%` }}
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-2 pt-1 border-t border-[#111]/8">
+                <div className="grid grid-cols-3 gap-2 pt-2 border-t-[2px] border-[#111]/12">
                   <div className="flex flex-col gap-0.5 items-center text-center">
-                    <span className="font-heading text-[22px] font-black text-[#111] tabular-nums">{totalPosted?.length ?? 0}</span>
-                    <span className="font-mono-ui text-[8px] uppercase tracking-widest text-[#111]/40">Created</span>
+                    <span className="font-heading text-[24px] font-black text-[#111] tabular-nums">{totalPosted?.length ?? 0}</span>
+                    <span className="font-mono-bold text-[9px] uppercase tracking-widest text-[#111]/55">Created</span>
                   </div>
-                  <div className="flex flex-col gap-0.5 items-center text-center border-x border-[#111]/8">
-                    <span className="font-heading text-[22px] font-black text-[#FF3E9A] tabular-nums">
+                  <div className="flex flex-col gap-0.5 items-center text-center border-x-[2px] border-[#111]/12">
+                    <span className="font-heading text-[24px] font-black text-[#FF3E9A] tabular-nums">
                       {allPostedStats.reduce((s, b) => s + Number(b.winnersApproved), 0)}
                     </span>
-                    <span className="font-mono-ui text-[8px] uppercase tracking-widest text-[#111]/40">Paid out</span>
+                    <span className="font-mono-bold text-[9px] uppercase tracking-widest text-[#111]/55">Paid out</span>
                   </div>
                   <div className="flex flex-col gap-0.5 items-center text-center">
-                    <span className="font-heading text-[22px] font-black text-[#111] tabular-nums">${formatUsdc(escrowTotal)}</span>
-                    <span className="font-mono-ui text-[8px] uppercase tracking-widest text-[#111]/40">In escrow</span>
+                    <span className="font-heading text-[24px] font-black text-[#111] tabular-nums">${formatUsdc(escrowTotal)}</span>
+                    <span className="font-mono-bold text-[9px] uppercase tracking-widest text-[#111]/55">In escrow</span>
                   </div>
                 </div>
                 {isPromiseKeeper && (
-                  <div className="flex items-center gap-2 bg-[#C6F23A]/20 border border-[#C6F23A]/40 rounded-lg px-3 py-2">
-                    <span className="text-[12px]">🤝</span>
-                    <span className="font-mono-bold text-[10px] text-[#111]/70">Promise Keeper — 100% payout rate</span>
+                  <div className="flex items-center gap-2 bg-[#C6F23A]/35 border-[2px] border-[#111] rounded-xl px-3 py-2 shadow-hard-xs">
+                    <CheckCircleIcon size={14} className="text-[#111] shrink-0" />
+                    <span className="font-mono-bold text-[10px] text-[#111]">Promise Keeper — 100% payout rate</span>
                   </div>
                 )}
               </>
             ) : (
               <div className="flex flex-col items-center justify-center py-6 gap-2 text-center">
-                <FolderIcon size={28} className="text-[#111]/20" />
-                <span className="font-mono-ui text-[11px] text-[#111]/30">No bounties created yet</span>
+                <FolderIcon size={28} className="text-[#111]/30" />
+                <span className="font-mono-bold text-[11px] uppercase tracking-wider text-[#111]/45">No bounties created yet</span>
               </div>
             )}
           </div>
@@ -878,17 +929,20 @@ export function ProfilePage({ address, onBack, onSelectBounty, onCreateBounty, o
 
       {/* ── Tabs ──────────────────────────────────────────────────────────── */}
       <div>
-        <div className="flex gap-0 border-[3px] border-[#111] rounded-t-lg overflow-hidden w-fit">
+        <div className="flex gap-0 border-[3px] border-[#111] rounded-t-xl overflow-hidden w-fit shadow-hard-sm">
           {TABS.map(t => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className="px-3 py-2 font-mono-bold text-[10px] uppercase tracking-widest text-[#111] border-r-[3px] border-[#111] last:border-r-0 transition-colors cursor-pointer"
-              style={{ backgroundColor: tab === t.id ? t.color : '#FFFDF0' }}
+              className="px-4 py-2.5 font-mono-bold text-[10px] sm:text-[11px] uppercase tracking-widest text-[#111] border-r-[3px] border-[#111] last:border-r-0 transition-colors cursor-pointer"
+              style={{
+                backgroundColor: tab === t.id ? t.color : '#FFFDF0',
+                color: tab === t.id && t.id === 'posted' ? '#FFFFFF' : '#111111',
+              }}
             >{t.label}</button>
           ))}
         </div>
-        <div className="border-[3px] border-t-0 border-[#111] rounded-b-lg rounded-tr-lg p-4 bg-[#FFFDF0]">
+        <div className="border-[3px] border-t-0 border-[#111] rounded-b-xl rounded-tr-xl p-4 sm:p-5 bg-[#FFFDF0] shadow-hard">
           {tab === 'participating' && (
             <BountyList
               ids={participatingIds as bigint[]}

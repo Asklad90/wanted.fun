@@ -6,14 +6,15 @@ import { SkeletonBountyCard } from './Skeleton'
 import { WindowCard } from './WindowCard'
 import { PillButton } from './PillButton'
 import { StatusTag } from './StatusTag'
+import { LoadingBar } from './LoadingBar'
 import { PixelAvatar } from './PixelAvatar'
-import { TrophyIcon, CoinIcon, ClockIcon, ArrowRightIcon } from './Icons'
+import { TrophyIcon, CoinIcon, ClockIcon, ArrowRightIcon, LockIcon } from './Icons'
 import { TrophyBigIcon, NotepadIcon, UsdcCoinIcon } from './StatIcons'
 import { AnimatedCounter } from './AnimatedCounter'
 import { MyBounties, MySubmissions } from './MyBounties'
 import { BOUNTY_BOARD_ABI } from '../bounty-abi'
 import { CHAIN_ID, CONTRACT_ADDRESS, CONTRACT_DEPLOYED } from '../bounty-config'
-import { formatUsdc, formatAddress, timeLeft, bountyStatus, decodeBytes } from '../lib/utils'
+import { barColor, formatUsdc, formatAddress, timeLeft, bountyStatus, decodeBytes } from '../lib/utils'
 import type { BountyStatusType } from '../lib/utils'
 
 type Tab = 'wall' | 'my-bounties' | 'my-submissions'
@@ -95,8 +96,10 @@ function WallBountyCard({ bounty, onClick }: { bounty: BountyData; onClick: () =
     cancelled: bounty.cancelled,
     reclaimedUnused: bounty.reclaimedUnused,
   })
+  const totalEscrow = bounty.rewardPerWinner * bounty.maxWinners
   const subCount = bounty.submissionCount !== undefined ? Number(bounty.submissionCount) : null
-  const meta = `${bounty.winnersApproved}/${bounty.maxWinners} winners${subCount !== null ? ` · ${subCount} submission${subCount === 1 ? '' : 's'}` : ''}`
+  const meta = `${bounty.winnersApproved}/${bounty.maxWinners} winners${subCount !== null ? ` · ${subCount} sub${subCount === 1 ? '' : 's'}` : ''}`
+  const accentColor = barColor(idNum)
 
   const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
     const rect = e.currentTarget.getBoundingClientRect()
@@ -117,51 +120,86 @@ function WallBountyCard({ bounty, onClick }: { bounty: BountyData; onClick: () =
       onClick={onClick}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className="relative overflow-hidden text-left w-full h-full flex flex-col gap-3 rounded-lg border-[2px] border-[#111] bg-[#FFFDF0] p-4 shadow-hard-sm transition-all hover:shadow-[6px_6px_0_#111] hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0_#111]"
+      className="group relative overflow-hidden text-left w-full h-full flex flex-col rounded-xl border-[3px] border-[#111] bg-[#FFFDF0] shadow-hard-sm transition-all duration-150 hover:shadow-[7px_7px_0_#111] hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0_#111] cursor-pointer"
     >
+      {/* Color-coded Neo-Brutalist top accent bar */}
+      <div
+        className="w-full px-3.5 py-2 border-b-[2.5px] border-[#111] flex items-center justify-between gap-2"
+        style={{
+          backgroundColor: accentColor,
+          boxShadow: 'inset 0 2px 0 rgba(255,255,255,0.45)',
+        }}
+      >
+        <div className="flex items-center gap-2">
+          <span className="font-mono-bold text-[10px] uppercase tracking-wider text-[#111] bg-white/85 px-1.5 py-0.5 rounded border-[1.5px] border-[#111]">
+            #{String(idNum).padStart(3, '0')}
+          </span>
+          <StatusTag status={status} />
+        </div>
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/90 border-[1.5px] border-[#111] text-[#111]">
+          <ClockIcon size={11} />
+          <span className="font-mono-bold text-[10px] uppercase tracking-wider">{timeLeft(bounty.deadline)}</span>
+        </span>
+      </div>
+
       {/* Interactive cursor spotlight sheen */}
       <div
         className="pointer-events-none absolute inset-0 transition-opacity duration-300"
         style={{
           opacity: spotlight.opacity,
-          background: `radial-gradient(240px circle at ${spotlight.x}px ${spotlight.y}px, rgba(127, 243, 240, 0.18), transparent 70%)`,
+          background: `radial-gradient(240px circle at ${spotlight.x}px ${spotlight.y}px, rgba(127, 243, 240, 0.22), transparent 70%)`,
         }}
         aria-hidden="true"
       />
-      <div className="flex items-center justify-between gap-2">
-        <StatusTag status={status} />
-        <span className="flex items-center gap-1 text-[#111]/70">
-          <ClockIcon size={12} />
-          <span className="font-mono-bold text-[10px] uppercase tracking-wider">{timeLeft(bounty.deadline)}</span>
-        </span>
-      </div>
 
-      <h3 className="font-heading text-[17px] font-extrabold leading-tight text-[#111] line-clamp-2">{title}</h3>
+      <div className="relative z-10 p-4 flex flex-col gap-3 flex-1">
+        <h3 className="font-heading text-[18px] font-extrabold leading-tight text-[#111] line-clamp-2 group-hover:underline decoration-2 underline-offset-2">
+          {title}
+        </h3>
 
-      {description && (
-        <p className="font-mono-ui text-[12px] leading-snug text-[#111]/70 line-clamp-3">{description}</p>
-      )}
+        {description && (
+          <p className="font-mono-ui text-[12px] leading-relaxed text-[#111]/75 line-clamp-2">{description}</p>
+        )}
 
-      <div className="mt-auto flex flex-col gap-3 pt-1">
-        <div className="flex items-center gap-1.5">
-          <UsdcCoinIcon size={20} />
-          <span className="font-heading text-[17px] font-extrabold tabular-nums text-[#111]">{formatUsdc(bounty.rewardPerWinner)} USDC</span>
-          <span className="font-mono-bold text-[9px] uppercase tracking-wider text-[#111]/50">/ winner</span>
-        </div>
-
-        <div className="flex items-center justify-between gap-2 border-t-2 border-[#111]/15 pt-3">
-          <span className="flex items-center gap-2 min-w-0">
-            <span className="inline-flex shrink-0 rounded-full overflow-hidden border-2 border-[#111]">
-              <PixelAvatar address={bounty.poster} size={26} />
+        <div className="mt-auto flex flex-col gap-3 pt-2">
+          {/* Reward block */}
+          <div className="rounded-xl border-[2px] border-[#111] bg-white p-3 shadow-[2px_2px_0_#111] flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5">
+              <UsdcCoinIcon size={22} />
+              <div className="flex items-baseline gap-1">
+                <span className="font-heading text-[20px] font-extrabold tabular-nums text-[#111] leading-none">
+                  ${formatUsdc(bounty.rewardPerWinner)}
+                </span>
+                <span className="font-mono-bold text-[9px] uppercase tracking-wider text-[#111]/60">USDC / win</span>
+              </div>
+            </div>
+            <span className="inline-flex items-center gap-1 bg-[#C6F23A] border-[1.5px] border-[#111] rounded-full px-2 py-0.5 font-mono-bold text-[9px] uppercase tracking-wider text-[#111]">
+              <LockIcon size={10} />
+              ${formatUsdc(totalEscrow)}
             </span>
-            <span className="flex flex-col min-w-0">
-              <span className="font-mono-ui text-[10px] text-[#111]/70 truncate">Created by {formatAddress(bounty.poster)}</span>
-              <span className="font-mono-ui text-[10px] text-[#111]/50 truncate">{meta}</span>
+          </div>
+
+          <LoadingBar
+            current={Number(bounty.winnersApproved)}
+            max={Number(bounty.maxWinners)}
+            label={`WINNERS ${bounty.winnersApproved}/${bounty.maxWinners}`}
+            color="#FF3E9A"
+          />
+
+          <div className="flex items-center justify-between gap-2 border-t-[2px] border-[#111]/12 pt-2.5">
+            <span className="flex items-center gap-2 min-w-0">
+              <span className="inline-flex shrink-0 rounded-full overflow-hidden border-[2px] border-[#111]">
+                <PixelAvatar address={bounty.poster} size={24} />
+              </span>
+              <span className="flex flex-col min-w-0">
+                <span className="font-mono-bold text-[10px] text-[#111] truncate">{formatAddress(bounty.poster)}</span>
+                <span className="font-mono-ui text-[9px] text-[#111]/60 truncate">{meta}</span>
+              </span>
             </span>
-          </span>
-          <span className="flex items-center gap-1 shrink-0 font-mono-bold text-[10px] text-[#111] underline underline-offset-2">
-            View bounty <ArrowRightIcon size={11} />
-          </span>
+            <span className="inline-flex items-center gap-1 shrink-0 font-mono-bold text-[10px] uppercase text-[#111] bg-[#FFE600] border-[1.5px] border-[#111] rounded-full px-2.5 py-1 shadow-[2px_2px_0_#111] group-hover:translate-x-0.5 transition-transform">
+              Open <ArrowRightIcon size={10} />
+            </span>
+          </div>
         </div>
       </div>
     </button>
@@ -270,8 +308,8 @@ function BountyGrid({ total, onSelectBounty, filter, query, onAllHiddenChange }:
         />
       ))}
       {noMatches && !noActiveFilter && (
-        <div className="col-span-full rounded-lg border-[2px] border-dashed border-[#111] bg-[#FFFDF0] py-12 px-4 text-center font-mono-bold text-[12px] uppercase tracking-widest text-[#111]/60">
-          No bounties match. Try a different search or filter.
+        <div className="col-span-full rounded-xl border-[3px] border-dashed border-[#111] bg-white py-12 px-4 text-center font-mono-bold text-[12px] uppercase tracking-widest text-[#111]/70">
+          No bounties match your filter. Try clearing your search or switching tabs.
         </div>
       )}
     </div>
@@ -282,9 +320,6 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
   const [tab, setTab] = useState<Tab>('wall')
   const [filter, setFilter] = useState<StatusFilter>('all')
   const [query, setQuery] = useState('')
-  // Tagged with the inputs it was computed from, so a change to totalBounties, filter,
-  // or query (below) invalidates it automatically — read it only through the derived
-  // `allBountiesHidden` further down, never directly.
   const [hiddenSnapshot, setHiddenSnapshot] = useState<{ hidden: boolean; totalBounties: number; filter: StatusFilter; query: string } | null>(null)
 
   const { data: totalBountiesRaw, isLoading: totalBountiesLoading } = useReadContract({
@@ -303,9 +338,6 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
   const totalBounties = totalBountiesRaw ? Number(totalBountiesRaw) : 0
   const totalEscrowed = (totalEscrowRaw) ?? 0n
 
-  // Only trust the snapshot while it was computed from today's totalBounties/filter/query —
-  // otherwise (e.g. a new bounty appears, or the filter/search changes), treat it as
-  // unknown until BountyGrid re-mounts and reports back.
   const allBountiesHidden = !!hiddenSnapshot
     && hiddenSnapshot.totalBounties === totalBounties
     && hiddenSnapshot.filter === filter
@@ -325,21 +357,26 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
           className="checkerboard border-[3px] border-[#111] rounded-2xl shadow-hard overflow-hidden p-4 sm:p-6 desk:p-8"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
+          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
         >
           <div className="desk:grid desk:grid-cols-[1.15fr_0.85fr] desk:gap-8 desk:items-center">
             <div className="flex flex-col gap-4">
               {/* Dedicated black card for headline & copy */}
-              <div className="bg-[#111] text-[#FFFDF0] rounded-2xl border-[3px] border-[#111] shadow-hard p-6 sm:p-8">
+              <div className="dark-grid-surface text-[#FFFDF0] rounded-2xl border-[3px] border-[#111] shadow-hard p-6 sm:p-8 relative overflow-hidden">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#C6F23A] text-[#111] border-[2px] border-[#111] font-mono-bold text-[10px] uppercase tracking-wider mb-4 shadow-[2px_2px_0_#FFFDF0]">
+                  <span className="w-2 h-2 rounded-full bg-[#111] animate-pulse" />
+                  100% Escrow Guaranteed on Arc
+                </div>
                 <h1
-                  className="font-heading text-[38px] sm:text-[50px] desk:text-[56px] font-extrabold leading-[1.05] text-white text-balance"
-                  style={{ letterSpacing: '-0.02em' }}
+                  className="font-heading text-[36px] sm:text-[48px] desk:text-[54px] font-extrabold leading-[1.04] text-white text-balance"
+                  style={{ letterSpacing: '-0.025em' }}
                 >
-                  Create a bounty.<br />Get work done.
+                  Create a bounty.<br />
+                  <span className="text-[#FFE600]">Get work done.</span>
                 </h1>
                 <div className="my-4 sm:my-5 border-t border-white/20" />
-                <p className="font-heading text-[16px] sm:text-[18px] font-bold text-white/90 leading-relaxed">
-                  Put your idea onchain, set the reward, and let contributors bring it to life. No promises, just work and rewards.
+                <p className="font-heading text-[15px] sm:text-[17px] font-bold text-white/90 leading-relaxed">
+                  Put your idea onchain, lock a USDC reward in smart-contract escrow, and let contributors compete to bring it to life.
                 </p>
               </div>
 
@@ -350,7 +387,7 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
                   onClick={onCreateBounty}
                   className="inline-flex items-center gap-2 rounded-full border-[3px] border-[#111] shadow-hard btn-press bg-[#FFE600] text-[#111] font-heading font-extrabold uppercase tracking-wide px-6 py-3.5 text-[14px] sm:text-[15px] cursor-pointer"
                 >
-                  <span>Post a bounty</span>
+                  <span>+ Post a bounty</span>
                   <span aria-hidden="true">→</span>
                 </button>
                 <button
@@ -365,10 +402,10 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
 
               {/* Stats row on mobile */}
               {CONTRACT_DEPLOYED && (
-                <div className="flex gap-8 flex-wrap pt-4 mt-1 border-t-[3px] border-[#111] desk:hidden">
+                <div className="grid grid-cols-3 gap-2 pt-4 mt-1 border-t-[3px] border-[#111] desk:hidden">
                   <Stat value={totalBounties.toString()} numericValue={totalBounties} label="Bounties" />
                   <Stat value={`$${formatUsdc(totalEscrowed)}`} numericValue={Number(totalEscrowed) / 1e6} prefix="$" label="In escrow" />
-                  <Stat value={`$${formatUsdc(totalPaid)}`} numericValue={Number(totalPaid) / 1e6} prefix="$" label="Paid out" icon={<CoinIcon size={28} />} />
+                  <Stat value={`$${formatUsdc(totalPaid)}`} numericValue={Number(totalPaid) / 1e6} prefix="$" label="Paid out" icon={<CoinIcon size={20} />} />
                 </div>
               )}
             </div>
@@ -377,34 +414,63 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
         </motion.section>
       </div>
 
-      {/* Stats row — desktop only (mobile keeps the stats inside the hero) */}
+      {/* Stats row — desktop only: framed in a crisp Neo-Brutalist 3-column card strip */}
       {CONTRACT_DEPLOYED && (
-        <div className="hidden desk:flex items-center justify-between w-full max-w-[1040px] mx-auto px-6">
-          <StatItem icon={<NotepadIcon size={54} />} value={totalBounties.toString()} numericValue={totalBounties} label="Bounties" />
-          <span className="h-14 w-px bg-[#111]/30" />
-          <StatItem icon={<UsdcCoinIcon size={54} />} value={`$${formatUsdc(totalEscrowed)}`} numericValue={Number(totalEscrowed) / 1e6} prefix="$" label="In escrow" />
-          <span className="h-14 w-px bg-[#111]/30" />
-          <StatItem icon={<TrophyBigIcon size={54} />} value={`$${formatUsdc(totalPaid)}`} numericValue={Number(totalPaid) / 1e6} prefix="$" label="Paid out" />
+        <div className="hidden desk:grid grid-cols-3 gap-5 w-full">
+          <StatItem
+            icon={<NotepadIcon size={44} />}
+            value={totalBounties.toString()}
+            numericValue={totalBounties}
+            label="Total Bounties Posted"
+            accent="#FFE600"
+          />
+          <StatItem
+            icon={<UsdcCoinIcon size={44} />}
+            value={`$${formatUsdc(totalEscrowed)}`}
+            numericValue={Number(totalEscrowed) / 1e6}
+            prefix="$"
+            label="USDC Locked in Escrow"
+            accent="#7FF3F0"
+          />
+          <StatItem
+            icon={<TrophyBigIcon size={44} />}
+            value={`$${formatUsdc(totalPaid)}`}
+            numericValue={Number(totalPaid) / 1e6}
+            prefix="$"
+            label="USDC Paid to Winners"
+            accent="#C6F23A"
+          />
         </div>
       )}
 
       {/* Tabs + content */}
-      <div id="wall" className="scroll-mt-24 flex flex-col gap-8">
+      <div id="wall" className="scroll-mt-24 flex flex-col gap-6">
         {/* Tab strip */}
         <motion.div
-          className="flex gap-0 border-[3px] border-[#111] rounded-t-lg overflow-hidden shadow-hard w-fit"
+          className="flex gap-0 border-[3px] border-[#111] rounded-xl overflow-hidden shadow-hard w-fit bg-[#FFFDF0]"
           initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.3, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
+          transition={{ duration: 0.3, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
         >
-          {TAB_LABELS.map(({ id, label, color }) => (
-            <button
-              key={id}
-              onClick={() => setTab(id)}
-              className="px-4 py-2.5 font-mono-bold text-[11px] uppercase tracking-widest text-[#111] transition-colors border-r-[3px] border-[#111] last:border-r-0"
-              style={{ backgroundColor: tab === id ? color : '#FFFDF0', minWidth: 0 }}
-            >{label}</button>
-          ))}
+          {TAB_LABELS.map(({ id, label, color }) => {
+            const active = tab === id
+            return (
+              <button
+                key={id}
+                onClick={() => setTab(id)}
+                className={`px-4 sm:px-5 py-2.5 font-mono-bold text-[11px] uppercase tracking-widest transition-colors border-r-[3px] border-[#111] last:border-r-0 cursor-pointer ${
+                  active ? 'text-[#111]' : 'text-[#111]/75 hover:bg-[#111]/5'
+                }`}
+                style={{
+                  backgroundColor: active ? color : '#FFFDF0',
+                  color: active && id === 'my-bounties' ? '#FFFFFF' : '#111111',
+                  minWidth: 0,
+                }}
+              >
+                {label}
+              </button>
+            )
+          })}
         </motion.div>
 
         {/* Tab content */}
@@ -427,7 +493,6 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
               </div>
             </WindowCard>
           ) : totalBountiesLoading ? (
-            // Still reading the count — don't flash "No bounties yet" before we actually know.
             <div className="grid grid-cols-1 sm:grid-cols-2 desk:grid-cols-2 xl:grid-cols-3 gap-4">
               <SkeletonBountyCard />
               <SkeletonBountyCard />
@@ -444,19 +509,22 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
               </div>
             </WindowCard>
           ) : (
-            <div className="desk:border-[3px] desk:border-[#111] desk:rounded-xl desk:shadow-[6px_6px_0_#111] desk:bg-[#FFFDF0] desk:overflow-hidden">
-              {/* Desktop toolbar: title, count, search */}
-              <div className="hidden desk:flex items-center gap-4 flex-wrap checkerboard border-b-[3px] border-[#111] px-6 py-5">
-                <span className="font-heading text-[20px] font-extrabold uppercase tracking-wide text-[#111] bg-[#FFE600] border-[3px] border-[#111] shadow-hard-sm rounded-md px-4 py-1.5">
-                  Bounty Wall
-                </span>
-                <span className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111]/70 border-l-2 border-[#111]/30 pl-4">
-                  {totalBounties} bount{totalBounties === 1 ? 'y' : 'ies'}
-                </span>
-                <label className="relative block w-full max-w-[340px] ml-auto">
+            <div className="border-[3px] border-[#111] rounded-2xl shadow-hard bg-[#FFFDF0] overflow-hidden">
+              {/* Responsive toolbar: title, count, search */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 flex-wrap checkerboard border-b-[3px] border-[#111] px-4 sm:px-6 py-4 sm:py-5">
+                <div className="flex items-center gap-3">
+                  <span className="font-heading text-[18px] sm:text-[20px] font-extrabold uppercase tracking-wide text-[#111] bg-[#FFE600] border-[3px] border-[#111] shadow-hard-sm rounded-lg px-3.5 py-1">
+                    Bounty Wall
+                  </span>
+                  <span className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111] bg-white/90 border-[2px] border-[#111] rounded-full px-3 py-1">
+                    {totalBounties} total
+                  </span>
+                </div>
+
+                <label className="relative block w-full sm:max-w-[340px] sm:ml-auto">
                   <span className="sr-only">Search bounties</span>
                   <svg
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#111]"
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#111]"
                     viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"
                   >
                     <circle cx="8.5" cy="8.5" r="5.5" />
@@ -466,34 +534,57 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
                     type="search"
                     value={query}
                     onChange={e => setQuery(e.target.value)}
-                    placeholder="Search bounties..."
-                    className="w-full bg-white border-[3px] border-[#111] rounded-lg shadow-hard-sm pl-10 pr-3 py-2 font-mono-ui text-[13px] text-[#111] placeholder:text-[#111]/50 focus:outline-none focus:shadow-[6px_6px_0_#111] transition-shadow"
+                    placeholder="Search bounties by keyword..."
+                    className="w-full bg-white border-[3px] border-[#111] rounded-xl shadow-hard-sm pl-10 pr-8 py-2 font-mono-ui text-[13px] text-[#111] placeholder:text-[#111]/50 focus:outline-none focus:shadow-[5px_5px_0_#111] transition-shadow"
                   />
+                  {query && (
+                    <button
+                      type="button"
+                      onClick={() => setQuery('')}
+                      aria-label="Clear search"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-[#111] text-white font-mono-bold text-[11px] flex items-center justify-center hover:bg-[#FF3E9A] transition-colors cursor-pointer"
+                    >
+                      ×
+                    </button>
+                  )}
                 </label>
               </div>
 
-              <div className="flex flex-col gap-4 desk:p-6 desk:gap-5">
-                {/* Mobile heading (unchanged look) */}
-                <div className="flex items-center justify-between desk:hidden">
-                  <h2 className="font-heading text-[20px] font-bold text-[#111]">All Bounties ({totalBounties})</h2>
-                </div>
-
-                {/* Desktop filter pills */}
-                <div className="hidden desk:flex items-center gap-2 flex-wrap">
-                  {FILTERS.map(f => (
+              <div className="flex flex-col gap-5 p-4 sm:p-6">
+                {/* Filter pills — available on both mobile and desktop */}
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {FILTERS.map(f => {
+                      const active = filter === f.id
+                      return (
+                        <button
+                          key={f.id}
+                          type="button"
+                          onClick={() => setFilter(f.id)}
+                          aria-pressed={active}
+                          className={`font-mono-bold text-[11px] uppercase tracking-wider text-[#111] px-4 py-1.5 rounded-full border-[2.5px] border-[#111] transition-all cursor-pointer ${
+                            active
+                              ? 'bg-[#FFE600] shadow-hard-sm -translate-y-0.5'
+                              : 'bg-white hover:bg-[#FFE600]/40'
+                          }`}
+                        >
+                          {f.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  {(filter !== 'all' || query.trim() !== '') && (
                     <button
-                      key={f.id}
                       type="button"
-                      onClick={() => setFilter(f.id)}
-                      aria-pressed={filter === f.id}
-                      className={`font-mono-bold text-[12px] text-[#111] px-4 py-1.5 rounded-full border-2 border-[#111] transition-colors ${filter === f.id ? 'bg-[#FFE600]' : 'bg-[#FFFDF0] hover:bg-[#FFE600]/50'}`}
+                      onClick={() => { setFilter('all'); setQuery('') }}
+                      className="font-mono-bold text-[10px] uppercase tracking-wider text-[#111]/70 hover:text-[#111] underline underline-offset-2 cursor-pointer"
                     >
-                      {f.label}
+                      Reset filters
                     </button>
-                  ))}
+                  )}
                 </div>
 
-                <div className="desk:grid desk:grid-cols-[minmax(0,1fr)_264px] desk:gap-6 desk:items-start">
+                <div className="desk:grid desk:grid-cols-[minmax(0,1fr)_272px] desk:gap-6 desk:items-start">
                   <BountyGrid
                     total={totalBounties}
                     onSelectBounty={onSelectBounty}
@@ -501,13 +592,31 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
                     query={query}
                     onAllHiddenChange={handleAllHiddenChange}
                   />
-                  <aside className="hidden desk:flex flex-col items-center text-center gap-3 rounded-lg border-[2px] border-[#111] bg-[#A78BFA]/20 p-5">
-                    <TrophyBigIcon size={64} />
-                    <h3 className="font-heading text-[20px] font-extrabold text-[#111] leading-tight">Need something done?</h3>
-                    <p className="font-mono-ui text-[12px] leading-snug text-[#111]/70">
-                      Lock a USDC prize, let people compete, and pay only the winners you pick.
-                    </p>
-                    <PillButton onClick={onCreateBounty} variant="yellow" size="sm">Post a bounty</PillButton>
+                  <aside className="hidden desk:flex flex-col rounded-2xl border-[3px] border-[#111] bg-white shadow-hard overflow-hidden sticky top-24">
+                    <div className="bg-[#A78BFA] border-b-[3px] border-[#111] px-4 py-2.5 flex items-center justify-between">
+                      <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]">CREATOR_MODE.EXE</span>
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#C6F23A] border-[1.5px] border-[#111]" />
+                    </div>
+                    <div className="p-5 flex flex-col items-center text-center gap-3.5">
+                      <TrophyBigIcon size={60} />
+                      <h3 className="font-heading text-[20px] font-extrabold text-[#111] leading-tight">
+                        Need something built or designed?
+                      </h3>
+                      <p className="font-mono-ui text-[12px] leading-relaxed text-[#111]/75">
+                        Lock a USDC prize in smart-contract escrow, let builders compete, and pay only the winners you approve.
+                      </p>
+                      <div className="w-full rounded-xl bg-[#FFFDF0] border-[2px] border-[#111] p-3 text-left flex flex-col gap-1.5">
+                        <div className="font-mono-bold text-[10px] text-[#111] flex items-center gap-1.5">
+                          <span className="text-[#16a34a]">✓</span> Zero platform fee
+                        </div>
+                        <div className="font-mono-bold text-[10px] text-[#111] flex items-center gap-1.5">
+                          <span className="text-[#16a34a]">✓</span> Reclaim unused funds anytime after deadline
+                        </div>
+                      </div>
+                      <PillButton onClick={onCreateBounty} variant="yellow" size="md" className="w-full">
+                        Post a bounty
+                      </PillButton>
+                    </div>
                   </aside>
                 </div>
               </div>
@@ -527,9 +636,9 @@ function Stat({ value, label, icon, numericValue, prefix = '' }: {
   prefix?: string
 }) {
   return (
-    <div className="flex flex-col gap-0.5">
-      <div className="flex items-center gap-1.5">
-        <span className="font-heading text-[28px] font-extrabold tabular-nums text-[#111]" style={{ letterSpacing: '-0.02em' }}>
+    <div className="rounded-xl border-[2px] border-[#111] bg-white/95 p-2.5 shadow-[2px_2px_0_#111] flex flex-col gap-0.5">
+      <div className="flex items-center gap-1">
+        <span className="font-heading text-[20px] sm:text-[24px] font-extrabold tabular-nums text-[#111] leading-none" style={{ letterSpacing: '-0.02em' }}>
           {numericValue !== undefined ? (
             <AnimatedCounter value={numericValue} prefix={prefix} decimals={prefix === '$' ? 2 : 0} />
           ) : (
@@ -538,30 +647,36 @@ function Stat({ value, label, icon, numericValue, prefix = '' }: {
         </span>
         {icon}
       </div>
-      <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/70">{label}</span>
+      <span className="font-mono-bold text-[9px] uppercase tracking-wider text-[#111]/70">{label}</span>
     </div>
   )
 }
 
-function StatItem({ icon, value, label, numericValue, prefix = '' }: {
+function StatItem({ icon, value, label, numericValue, prefix = '', accent = '#FFE600' }: {
   icon: React.ReactNode
   value: string
   label: string
   numericValue?: number
   prefix?: string
+  accent?: string
 }) {
   return (
-    <div className="flex items-center gap-4 min-w-0">
-      <span className="shrink-0">{icon}</span>
+    <div className="flex items-center gap-4 rounded-2xl border-[3px] border-[#111] bg-white p-5 shadow-hard min-w-0">
+      <span
+        className="w-16 h-16 rounded-xl border-[2.5px] border-[#111] shadow-hard-xs flex items-center justify-center shrink-0"
+        style={{ backgroundColor: accent }}
+      >
+        {icon}
+      </span>
       <div className="flex flex-col gap-1 min-w-0">
-        <span className="font-heading text-[40px] font-extrabold tabular-nums text-[#111] leading-none truncate" style={{ letterSpacing: '-0.02em' }}>
+        <span className="font-heading text-[34px] font-extrabold tabular-nums text-[#111] leading-none truncate" style={{ letterSpacing: '-0.02em' }}>
           {numericValue !== undefined ? (
             <AnimatedCounter value={numericValue} prefix={prefix} decimals={prefix === '$' ? 2 : 0} />
           ) : (
             value
           )}
         </span>
-        <span className="font-mono-bold text-[12px] uppercase tracking-widest text-[#111]/70">{label}</span>
+        <span className="font-mono-bold text-[11px] uppercase tracking-wider text-[#111]/70">{label}</span>
       </div>
     </div>
   )
@@ -581,12 +696,14 @@ function HowItWorks() {
         {HOW_STEPS.map(s => (
           <div
             key={s.n}
-            className="flex items-center gap-4 rounded-lg border-[3px] border-[#111] shadow-hard-sm px-4 py-2.5"
+            className="flex items-center gap-4 rounded-xl border-[3px] border-[#111] shadow-hard-sm px-4 py-2.5 transition-transform duration-150 hover:-translate-y-0.5"
             style={{ backgroundColor: s.color }}
           >
-            <span className="font-heading text-[24px] font-extrabold tabular-nums text-[#111] leading-none">{s.n}</span>
+            <span className="font-heading text-[24px] font-extrabold tabular-nums text-[#111] bg-white/85 border-[2px] border-[#111] rounded-lg px-2 py-1 leading-none">
+              {s.n}
+            </span>
             <div className="min-w-0">
-              <div className="font-heading text-[18px] font-extrabold text-[#111] leading-tight">{s.title}</div>
+              <div className="font-heading text-[17px] font-extrabold text-[#111] leading-tight">{s.title}</div>
               <div className="font-mono-ui text-[12px] text-[#111] leading-snug">{s.text}</div>
             </div>
           </div>

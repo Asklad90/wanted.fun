@@ -437,23 +437,41 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
   return (
     <div className="flex flex-col gap-5 max-w-2xl desk:max-w-[1120px] mx-auto">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <button onClick={onBack} className="font-mono-bold text-[12px] uppercase tracking-widest text-[#1A1AE6] hover:underline self-start">← Back to wall</button>
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex items-center gap-1.5 font-mono-bold text-[11px] uppercase tracking-wider text-[#111] bg-white hover:bg-[#FFE600] border-[2.5px] border-[#111] px-3.5 py-1.5 rounded-full shadow-hard-sm transition-colors btn-press cursor-pointer"
+        >
+          <span aria-hidden="true">←</span>
+          <span>Back to Wall</span>
+        </button>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={handleCopyLink}
-            className="flex items-center gap-1.5 font-mono-bold text-[11px] uppercase tracking-wider bg-white border-2 border-[#111] px-3 py-1 rounded-md shadow-hard-sm hover:bg-[#FFE600] transition-colors btn-press cursor-pointer"
+            className="inline-flex items-center gap-1.5 font-mono-bold text-[11px] uppercase tracking-wider bg-white border-[2.5px] border-[#111] px-3.5 py-1.5 rounded-full shadow-hard-sm hover:bg-[#FFE600] transition-colors btn-press cursor-pointer"
             title="Copy link to this bounty"
           >
-            <span>{copied ? '✓ Copied' : '🔗 Copy link'}</span>
+            {copied ? (
+              <span>✓ Copied</span>
+            ) : (
+              <>
+                <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                </svg>
+                <span>Copy link</span>
+              </>
+            )}
           </button>
           <button
             type="button"
             onClick={handleShareX}
-            className="flex items-center gap-1.5 font-mono-bold text-[11px] uppercase tracking-wider bg-[#111] text-white border-2 border-[#111] px-3 py-1 rounded-md shadow-hard-sm hover:bg-[#222] hover:text-[#FFE600] transition-colors btn-press cursor-pointer"
+            className="inline-flex items-center gap-1.5 font-mono-bold text-[11px] uppercase tracking-wider bg-[#111] text-white border-[2.5px] border-[#111] px-3.5 py-1.5 rounded-full shadow-hard-sm hover:bg-[#222] hover:text-[#FFE600] transition-colors btn-press cursor-pointer"
             title="Share on X"
           >
-            <span>𝕏 Share</span>
+            <XIcon size={11} />
+            <span>Share</span>
           </button>
         </div>
       </div>
@@ -704,38 +722,38 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
         <WindowCard title="SUBMIT_WORK.EXE" titleBarColor="#A78BFA">
           <div className="flex flex-col gap-3">
             {/* Info banner */}
-            <div className="font-mono-ui text-[11px] text-[#111]/60 border-2 border-[#111] rounded-lg p-2 bg-[#C6F23A]/20">
-              <strong>Free submission</strong> — no gas, stored off-chain.
+            <div className="font-mono-ui text-[11px] text-[#111] border-[2px] border-[#111] rounded-xl p-2.5 bg-[#C6F23A]/25 shadow-hard-xs">
+              <strong>Free submission</strong> — no gas required, stored off-chain.
             </div>
 
             {/* Text / link */}
             <div className="flex flex-col gap-1">
-              <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/50">Text / Link</span>
+              <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/60">Text / Link</span>
               <textarea
                 value={submissionText}
                 onChange={e => setSubmissionText(e.target.value)}
                 placeholder="Paste a link, YouTube URL, or describe your work..."
                 rows={4}
-                className="border-[3px] border-[#111] rounded-lg px-3 py-2.5 text-[15px] font-body bg-white focus:outline-none focus:bg-[#FFFDF0] w-full resize-none"
+                className="input-neo rounded-xl px-3.5 py-2.5 text-[15px] font-body w-full resize-none"
               />
-              <div className={`font-mono-ui text-[10px] text-right ${submissionText.length > 1000 ? 'text-[#FF6B57]' : 'text-[#111]/40'}`}>
+              <div className={`font-mono-ui text-[10px] text-right ${submissionText.length > 1000 ? 'text-[#FF6B57]' : 'text-[#111]/50'}`}>
                 {submissionText.length}/1000
               </div>
             </div>
 
             {/* File upload */}
             <div className="flex flex-col gap-2">
-              <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/50">Attach image or video (optional)</span>
+              <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/60">Attach image or video (optional)</span>
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="border-[3px] border-dashed border-[#111] rounded-lg p-4 flex flex-col items-center gap-1.5 bg-[#FFFDF0] hover:bg-[#A78BFA]/10 transition-colors cursor-pointer"
+                className="border-[3px] border-dashed border-[#111] rounded-xl p-4 flex flex-col items-center gap-1.5 bg-[#FFFDF0] hover:bg-[#A78BFA]/15 transition-colors cursor-pointer"
               >
                 <UploadIcon />
-                <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/60">
+                <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/70">
                   {uploadFile ? uploadFile.name : 'Tap to choose image or video'}
                 </span>
-                <span className="font-mono-ui text-[9px] text-[#111]/40">Max 3 MB · JPG, PNG, GIF, WEBP, MP4, MOV, WEBM</span>
+                <span className="font-mono-ui text-[9px] text-[#111]/50">Max 3 MB · JPG, PNG, GIF, WEBP, MP4, MOV, WEBM</span>
               </button>
               <input
                 ref={fileInputRef}
@@ -745,7 +763,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
                 className="hidden"
               />
               {uploadPreview && (
-                <div className="relative border-[2px] border-[#111] rounded-lg overflow-hidden">
+                <div className="relative border-[2px] border-[#111] rounded-xl overflow-hidden">
                   {uploadFile?.type.startsWith('video/') ? (
                     // eslint-disable-next-line jsx-a11y/media-has-caption
                     <video src={uploadPreview} controls className="w-full max-h-48 bg-black" />
@@ -754,16 +772,17 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
                   )}
                   <button
                     onClick={clearFile}
-                    className="absolute top-2 right-2 bg-[#FF3E9A] border-[2px] border-[#111] rounded-full w-6 h-6 flex items-center justify-center font-mono-bold text-[11px] text-white shadow-hard-sm"
+                    className="absolute top-2 right-2 bg-[#FF3E9A] border-[2px] border-[#111] rounded-full w-6 h-6 flex items-center justify-center font-mono-bold text-[11px] text-white shadow-hard-sm cursor-pointer"
                   >×</button>
                 </div>
               )}
             </div>
 
             {userMissingSocial && (
-              <div className="border-[2px] border-[#111] rounded-lg p-2.5 bg-[#FFE600]/30 flex items-center justify-between gap-2">
-                <span className="font-mono-ui text-[11px] text-[#111]">
-                  ⚠️ This bounty requires a connected Twitter/X or GitHub profile.
+              <div className="border-[2px] border-[#111] rounded-xl p-3 bg-[#FFE600]/35 flex items-center justify-between gap-2.5 shadow-hard-xs">
+                <span className="font-mono-ui text-[11px] text-[#111] flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-[#FF6B57] border-[1.5px] border-[#111] text-white font-mono-bold text-[11px] inline-flex items-center justify-center shrink-0">!</span>
+                  <span>This bounty requires a connected Twitter/X or GitHub profile.</span>
                 </span>
                 <a
                   href={address ? `#/profile/${address}` : '#/'}
@@ -956,13 +975,15 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
 
             {examples.length > 0 && (
               <div className="flex items-start gap-2.5 pt-2 border-t-2 border-[#111]/10">
-                <span className="text-[13px] leading-none mt-0.5">📎</span>
+                <span className="mt-0.5 shrink-0 inline-flex items-center justify-center w-5 h-5 rounded border-[1.5px] border-[#111] bg-[#FFE600]">
+                  <AttachmentIcon />
+                </span>
                 <div className="flex flex-col">
                   <span className="font-mono-bold text-[11px] uppercase tracking-wider text-[#111]">Reference Files</span>
                   <button
                     type="button"
                     onClick={() => setShowAttachments(true)}
-                    className="font-mono-bold text-[11px] text-[#1A1AE6] underline text-left hover:text-[#111] transition-colors"
+                    className="font-mono-bold text-[11px] text-[#1A1AE6] underline text-left hover:text-[#111] transition-colors cursor-pointer"
                   >
                     View {examples.length} reference attachment{examples.length === 1 ? '' : 's'} provided by creator →
                   </button>
@@ -982,7 +1003,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
           onClick={() => setShowAttachments(false)}
         >
           <div
-            className="relative w-full max-w-lg max-h-[85vh] flex flex-col border-[3px] border-[#111] rounded-2xl overflow-hidden"
+            className="relative w-full max-w-lg max-h-[85vh] flex flex-col border-[3px] border-[#111] rounded-2xl overflow-hidden shadow-hard-lg"
             onClick={e => e.stopPropagation()}
           >
             {/* Title bar */}
@@ -992,7 +1013,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
               </span>
               <button
                 onClick={() => setShowAttachments(false)}
-                className="w-6 h-6 rounded-full border-[2px] border-[#111] bg-[#FF3E9A] flex items-center justify-center font-mono-bold text-[12px] text-white leading-none"
+                className="w-6 h-6 rounded-full border-[2px] border-[#111] bg-[#FF3E9A] flex items-center justify-center font-mono-bold text-[12px] text-white leading-none cursor-pointer"
                 aria-label="Close"
               >×</button>
             </div>
@@ -1003,7 +1024,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
                 {examples.map((ex, idx) => (
                   <div
                     key={idx}
-                    className="border-[2px] border-[#111] rounded-xl overflow-hidden bg-white"
+                    className="border-[2px] border-[#111] rounded-xl overflow-hidden bg-white shadow-hard-xs"
                   >
                     {ex.content.startsWith('data:video') ? (
                       // eslint-disable-next-line jsx-a11y/media-has-caption
@@ -1018,7 +1039,7 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
                         alt={`Attachment ${idx + 1}`}
                         className="w-full max-h-48 object-contain"
                       />                    )}
-                    <div className="px-2 py-1 border-t-[2px] border-[#111] font-mono-ui text-[9px] uppercase tracking-widest text-[#111]/50">
+                    <div className="px-2 py-1 border-t-[2px] border-[#111] font-mono-ui text-[9px] uppercase tracking-widest text-[#111]/60">
                       File {idx + 1}
                     </div>
                   </div>
@@ -1088,12 +1109,12 @@ function OffchainSubmissionList({
       {/* Comment Section Header Toolbar */}
       <div className="flex items-center justify-between pb-3 mb-3 border-b-[2px] border-[#111]/15 gap-2 flex-wrap">
         <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] animate-pulse" />
+          <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] border border-[#111] animate-pulse" />
           <span className="font-mono-bold text-[11px] uppercase tracking-wider text-[#111]">
             {submissions.length} {submissions.length === 1 ? 'Submission' : 'Submissions'}
           </span>
           {submissions.length > 0 && (
-            <span className="font-mono-ui text-[10px] text-[#111]/40 hidden sm:inline">
+            <span className="font-mono-ui text-[10px] text-[#111]/50 hidden sm:inline">
               · Scroll feed
             </span>
           )}
@@ -1102,12 +1123,12 @@ function OffchainSubmissionList({
         {/* Visibility toggle (creator only) */}
         {isPoster && onToggleVisibility && (
           <div className="flex items-center gap-2 ml-auto">
-            <span className="font-mono-ui text-[10px] text-[#111]/60 hidden sm:inline">
+            <span className="font-mono-ui text-[10px] text-[#111]/70 hidden sm:inline">
               Visibility: <strong>{isPublic ? 'Public' : 'Private'}</strong>
             </span>
             <button
               onClick={onToggleVisibility}
-              className="font-mono-bold text-[10px] uppercase tracking-wider border-[2px] border-[#111] rounded-full px-3 py-1 transition-colors btn-press cursor-pointer"
+              className="font-mono-bold text-[10px] uppercase tracking-wider border-[2px] border-[#111] rounded-full px-3 py-1 transition-colors btn-press shadow-hard-xs cursor-pointer"
               style={{
                 backgroundColor: isPublic ? '#1A1AE6' : '#FFFDF0',
                 color: isPublic ? '#fff' : '#111',
@@ -1122,23 +1143,23 @@ function OffchainSubmissionList({
       {loading ? (
         <div className="py-12 flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-[3px] border-[#111]/20 border-t-[#A3E635] rounded-full animate-spin" />
-          <span className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111]/40">Loading submissions…</span>
+          <span className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111]/50">Loading submissions…</span>
         </div>
       ) : isPrivateForViewer ? (
-        <div className="checkerboard rounded-xl py-10 flex flex-col items-center gap-3 text-center px-4">
+        <div className="checkerboard rounded-xl py-10 flex flex-col items-center gap-3 text-center px-4 border-[2px] border-[#111]">
           <LockIcon size={36} />
           <div className="font-mono-bold text-[12px] uppercase tracking-widest text-[#111]">
             The submissions for this bounty are private
           </div>
-          <p className="font-mono-ui text-[11px] text-[#111]/60 max-w-sm">
+          <p className="font-mono-ui text-[11px] text-[#111]/70 max-w-sm">
             Only the bounty creator can view submissions for this bounty.
           </p>
         </div>
       ) : submissions.length === 0 ? (
-        <div className="checkerboard rounded-xl py-10 flex flex-col items-center gap-3 text-center px-4">
+        <div className="checkerboard rounded-xl py-10 flex flex-col items-center gap-3 text-center px-4 border-[2px] border-[#111]">
           <FolderIcon size={36} />
-          <div className="font-mono-bold text-[12px] uppercase tracking-widest text-[#111]/50">No submissions yet</div>
-          <p className="font-mono-ui text-[11px] text-[#111]/60 max-w-xs">
+          <div className="font-mono-bold text-[12px] uppercase tracking-widest text-[#111]/70">No submissions yet</div>
+          <p className="font-mono-ui text-[11px] text-[#111]/70 max-w-xs">
             Be the first hunter to submit proof of work and claim the bounty!
           </p>
         </div>
@@ -1151,12 +1172,12 @@ function OffchainSubmissionList({
                 value={query}
                 onChange={e => setQuery(e.target.value)}
                 placeholder="Search by wallet address…"
-                className="flex-1 min-w-0 border-[2px] border-[#111]/20 rounded-full px-3.5 py-1.5 font-mono-ui text-[12px] bg-[#FFFDF0] focus:outline-none focus:border-[#111]"
+                className="flex-1 min-w-0 input-neo rounded-full px-3.5 py-1.5 font-mono-ui text-[12px]"
               />
               <button
                 type="button"
                 onClick={() => setNewestFirst(v => !v)}
-                className="shrink-0 font-mono-bold text-[10px] uppercase tracking-wider border-[2px] border-[#111] rounded-full px-3 py-1.5 bg-white hover:bg-[#FFE600]/40 transition-colors btn-press cursor-pointer"
+                className="shrink-0 font-mono-bold text-[10px] uppercase tracking-wider border-[2px] border-[#111] rounded-full px-3 py-1.5 bg-white hover:bg-[#FFE600] shadow-hard-xs transition-colors btn-press cursor-pointer"
               >
                 {newestFirst ? 'Newest ↓' : 'Oldest ↑'}
               </button>
@@ -1164,10 +1185,10 @@ function OffchainSubmissionList({
           )}
 
           {shown.length === 0 ? (
-            <div className="py-8 text-center font-mono-ui text-[12px] text-[#111]/50">No submissions match “{query}”.</div>
+            <div className="py-8 text-center font-mono-ui text-[12px] text-[#111]/60">No submissions match “{query}”.</div>
           ) : (
             /* Self-contained scrollable comment stream */
-            <div className="max-h-[520px] sm:max-h-[580px] overflow-y-auto overscroll-contain submissions-scroll pr-1.5 pb-7 flex flex-col gap-3">
+            <div className="max-h-[520px] sm:max-h-[580px] overflow-y-auto overscroll-contain submissions-scroll pr-1.5 pb-7 flex flex-col gap-3.5">
               {shown.map(sub => (
                 <SingleOffchainSubmission
                   key={sub.id}
@@ -1241,12 +1262,15 @@ function SingleOffchainSubmission({ sub, bountyId, isPoster, rewardPerWinner, ca
 
   return (
     <>
-      <div className={`border-[2px] border-[#111]/15 rounded-2xl p-3.5 transition-all duration-150 hover:border-[#111]/35 hover:shadow-xs ${isWinner ? 'bg-gradient-to-br from-[#C6F23A]/12 to-[#A3E635]/5 border-[#A3E635]/40' : 'bg-white'}`}>
+      <div className={`border-[2.5px] border-[#111] rounded-2xl p-3.5 shadow-hard-sm transition-all duration-150 hover:shadow-[5px_5px_0_#111] ${isWinner ? 'bg-[#C6F23A]/20' : 'bg-white'}`}>
         {/* Author / Comment Row with Avatar */}
         <div className="flex items-start gap-3">
-          <div className="border-[2px] border-[#111] rounded-xl overflow-hidden shrink-0 shadow-xs mt-0.5 bg-[#FFFDF0]">
-            <PixelAvatar address={sub.submitter} size={34} />
-          </div>
+          <a
+            href={`#/profile/${sub.submitter}`}
+            className="border-[2px] border-[#111] rounded-xl overflow-hidden shrink-0 shadow-hard-xs mt-0.5 bg-[#FFFDF0] hover:scale-105 transition-transform"
+          >
+            <PixelAvatar address={sub.submitter} size={36} />
+          </a>
 
           <div className="flex-1 min-w-0">
             {/* Header info */}
@@ -1259,16 +1283,16 @@ function SingleOffchainSubmission({ sub, bountyId, isPoster, rewardPerWinner, ca
                   {shortAddr}
                 </a>
                 {isOwnSub && (
-                  <span className="font-mono-bold text-[8.5px] uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-[#1A1AE6]/10 text-[#1A1AE6] border border-[#1A1AE6]/20">
+                  <span className="font-mono-bold text-[8.5px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#FFE600] text-[#111] border-[1.5px] border-[#111]">
                     You
                   </span>
                 )}
                 {sub.created_at && (
-                  <span className="font-mono-ui text-[10px] text-[#111]/45">
+                  <span className="font-mono-ui text-[10px] text-[#111]/60">
                     {formatTimeAgo(Number(sub.created_at))}
                   </span>
                 )}
-                <span className="font-mono-bold text-[9px] text-[#111]/30">
+                <span className="font-mono-bold text-[9px] text-[#111]/45 bg-[#111]/5 px-1.5 py-0.5 rounded border border-[#111]/15">
                   #{String(sub.id).padStart(2, '0')}
                 </span>
               </div>
@@ -1276,12 +1300,12 @@ function SingleOffchainSubmission({ sub, bountyId, isPoster, rewardPerWinner, ca
               {/* Badges & Actions */}
               <div className="flex items-center gap-1.5 shrink-0">
                 {isPaid && (
-                  <span className="font-mono-bold text-[9px] uppercase bg-[#C6F23A] border border-[#111] px-2 py-0.5 rounded-full text-[#111] shadow-xs">
+                  <span className="font-mono-bold text-[9px] uppercase bg-[#C6F23A] border-[2px] border-[#111] px-2.5 py-0.5 rounded-full text-[#111] shadow-hard-xs">
                     ✓ Paid {formatUsdc(rewardPerWinner)} USDC
                   </span>
                 )}
                 {isPending && (
-                  <span className="font-mono-bold text-[9px] uppercase bg-[#FFE600] border border-[#111] px-2 py-0.5 rounded-full text-[#111] shadow-xs">
+                  <span className="font-mono-bold text-[9px] uppercase bg-[#FFE600] border-[2px] border-[#111] px-2.5 py-0.5 rounded-full text-[#111] shadow-hard-xs">
                     Payout pending
                   </span>
                 )}
@@ -1293,7 +1317,7 @@ function SingleOffchainSubmission({ sub, bountyId, isPoster, rewardPerWinner, ca
                 {canExpand && (
                   <button
                     onClick={() => setExpanded(true)}
-                    className="w-6 h-6 rounded-lg border-[1.5px] border-[#111]/20 bg-white hover:bg-[#FFE600]/40 flex items-center justify-center font-mono-bold text-[11px] text-[#111] transition-colors shadow-xs cursor-pointer"
+                    className="w-7 h-7 rounded-lg border-[2px] border-[#111] bg-white hover:bg-[#FFE600] flex items-center justify-center font-mono-bold text-[12px] text-[#111] transition-colors shadow-hard-xs cursor-pointer"
                     aria-label="Expand submission"
                     title="View full submission"
                   >
@@ -1340,7 +1364,7 @@ function SingleOffchainSubmission({ sub, bountyId, isPoster, rewardPerWinner, ca
           onClick={() => setExpanded(false)}
         >
           <div
-            className="relative w-full max-w-lg max-h-[85vh] flex flex-col border-[3px] border-[#111] rounded-2xl overflow-hidden bg-white"
+            className="relative w-full max-w-lg max-h-[85vh] flex flex-col border-[3px] border-[#111] rounded-2xl overflow-hidden bg-white shadow-hard-lg"
             onClick={e => e.stopPropagation()}
           >
             {/* Title bar */}
@@ -1350,7 +1374,7 @@ function SingleOffchainSubmission({ sub, bountyId, isPoster, rewardPerWinner, ca
               </span>
               <button
                 onClick={() => setExpanded(false)}
-                className="w-6 h-6 rounded-full border-[2px] border-[#111] bg-[#FF3E9A] flex items-center justify-center font-mono-bold text-[12px] text-white leading-none"
+                className="w-6 h-6 rounded-full border-[2px] border-[#111] bg-[#FF3E9A] flex items-center justify-center font-mono-bold text-[12px] text-white leading-none cursor-pointer"
                 aria-label="Close"
               >×</button>
             </div>
@@ -1404,19 +1428,41 @@ function PosterCard({ poster }: { poster: string }) {
 
   return (
     <WindowCard title="CREATOR.EXE" titleBarColor="#FF3E9A" bodyClassName="flex flex-col gap-3">
-      <div className="flex items-center gap-3">
-        <div className="border-[2px] border-[#111] rounded-lg overflow-hidden shrink-0">
+      <a
+        href={`#/profile/${poster}`}
+        className="group flex items-center gap-3 p-1.5 -m-1.5 rounded-xl hover:bg-[#111]/5 transition-colors"
+      >
+        <div className="border-[2px] border-[#111] rounded-xl overflow-hidden shrink-0 shadow-hard-xs">
           <PixelAvatar address={poster} size={44} variant={profile.avatar_variant} />
         </div>
-        <div className="flex flex-col min-w-0">
-          <span className="font-heading text-[14px] font-extrabold text-[#111] truncate">{shortAddr}</span>
-          <span className="font-mono-ui text-[10px] text-[#111]/50">{(postedIds?.length ?? 0)} bount{(postedIds?.length ?? 0) === 1 ? 'y' : 'ies'} created</span>
+        <div className="flex flex-col min-w-0 flex-1">
+          <span className="font-heading text-[15px] font-extrabold text-[#111] group-hover:text-[#1A1AE6] group-hover:underline truncate">
+            {shortAddr}
+          </span>
+          <span className="font-mono-ui text-[10px] text-[#111]/60">
+            {(postedIds?.length ?? 0)} bount{(postedIds?.length ?? 0) === 1 ? 'y' : 'ies'} created
+          </span>
         </div>
-      </div>
+        <span className="font-mono-bold text-[10px] text-[#111]/60 group-hover:text-[#111] group-hover:translate-x-0.5 transition-transform">
+          →
+        </span>
+      </a>
       {profile.bio && (
-        <p className="font-mono-ui text-[11px] font-bold text-[#111] bg-[#FFFDF0] border-[2px] border-[#111]/15 rounded-md px-2.5 py-1.5 leading-snug">{profile.bio}</p>
+        <p className="font-mono-ui text-[11px] font-bold text-[#111] bg-[#FFFDF0] border-[2px] border-[#111] rounded-xl px-3 py-2 leading-snug shadow-hard-xs">
+          {profile.bio}
+        </p>
       )}
-      <span className="self-start font-mono-bold text-[9px] uppercase tracking-widest border-[2px] border-[#111] rounded-full px-2 py-0.5 bg-[#A78BFA] text-[#111] shadow-hard-sm w-fit">WANT CREATOR</span>
+      <div className="flex items-center justify-between gap-2 pt-1">
+        <span className="font-mono-bold text-[9px] uppercase tracking-widest border-[2px] border-[#111] rounded-full px-2.5 py-0.5 bg-[#A78BFA] text-[#111] shadow-hard-xs">
+          WANT CREATOR
+        </span>
+        <a
+          href={`#/profile/${poster}`}
+          className="font-mono-bold text-[10px] uppercase tracking-wider text-[#111] hover:text-[#1A1AE6] underline underline-offset-2"
+        >
+          View Profile ↗
+        </a>
+      </div>
     </WindowCard>
   )
 }

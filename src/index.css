@@ -5,26 +5,51 @@
 /* ── Base ── */
 *, *::before, *::after { box-sizing: border-box; }
 
+:root {
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-snappy: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 body {
   background-color: #FFFDF0;
   color: #111111;
   font-family: 'Space Grotesk', sans-serif;
   font-weight: 500;
   min-height: 100dvh;
+  overflow-x: hidden;
 }
 
-/* ── Dot-grid page background ── */
+/* ── Architectural Neo-Brutalist Grid + Dot Matrix Background ── */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background-image: radial-gradient(#11111138 2.5px, transparent 2.5px);
-  background-size: 28px 28px;
+  background-image:
+    radial-gradient(#11111132 2px, transparent 2px),
+    linear-gradient(to right, rgba(17, 17, 17, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(17, 17, 17, 0.035) 1px, transparent 1px);
+  background-size: 28px 28px, 112px 112px, 112px 112px;
   pointer-events: none;
   z-index: 0;
 }
 
 #root { position: relative; z-index: 1; }
+
+/* ── Accessible Keyboard Focus Ring (WCAG 2.2 AA) ── */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid #111111;
+  outline-offset: 2px;
+}
 
 /* ── Typography helpers ── */
 .font-heading   { font-family: 'Space Grotesk', sans-serif; font-weight: 800; }
@@ -32,11 +57,31 @@ body::before {
 .font-mono-ui   { font-family: 'Space Mono', monospace; font-weight: 400; }
 .font-mono-bold { font-family: 'Space Mono', monospace; font-weight: 700; }
 
-/* ── Hard shadow ── */
-.shadow-hard   { box-shadow: 6px 6px 0 #111111; }
+/* ── Hard shadow scale ── */
+.shadow-hard-lg { box-shadow: 8px 8px 0 #111111; }
+.shadow-hard    { box-shadow: 6px 6px 0 #111111; }
 .shadow-hard-sm { box-shadow: 3px 3px 0 #111111; }
+.shadow-hard-xs { box-shadow: 2px 2px 0 #111111; }
 
-/* ── Checkerboard ── */
+/* ── Neo-Brutalist Form Input ── */
+.input-neo {
+  border: 3px solid #111111;
+  border-radius: 0.75rem;
+  background-color: #FFFFFF;
+  color: #111111;
+  transition: transform 140ms var(--ease-spring), box-shadow 140ms var(--ease-spring), background-color 140ms ease;
+}
+.input-neo:hover {
+  background-color: #FFFDF7;
+}
+.input-neo:focus {
+  outline: none;
+  background-color: #FFFDF0;
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 #111111;
+}
+
+/* ── Checkerboard & Halftone Patterns ── */
 .checkerboard {
   background-color: #FFFDF0;
   background-image:
@@ -48,17 +93,32 @@ body::before {
   background-position: 0 0, 0 12px, 12px -12px, -12px 0px;
 }
 
-/* ── Button press animation ── */
+.halftone-dots {
+  background-image: radial-gradient(rgba(17, 17, 17, 0.16) 1.5px, transparent 1.5px);
+  background-size: 10px 10px;
+}
+
+.dark-grid-surface {
+  background-color: #111111;
+  background-image:
+    linear-gradient(to right, rgba(255, 253, 240, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 253, 240, 0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* ── Button press animation (smooth spring physics) ── */
 .btn-press {
-  transition: box-shadow 80ms ease, transform 80ms ease;
+  transition: box-shadow 150ms var(--ease-spring), transform 150ms var(--ease-spring), background-color 150ms ease;
+  will-change: transform, box-shadow;
+  touch-action: manipulation;
 }
-.btn-press:hover {
+.btn-press:hover:not(:disabled) {
   transform: translate(-2px, -2px);
-  box-shadow: 8px 8px 0 #111111;
+  box-shadow: 7px 7px 0 #111111;
 }
-.btn-press:active {
-  transform: translate(3px, 3px);
-  box-shadow: none;
+.btn-press:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 #111111;
 }
 
 /* ── Bounce-in ── */

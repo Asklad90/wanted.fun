@@ -1,58 +1,88 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
+type GlyphType = 'dollar' | 'star' | 'bolt' | 'want' | 'usdc' | 'none'
+
 interface Doodle {
   id: string
   position: string
   size: number
   bg: string
   rotate: number
-  delay: string
+  delay: number
   shape: 'circle' | 'square' | 'pill'
-  label?: string
+  glyph?: GlyphType
 }
 
 const MARGIN_DOODLES: Doodle[] = [
-  { id: 'm-1', position: 'left-[1.2%] top-[6%]',   size: 44, bg: '#7FF3F0', rotate: 9,   delay: '0.2s', shape: 'circle', label: '$' },
-  { id: 'm-2', position: 'left-[2.8%] top-[18%]',  size: 34, bg: '#FF3E9A', rotate: -12, delay: '1.4s', shape: 'square' },
-  { id: 'm-3', position: 'left-[1.2%] top-[30%]',  size: 58, bg: '#FF3E9A', rotate: -8,  delay: '0s',   shape: 'circle', label: '$' },
-  { id: 'm-4', position: 'left-[2.4%] top-[42%]',  size: 42, bg: '#FFE600', rotate: 14,  delay: '2.2s', shape: 'pill',   label: 'WANT' },
-  { id: 'm-5', position: 'left-[1.6%] top-[54%]',  size: 50, bg: '#FFE600', rotate: 12,  delay: '1.2s', shape: 'square' },
-  { id: 'm-6', position: 'left-[3%] top-[66%]',    size: 36, bg: '#A78BFA', rotate: -10, delay: '0.8s', shape: 'circle' },
-  { id: 'm-7', position: 'left-[1.2%] top-[78%]',  size: 46, bg: '#7FF3F0', rotate: -14, delay: '2.4s', shape: 'pill',   label: 'USDC' },
-  { id: 'm-8', position: 'left-[2.4%] top-[90%]',  size: 38, bg: '#C6F23A', rotate: 10,  delay: '1.8s', shape: 'square', label: '★' },
+  // Left gutter
+  { id: 'm-1', position: 'left-[1.2%] top-[7%]',   size: 46, bg: '#7FF3F0', rotate: 9,   delay: 0.2, shape: 'circle', glyph: 'dollar' },
+  { id: 'm-2', position: 'left-[2.8%] top-[19%]',  size: 36, bg: '#FF3E9A', rotate: -12, delay: 1.4, shape: 'square', glyph: 'bolt' },
+  { id: 'm-3', position: 'left-[1.2%] top-[31%]',  size: 56, bg: '#FFE600', rotate: -8,  delay: 0.0, shape: 'circle', glyph: 'star' },
+  { id: 'm-4', position: 'left-[2.4%] top-[43%]',  size: 44, bg: '#FFE600', rotate: 14,  delay: 2.2, shape: 'pill',   glyph: 'want' },
+  { id: 'm-5', position: 'left-[1.5%] top-[55%]',  size: 48, bg: '#C6F23A', rotate: 12,  delay: 1.2, shape: 'square', glyph: 'dollar' },
+  { id: 'm-6', position: 'left-[3.0%] top-[67%]',  size: 38, bg: '#A78BFA', rotate: -10, delay: 0.8, shape: 'circle', glyph: 'star' },
+  { id: 'm-7', position: 'left-[1.2%] top-[79%]',  size: 46, bg: '#7FF3F0', rotate: -14, delay: 2.4, shape: 'pill',   glyph: 'usdc' },
+  { id: 'm-8', position: 'left-[2.4%] top-[90%]',  size: 40, bg: '#C6F23A', rotate: 10,  delay: 1.8, shape: 'square', glyph: 'star' },
 
-  { id: 'm-9',  position: 'right-[2.6%] top-[8%]',  size: 38, bg: '#A78BFA', rotate: -9,  delay: '1s',   shape: 'square', label: '★' },
-  { id: 'm-10', position: 'right-[1.2%] top-[20%]', size: 52, bg: '#C6F23A', rotate: 10,  delay: '0.6s', shape: 'square', label: '★' },
-  { id: 'm-11', position: 'right-[2.8%] top-[32%]', size: 40, bg: '#FF3E9A', rotate: 13,  delay: '2s',   shape: 'circle', label: '$' },
-  { id: 'm-12', position: 'right-[1.6%] top-[44%]', size: 58, bg: '#A78BFA', rotate: -6,  delay: '1.8s', shape: 'circle' },
-  { id: 'm-13', position: 'right-[2.4%] top-[56%]', size: 44, bg: '#FFE600', rotate: -11, delay: '0.4s', shape: 'pill',   label: 'WANT' },
-  { id: 'm-14', position: 'right-[1.2%] top-[68%]', size: 46, bg: '#FF3E9A', rotate: 14,  delay: '3s',   shape: 'pill',   label: 'WANT' },
-  { id: 'm-15', position: 'right-[2.8%] top-[80%]', size: 36, bg: '#7FF3F0', rotate: 8,   delay: '1.3s', shape: 'circle', label: '$' },
-  { id: 'm-16', position: 'right-[1.4%] top-[92%]', size: 42, bg: '#C6F23A', rotate: -13, delay: '0.9s', shape: 'square' },
+  // Right gutter
+  { id: 'm-9',  position: 'right-[2.6%] top-[8%]',  size: 40, bg: '#A78BFA', rotate: -9,  delay: 1.0, shape: 'square', glyph: 'star' },
+  { id: 'm-10', position: 'right-[1.2%] top-[20%]', size: 52, bg: '#C6F23A', rotate: 10,  delay: 0.6, shape: 'square', glyph: 'bolt' },
+  { id: 'm-11', position: 'right-[2.8%] top-[32%]', size: 42, bg: '#FF3E9A', rotate: 13,  delay: 2.0, shape: 'circle', glyph: 'dollar' },
+  { id: 'm-12', position: 'right-[1.6%] top-[44%]', size: 56, bg: '#A78BFA', rotate: -6,  delay: 1.8, shape: 'circle', glyph: 'star' },
+  { id: 'm-13', position: 'right-[2.4%] top-[56%]', size: 44, bg: '#FFE600', rotate: -11, delay: 0.4, shape: 'pill',   glyph: 'want' },
+  { id: 'm-14', position: 'right-[1.2%] top-[68%]', size: 46, bg: '#FF3E9A', rotate: 14,  delay: 3.0, shape: 'pill',   glyph: 'usdc' },
+  { id: 'm-15', position: 'right-[2.8%] top-[80%]', size: 38, bg: '#7FF3F0', rotate: 8,   delay: 1.3, shape: 'circle', glyph: 'dollar' },
+  { id: 'm-16', position: 'right-[1.4%] top-[91%]', size: 42, bg: '#C6F23A', rotate: -13, delay: 0.9, shape: 'square', glyph: 'bolt' },
 ]
 
 const EDGE_DOODLES: Doodle[] = [
-  { id: 'e-1',  position: 'left-[-8px] top-[11%]',    size: 30, bg: '#FFE600', rotate: -10, delay: '0s',    shape: 'square', label: '★' },
-  { id: 'e-2',  position: 'right-[-8px] top-[17%]',   size: 32, bg: '#7FF3F0', rotate: 9,   delay: '0.8s',  shape: 'circle', label: '$' },
-  { id: 'e-3',  position: 'left-[-10px] top-[22%]',   size: 28, bg: '#C6F23A', rotate: 12,  delay: '1.6s',  shape: 'square' },
-  { id: 'e-4',  position: 'right-[-10px] top-[30%]',  size: 34, bg: '#A78BFA', rotate: -8,  delay: '2.2s',  shape: 'circle' },
-  { id: 'e-5',  position: 'left-[-8px] top-[40%]',    size: 32, bg: '#FF3E9A', rotate: -10, delay: '0.4s',  shape: 'circle', label: '$' },
-  { id: 'e-6',  position: 'right-[-8px] top-[48%]',   size: 34, bg: '#FFE600', rotate: 8,   delay: '1.2s',  shape: 'square', label: '★' },
-  { id: 'e-7',  position: 'left-[-10px] top-[58%]',   size: 30, bg: '#7FF3F0', rotate: 11,  delay: '1.9s',  shape: 'circle' },
-  { id: 'e-8',  position: 'right-[-10px] top-[66%]',  size: 28, bg: '#C6F23A', rotate: -9,  delay: '0.6s',  shape: 'square', label: '★' },
-  { id: 'e-9',  position: 'left-[-8px] top-[76%]',    size: 34, bg: '#A78BFA', rotate: 10,  delay: '2.4s',  shape: 'circle', label: '$' },
-  { id: 'e-10', position: 'right-[-8px] top-[84%]',   size: 30, bg: '#FF3E9A', rotate: -12, delay: '1s',    shape: 'square' },
-  { id: 'e-11', position: 'left-[-10px] bottom-[6%]', size: 32, bg: '#FFE600', rotate: 9,   delay: '0.3s',  shape: 'circle', label: '$' },
-  { id: 'e-12', position: 'right-[-10px] bottom-[2%]',size: 34, bg: '#7FF3F0', rotate: -8,  delay: '1.5s',  shape: 'square', label: '★' },
+  { id: 'e-1',  position: 'left-[-8px] top-[12%]',    size: 32, bg: '#FFE600', rotate: -10, delay: 0.0, shape: 'square', glyph: 'star' },
+  { id: 'e-2',  position: 'right-[-8px] top-[18%]',   size: 34, bg: '#7FF3F0', rotate: 9,   delay: 0.8, shape: 'circle', glyph: 'dollar' },
+  { id: 'e-3',  position: 'left-[-10px] top-[26%]',   size: 30, bg: '#C6F23A', rotate: 12,  delay: 1.6, shape: 'square', glyph: 'bolt' },
+  { id: 'e-4',  position: 'right-[-10px] top-[34%]',  size: 34, bg: '#A78BFA', rotate: -8,  delay: 2.2, shape: 'circle', glyph: 'star' },
+  { id: 'e-5',  position: 'left-[-8px] top-[44%]',    size: 32, bg: '#FF3E9A', rotate: -10, delay: 0.4, shape: 'circle', glyph: 'dollar' },
+  { id: 'e-6',  position: 'right-[-8px] top-[52%]',   size: 34, bg: '#FFE600', rotate: 8,   delay: 1.2, shape: 'square', glyph: 'star' },
+  { id: 'e-7',  position: 'left-[-10px] top-[62%]',   size: 30, bg: '#7FF3F0', rotate: 11,  delay: 1.9, shape: 'circle', glyph: 'bolt' },
+  { id: 'e-8',  position: 'right-[-10px] top-[70%]',  size: 30, bg: '#C6F23A', rotate: -9,  delay: 0.6, shape: 'square', glyph: 'star' },
+  { id: 'e-9',  position: 'left-[-8px] top-[80%]',    size: 34, bg: '#A78BFA', rotate: 10,  delay: 2.4, shape: 'circle', glyph: 'dollar' },
+  { id: 'e-10', position: 'right-[-8px] top-[86%]',   size: 32, bg: '#FF3E9A', rotate: -12, delay: 1.0, shape: 'square', glyph: 'bolt' },
 ]
 
 const MOBILE_DOODLES: Doodle[] = [
-  { id: 'mb-1', position: 'left-[-8px] top-[15%]',    size: 26, bg: '#FFE600', rotate: -10, delay: '0s',   shape: 'square', label: '★' },
-  { id: 'mb-2', position: 'right-[-8px] top-[26%]',   size: 24, bg: '#7FF3F0', rotate: 9,   delay: '1s',   shape: 'circle', label: '$' },
-  { id: 'mb-3', position: 'left-[-8px] bottom-[20%]', size: 24, bg: '#FF3E9A', rotate: -9,  delay: '1.8s', shape: 'circle', label: '$' },
-  { id: 'mb-4', position: 'right-[-8px] bottom-[8%]', size: 26, bg: '#C6F23A', rotate: 10,  delay: '0.6s', shape: 'square', label: '★' },
+  { id: 'mb-1', position: 'left-[-8px] top-[16%]',    size: 26, bg: '#FFE600', rotate: -10, delay: 0.0, shape: 'square', glyph: 'star' },
+  { id: 'mb-2', position: 'right-[-8px] top-[28%]',   size: 26, bg: '#7FF3F0', rotate: 9,   delay: 1.0, shape: 'circle', glyph: 'dollar' },
+  { id: 'mb-3', position: 'left-[-8px] bottom-[22%]', size: 26, bg: '#FF3E9A', rotate: -9,  delay: 1.8, shape: 'circle', glyph: 'bolt' },
+  { id: 'mb-4', position: 'right-[-8px] bottom-[10%]',size: 26, bg: '#C6F23A', rotate: 10,  delay: 0.6, shape: 'square', glyph: 'star' },
 ]
+
+function DoodleGlyph({ glyph, size }: { glyph?: GlyphType; size: number }) {
+  if (!glyph || glyph === 'none') return null
+  if (glyph === 'want') {
+    return <span className="font-mono-bold text-[10px] tracking-wider uppercase text-[#111]">WANT</span>
+  }
+  if (glyph === 'usdc') {
+    return <span className="font-mono-bold text-[10px] tracking-wider uppercase text-[#111]">USDC</span>
+  }
+  if (glyph === 'dollar') {
+    return <span className="font-heading font-black text-[#111]" style={{ fontSize: Math.round(size * 0.44) }}>$</span>
+  }
+  if (glyph === 'bolt') {
+    const s = Math.max(12, Math.round(size * 0.42))
+    return (
+      <svg width={s} height={s} viewBox="0 0 24 24" fill="#111" aria-hidden="true">
+        <path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" stroke="#111" strokeWidth="1.5" strokeLinejoin="round" />
+      </svg>
+    )
+  }
+  // Vector 4-point Neo-Brutalist star
+  const s = Math.max(12, Math.round(size * 0.44))
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="#111" aria-hidden="true">
+      <path d="M12 2L14.8 9.2L22 12L14.8 14.8L12 22L9.2 14.8L2 12L9.2 9.2L12 2Z" stroke="#111" strokeWidth="1.5" strokeLinejoin="round" />
+    </svg>
+  )
+}
 
 interface ClickRipple {
   id: number
@@ -60,220 +90,251 @@ interface ClickRipple {
   y: number
 }
 
-function InteractiveDoodleShape({ d, mousePos }: { d: Doodle; mousePos: { x: number; y: number } }) {
-  const [clicked, setClicked] = useState(false)
-  const elRef = useRef<HTMLButtonElement>(null)
-  const [offset, setOffset] = useState({ x: 0, y: 0 })
-
-  const width = d.shape === 'pill' ? Math.round(d.size * 1.6) : d.size
-  const height = d.shape === 'pill' ? Math.round(d.size * 0.55) : d.size
-  const borderRadius = d.shape === 'circle' ? '50%' : d.shape === 'pill' ? '999px' : '12px'
-
-  // Magnetic avoidance / proximity reaction
-  useEffect(() => {
-    if (!elRef.current) return
-    const rect = elRef.current.getBoundingClientRect()
-    const centerX = rect.left + rect.width / 2
-    const centerY = rect.top + rect.height / 2
-    const dx = mousePos.x - centerX
-    const dy = mousePos.y - centerY
-    const dist = Math.sqrt(dx * dx + dy * dy)
-
-    const threshold = 130
-    if (dist < threshold && dist > 0) {
-      // Repel slightly away from cursor (max 10px)
-      const force = (1 - dist / threshold) * 10
-      setOffset({
-        x: -(dx / dist) * force,
-        y: -(dy / dist) * force,
-      })
-    } else {
-      setOffset({ x: 0, y: 0 })
-    }
-  }, [mousePos])
+function InteractiveDoodle({
+  d,
+  registerNode,
+}: {
+  d: Doodle
+  registerNode: (id: string, el: HTMLButtonElement | null, baseRotate: number) => void
+}) {
+  const [spinning, setSpinning] = useState(false)
+  const width = d.shape === 'pill' ? Math.round(d.size * 1.65) : d.size
+  const height = d.shape === 'pill' ? Math.round(d.size * 0.58) : d.size
+  const borderRadius = d.shape === 'circle' ? '9999px' : d.shape === 'pill' ? '9999px' : '11px'
 
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
-    setClicked(true)
-    setTimeout(() => setClicked(false), 700)
+    setSpinning(true)
+    window.setTimeout(() => setSpinning(false), 620)
   }, [])
 
   return (
-    <motion.button
-      ref={elRef}
+    <button
+      ref={el => registerNode(d.id, el, d.rotate)}
       type="button"
       onClick={handleClick}
-      aria-label={`Sticker ${d.label || d.shape}`}
-      className={`absolute ${d.position} pointer-events-auto select-none cursor-pointer flex items-center justify-center border-[3px] border-[#111] font-mono-bold text-[#111] z-10`}
+      tabIndex={-1}
+      aria-hidden="true"
+      className={`absolute ${d.position} pointer-events-auto select-none cursor-pointer flex items-center justify-center border-[3px] border-[#111] text-[#111] transition-shadow duration-150 hover:shadow-[6px_6px_0_#111] active:shadow-[1px_1px_0_#111]`}
       style={{
         width,
         height,
         backgroundColor: d.bg,
         borderRadius,
-        boxShadow: '4px 4px 0 #111',
-        fontSize: d.shape === 'pill' ? 11 : Math.round(d.size * 0.4),
-      }}
-      animate={{
-        x: offset.x,
-        y: offset.y,
-        rotate: clicked ? [d.rotate, d.rotate + 180, d.rotate + 360] : d.rotate,
-        scale: clicked ? [1, 1.3, 0.88, 1.1, 1] : 1,
-      }}
-      whileHover={{
-        scale: 1.15,
-        boxShadow: '6px 6px 0 #111',
-        transition: { type: 'spring', stiffness: 400, damping: 15 },
-      }}
-      whileTap={{
-        scale: 0.85,
-        boxShadow: '1px 1px 0 #111',
-      }}
-      transition={{
-        type: 'spring',
-        stiffness: 300,
-        damping: 20,
+        boxShadow: 'inset 0 2px 0 rgba(255,255,255,0.55), 4px 4px 0 #111',
+        transform: `rotate(${d.rotate}deg)`,
+        willChange: 'transform',
       }}
     >
-      {d.label}
-    </motion.button>
+      <span
+        className="flex items-center justify-center w-full h-full transition-transform duration-500"
+        style={{
+          transform: spinning ? 'rotate(360deg) scale(1.22)' : 'none',
+        }}
+      >
+        <DoodleGlyph glyph={d.glyph} size={d.size} />
+      </span>
+    </button>
   )
 }
 
 export function ReactiveBackground() {
   const [ripples, setRipples] = useState<ClickRipple[]>([])
-  const [mousePos, setMousePos] = useState({ x: -1000, y: -1000 })
-  const [smoothPos, setSmoothPos] = useState({ x: -1000, y: -1000 })
-  const targetPosRef = useRef({ x: -1000, y: -1000 })
-  const lastMoveTimeRef = useRef<number>(Date.now())
-  const rafRef = useRef<number | null>(null)
+  const auraPrimaryRef = useRef<HTMLDivElement>(null)
+  const auraSecondaryRef = useRef<HTMLDivElement>(null)
+  const dotHighlightRef = useRef<HTMLDivElement>(null)
 
-  // Track pointer movements
-  useEffect(() => {
-    const handlePointerMove = (e: PointerEvent) => {
-      targetPosRef.current = { x: e.clientX, y: e.clientY }
-      lastMoveTimeRef.current = Date.now()
-    }
+  const nodesRef = useRef<Map<string, { el: HTMLButtonElement; baseRotate: number; delay: number }>>(new Map())
 
-    const handleClick = (e: MouseEvent) => {
-      const id = Date.now() + Math.random()
-      setRipples(prev => [...prev.slice(-3), { id, x: e.clientX, y: e.clientY }])
-      setTimeout(() => {
-        setRipples(prev => prev.filter(r => r.id !== id))
-      }, 750)
-    }
-
-    window.addEventListener('pointermove', handlePointerMove, { passive: true })
-    window.addEventListener('click', handleClick, { passive: true })
-
-    // Smooth RAF loop for continuous smooth aura tracking & ambient drift
-    let angle = 0
-    const loop = () => {
-      const now = Date.now()
-      const isIdle = now - lastMoveTimeRef.current > 2000
-
-      if (isIdle) {
-        // Subtle ambient drifting figure-eight when idle or on mobile
-        angle += 0.012
-        const viewportW = typeof window !== 'undefined' ? window.innerWidth : 1200
-        const viewportH = typeof window !== 'undefined' ? window.innerHeight : 800
-        const ambientX = viewportW / 2 + Math.cos(angle) * (viewportW * 0.32)
-        const ambientY = viewportH / 2 + Math.sin(angle * 1.5) * (viewportH * 0.22)
-        targetPosRef.current = { x: ambientX, y: ambientY }
-      }
-
-      setSmoothPos(prev => {
-        const dx = targetPosRef.current.x - prev.x
-        const dy = targetPosRef.current.y - prev.y
-        const nextX = prev.x === -1000 ? targetPosRef.current.x : prev.x + dx * 0.08
-        const nextY = prev.y === -1000 ? targetPosRef.current.y : prev.y + dy * 0.08
-        return { x: nextX, y: nextY }
-      })
-
-      rafRef.current = requestAnimationFrame(loop)
-    }
-
-    rafRef.current = requestAnimationFrame(loop)
-
-    return () => {
-      window.removeEventListener('pointermove', handlePointerMove)
-      window.removeEventListener('click', handleClick)
-      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+  const registerNode = useCallback((id: string, el: HTMLButtonElement | null, baseRotate: number) => {
+    if (el) {
+      const found = [...MARGIN_DOODLES, ...EDGE_DOODLES, ...MOBILE_DOODLES].find(item => item.id === id)
+      nodesRef.current.set(id, { el, baseRotate, delay: found?.delay ?? 0 })
+    } else {
+      nodesRef.current.delete(id)
     }
   }, [])
 
-  // Periodically throttle mousePos updates to doodle buttons for performance
   useEffect(() => {
-    setMousePos(smoothPos)
-  }, [smoothPos])
+    const prefersReducedMotion =
+      typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    if (prefersReducedMotion) return
+
+    const target = { x: window.innerWidth * 0.5, y: window.innerHeight * 0.35 }
+    const current = { x: target.x, y: target.y }
+    let lastPointerTime = 0
+    let rafId: number | null = null
+
+    const onPointerMove = (e: PointerEvent) => {
+      target.x = e.clientX
+      target.y = e.clientY
+      lastPointerTime = performance.now()
+    }
+
+    const onClick = (e: MouseEvent) => {
+      // Only spawn background ripple if not clicking inside an input/textarea
+      const tag = (e.target as HTMLElement | null)?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return
+      const id = Date.now() + Math.random()
+      setRipples(prev => [...prev.slice(-3), { id, x: e.clientX, y: e.clientY }])
+      window.setTimeout(() => {
+        setRipples(prev => prev.filter(r => r.id !== id))
+      }, 650)
+    }
+
+    window.addEventListener('pointermove', onPointerMove, { passive: true })
+    window.addEventListener('click', onClick, { passive: true })
+
+    const tick = (now: number) => {
+      const isIdle = now - lastPointerTime > 2400
+      if (isIdle) {
+        const t = now * 0.00045
+        const vw = window.innerWidth
+        const vh = window.innerHeight
+        target.x = vw * 0.5 + Math.cos(t) * (vw * 0.28)
+        target.y = vh * 0.42 + Math.sin(t * 1.4) * (vh * 0.2)
+      }
+
+      // Smooth lerp (zero React re-renders!)
+      current.x += (target.x - current.x) * 0.085
+      current.y += (target.y - current.y) * 0.085
+
+      if (auraPrimaryRef.current) {
+        auraPrimaryRef.current.style.transform = `translate3d(${current.x - 320}px, ${current.y - 320}px, 0)`
+      }
+      if (auraSecondaryRef.current) {
+        auraSecondaryRef.current.style.transform = `translate3d(${current.x - 190}px, ${current.y - 190}px, 0)`
+      }
+      if (dotHighlightRef.current) {
+        dotHighlightRef.current.style.maskImage = `radial-gradient(280px circle at ${current.x}px ${current.y}px, #000 0%, transparent 100%)`
+        dotHighlightRef.current.style.webkitMaskImage = `radial-gradient(280px circle at ${current.x}px ${current.y}px, #000 0%, transparent 100%)`
+      }
+
+      // Update floating + magnetic proximity on visible sticker nodes directly
+      const floatSec = now * 0.001
+      nodesRef.current.forEach(({ el, baseRotate, delay }) => {
+        const rect = el.getBoundingClientRect()
+        if (rect.width === 0 && rect.height === 0) return // hidden by breakpoint
+
+        const floatY = Math.sin(floatSec * 1.3 + delay) * -7
+        const cx = rect.left + rect.width * 0.5
+        const cy = rect.top + rect.height * 0.5
+        const dx = current.x - cx
+        const dy = current.y - cy
+        const distSq = dx * dx + dy * dy
+        const radius = 150
+
+        let repelX = 0
+        let repelY = 0
+        let extraRot = 0
+        if (distSq < radius * radius && distSq > 1) {
+          const dist = Math.sqrt(distSq)
+          const force = (1 - dist / radius) * 14
+          repelX = -(dx / dist) * force
+          repelY = -(dy / dist) * force
+          extraRot = (repelX * 0.6)
+        }
+
+        el.style.transform = `translate3d(${repelX.toFixed(1)}px, ${(floatY + repelY).toFixed(1)}px, 0) rotate(${(baseRotate + extraRot).toFixed(1)}deg)`
+      })
+
+      rafId = requestAnimationFrame(tick)
+    }
+
+    rafId = requestAnimationFrame(tick)
+
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove)
+      window.removeEventListener('click', onClick)
+      if (rafId !== null) cancelAnimationFrame(rafId)
+    }
+  }, [])
 
   return (
     <>
-      {/* ── Reactive Cursor Spotlight Aura (sits above cream paper, behind content) ── */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
-      >
-        {/* Soft interactive radial bloom tracking cursor */}
+      {/* ── Ambient Top Wash & Cursor-Reactive Grid Illumination ── */}
+      <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        {/* Top subtle warm-cyan architectural wash */}
         <div
-          className="absolute w-[600px] h-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full transition-opacity duration-300 pointer-events-none"
+          className="absolute inset-x-0 top-0 h-[420px] opacity-60"
           style={{
-            left: `${smoothPos.x}px`,
-            top: `${smoothPos.y}px`,
-            background: 'radial-gradient(circle, rgba(127, 243, 240, 0.16) 0%, rgba(255, 230, 0, 0.08) 40%, rgba(255, 62, 154, 0.04) 65%, transparent 75%)',
-            mixBlendMode: 'multiply',
+            background:
+              'radial-gradient(ellipse 80% 50% at 50% -10%, rgba(127, 243, 240, 0.22), rgba(255, 230, 0, 0.08) 55%, transparent 100%)',
           }}
         />
 
-        {/* Crisp reactive dot grid highlight ring */}
+        {/* Primary soft Neo-Brutalist spotlight following cursor */}
         <div
-          className="absolute w-[340px] h-[340px] -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none opacity-40"
+          ref={auraPrimaryRef}
+          className="absolute top-0 left-0 w-[640px] h-[640px] rounded-full pointer-events-none will-change-transform"
           style={{
-            left: `${smoothPos.x}px`,
-            top: `${smoothPos.y}px`,
-            background: 'radial-gradient(circle, rgba(167, 139, 250, 0.25) 0%, transparent 70%)',
+            background:
+              'radial-gradient(circle, rgba(127, 243, 240, 0.22) 0%, rgba(255, 230, 0, 0.12) 38%, rgba(167, 139, 250, 0.06) 65%, transparent 78%)',
+          }}
+        />
+
+        {/* Secondary inner warm core */}
+        <div
+          ref={auraSecondaryRef}
+          className="absolute top-0 left-0 w-[380px] h-[380px] rounded-full pointer-events-none will-change-transform"
+          style={{
+            background:
+              'radial-gradient(circle, rgba(255, 62, 154, 0.09) 0%, rgba(255, 230, 0, 0.08) 50%, transparent 75%)',
+          }}
+        />
+
+        {/* Cursor-revealed high-contrast accented dot matrix */}
+        <div
+          ref={dotHighlightRef}
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage: 'radial-gradient(#FF3E9A 2.5px, transparent 2.5px)',
+            backgroundSize: '28px 28px',
+            opacity: 0.35,
           }}
         />
       </div>
 
-      {/* ── Interactive Click / Tap Shockwave Ripples ── */}
-      <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-30 overflow-hidden">
+      {/* ── Tactile Click Ripples ── */}
+      <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-40 overflow-hidden">
         <AnimatePresence>
           {ripples.map(r => (
             <motion.div
               key={r.id}
-              initial={{ width: 0, height: 0, opacity: 0.9, scale: 0 }}
-              animate={{ width: 140, height: 140, opacity: 0, scale: 1 }}
+              initial={{ width: 8, height: 8, opacity: 0.85 }}
+              animate={{ width: 110, height: 110, opacity: 0 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.65, ease: 'easeOut' }}
-              className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[#FFE600] pointer-events-none"
+              transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+              className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-[2.5px] border-[#111] pointer-events-none"
               style={{
                 left: `${r.x}px`,
                 top: `${r.y}px`,
-                boxShadow: '0 0 12px 2px rgba(255, 230, 0, 0.6), inset 0 0 8px rgba(127, 243, 240, 0.4)',
+                boxShadow: '0 0 0 3px rgba(255, 230, 0, 0.55)',
               }}
             />
           ))}
         </AnimatePresence>
       </div>
 
-      {/* ── Interactive Stickers & Doodles (Desktop Gutters 1536px+) ── */}
+      {/* ── Wide Desktop Gutter Stickers (1536px+) ── */}
       <div aria-hidden="true" className="fixed inset-0 -z-10 hidden 2xl:block overflow-hidden pointer-events-none">
         {MARGIN_DOODLES.map(d => (
-          <InteractiveDoodleShape key={d.id} d={d} mousePos={mousePos} />
+          <InteractiveDoodle key={d.id} d={d} registerNode={registerNode} />
         ))}
       </div>
 
-      {/* ── Interactive Stickers & Doodles (Desktop Edges 900px+) ── */}
+      {/* ── Desktop Edge Stickers (900px+) ── */}
       <div aria-hidden="true" className="fixed inset-0 -z-10 hidden desk:block overflow-hidden pointer-events-none">
         {EDGE_DOODLES.map(d => (
-          <InteractiveDoodleShape key={d.id} d={d} mousePos={mousePos} />
+          <InteractiveDoodle key={d.id} d={d} registerNode={registerNode} />
         ))}
       </div>
 
-      {/* ── Interactive Stickers & Doodles (Mobile < 900px) ── */}
+      {/* ── Mobile Edge Stickers (<900px) ── */}
       <div aria-hidden="true" className="fixed inset-0 -z-10 block desk:hidden overflow-hidden pointer-events-none">
         {MOBILE_DOODLES.map(d => (
-          <InteractiveDoodleShape key={d.id} d={d} mousePos={mousePos} />
+          <InteractiveDoodle key={d.id} d={d} registerNode={registerNode} />
         ))}
       </div>
     </>

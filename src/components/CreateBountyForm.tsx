@@ -196,13 +196,54 @@ export function CreateBountyForm({ onClose, onSuccess }: CreateBountyFormProps) 
     )
   }
 
+  function setPresetDeadline(hoursFromNow: number) {
+    const dt = new Date(Date.now() + hoursFromNow * 3600_000)
+    // Format for datetime-local in local timezone
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const formatted = `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`
+    setDeadlineDate(formatted)
+  }
+
   // ── Form ─────────────────────────────────────────────────────────────────────
   return (
     <WindowCard title="NEW_BOUNTY.EXE" titleBarColor="#FF3E9A" onClose={onClose}>
       <div className="flex flex-col gap-5">
 
+        {/* 2-Step Progress Indicator */}
+        <div className="grid grid-cols-2 gap-2.5">
+          <div
+            className={`flex items-center gap-2.5 rounded-xl border-[2.5px] border-[#111] px-3 py-2 shadow-hard-xs transition-colors ${
+              !approveSuccess ? 'bg-[#FFE600]' : 'bg-[#C6F23A]'
+            }`}
+          >
+            <span className="w-6 h-6 rounded-lg border-[2px] border-[#111] bg-white font-mono-bold text-[11px] text-[#111] flex items-center justify-center shrink-0">
+              {approveSuccess ? '✓' : '01'}
+            </span>
+            <div className="flex flex-col min-w-0">
+              <span className="font-mono-bold text-[10px] uppercase tracking-wider text-[#111] truncate">Approve USDC</span>
+              <span className="font-mono-ui text-[9px] text-[#111]/70 truncate">
+                {approveSuccess ? 'Approved' : 'Allow escrow lock'}
+              </span>
+            </div>
+          </div>
+
+          <div
+            className={`flex items-center gap-2.5 rounded-xl border-[2.5px] border-[#111] px-3 py-2 shadow-hard-xs transition-colors ${
+              approveSuccess ? 'bg-[#C6F23A]' : 'bg-white opacity-70'
+            }`}
+          >
+            <span className="w-6 h-6 rounded-lg border-[2px] border-[#111] bg-white font-mono-bold text-[11px] text-[#111] flex items-center justify-center shrink-0">
+              02
+            </span>
+            <div className="flex flex-col min-w-0">
+              <span className="font-mono-bold text-[10px] uppercase tracking-wider text-[#111] truncate">Lock &amp; Publish</span>
+              <span className="font-mono-ui text-[9px] text-[#111]/70 truncate">Go live onchain</span>
+            </div>
+          </div>
+        </div>
+
         {/* Trust notice */}
-        <div className="border-[3px] border-[#111] rounded-lg bg-[#C6F23A]/40 px-3 py-3 flex items-start gap-2">
+        <div className="border-[2.5px] border-[#111] rounded-xl bg-[#C6F23A]/35 px-3.5 py-3 flex items-start gap-2.5 shadow-hard-xs">
           <LockIcon size={16} className="shrink-0 mt-0.5 text-[#111]" />
           <p className="font-mono-bold text-[11px] text-[#111] leading-relaxed uppercase tracking-wide">
             Your bounty goes live <strong>only after the prize is locked in escrow.</strong> Workers can never submit to an unfunded bounty.
@@ -211,7 +252,7 @@ export function CreateBountyForm({ onClose, onSuccess }: CreateBountyFormProps) 
 
         {/* ── Section: Details ── */}
         <div className="flex flex-col gap-4">
-          <div className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/40 border-b-[2px] border-[#111]/10 pb-1">
+          <div className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/60 border-b-[2px] border-[#111]/15 pb-1">
             Bounty details
           </div>
 
@@ -219,15 +260,15 @@ export function CreateBountyForm({ onClose, onSuccess }: CreateBountyFormProps) 
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
               <label className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111]">Title *</label>
-              <span className={`font-mono-ui text-[10px] ${titleBytes > MAX_TITLE ? 'text-[#FF6B57]' : 'text-[#111]/40'}`}>{titleBytes}/{MAX_TITLE}</span>
+              <span className={`font-mono-ui text-[10px] ${titleBytes > MAX_TITLE ? 'text-[#FF6B57]' : 'text-[#111]/50'}`}>{titleBytes}/{MAX_TITLE}</span>
             </div>
             <input
               type="text"
               value={title}
               onChange={e => setTitle(e.target.value)}
-              placeholder="e.g. Write a blog post about Arc"
+              placeholder="e.g. Write a deep-dive thread about Arc"
               maxLength={MAX_TITLE}
-              className="border-[3px] border-[#111] rounded-lg px-3 py-2.5 text-[15px] font-body bg-white focus:outline-none focus:bg-[#FFFDF0] w-full"
+              className="input-neo rounded-xl px-3.5 py-2.5 text-[15px] font-body w-full"
             />
           </div>
 
@@ -235,14 +276,14 @@ export function CreateBountyForm({ onClose, onSuccess }: CreateBountyFormProps) 
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
               <label className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111]">Description *</label>
-              <span className={`font-mono-ui text-[10px] ${descBytes > MAX_DESC ? 'text-[#FF6B57]' : 'text-[#111]/40'}`}>{descBytes}/{MAX_DESC}</span>
+              <span className={`font-mono-ui text-[10px] ${descBytes > MAX_DESC ? 'text-[#FF6B57]' : 'text-[#111]/50'}`}>{descBytes}/{MAX_DESC}</span>
             </div>
             <textarea
               value={description}
               onChange={e => setDescription(e.target.value)}
               placeholder="Describe what workers need to do and how to submit. What does good work look like?"
               rows={4}
-              className="border-[3px] border-[#111] rounded-lg px-3 py-2.5 text-[15px] font-body bg-white focus:outline-none focus:bg-[#FFFDF0] w-full resize-none"
+              className="input-neo rounded-xl px-3.5 py-2.5 text-[15px] font-body w-full resize-none"
             />
           </div>
 
@@ -410,56 +451,111 @@ export function CreateBountyForm({ onClose, onSuccess }: CreateBountyFormProps) 
 
         {/* ── Section: Reward ── */}
         <div className="flex flex-col gap-4">
-          <div className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/40 border-b-[2px] border-[#111]/10 pb-1">
+          <div className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/60 border-b-[2px] border-[#111]/15 pb-1">
             Prize &amp; deadline
           </div>
 
           {/* Reward + winners */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div className="flex flex-col gap-1.5">
               <label className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111]">Reward / winner (USDC) *</label>
               <input type="number" value={rewardPerWinner} onChange={e => setRewardPerWinner(e.target.value)}
                 placeholder="25" min="0.000001" step="0.000001"
-                className="border-[3px] border-[#111] rounded-lg px-3 py-2.5 text-[15px] font-heading font-bold bg-white focus:outline-none focus:bg-[#FFFDF0] w-full tabular-nums"
+                className="input-neo rounded-xl px-3.5 py-2.5 text-[16px] font-heading font-extrabold w-full tabular-nums"
               />
+              {/* Quick reward presets */}
+              <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                {['10', '25', '50', '100'].map(amt => (
+                  <button
+                    key={amt}
+                    type="button"
+                    onClick={() => setRewardPerWinner(amt)}
+                    className={`font-mono-bold text-[10px] px-2.5 py-1 rounded-full border-[2px] border-[#111] transition-all cursor-pointer ${
+                      rewardPerWinner === amt
+                        ? 'bg-[#FFE600] shadow-hard-xs -translate-y-0.5'
+                        : 'bg-white hover:bg-[#FFFDF0]'
+                    }`}
+                  >
+                    ${amt}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111]">Max winners (1–50) *</label>
               <input type="number" value={maxWinners} onChange={e => setMaxWinners(e.target.value)}
                 placeholder="1" min="1" max="50" step="1"
-                className="border-[3px] border-[#111] rounded-lg px-3 py-2.5 text-[15px] font-heading font-bold bg-white focus:outline-none focus:bg-[#FFFDF0] w-full tabular-nums"
+                className="input-neo rounded-xl px-3.5 py-2.5 text-[16px] font-heading font-extrabold w-full tabular-nums"
               />
+              {/* Quick winners presets */}
+              <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                {['1', '2', '3', '5'].map(w => (
+                  <button
+                    key={w}
+                    type="button"
+                    onClick={() => setMaxWinners(w)}
+                    className={`font-mono-bold text-[10px] px-2.5 py-1 rounded-full border-[2px] border-[#111] transition-all cursor-pointer ${
+                      maxWinners === w
+                        ? 'bg-[#7FF3F0] shadow-hard-xs -translate-y-0.5'
+                        : 'bg-white hover:bg-[#FFFDF0]'
+                    }`}
+                  >
+                    {w} {w === '1' ? 'winner' : 'winners'}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
           {/* Deadline */}
           <div className="flex flex-col gap-1.5">
-            <label className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111]">Deadline *</label>
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <label className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111]">Deadline *</label>
+              <div className="flex items-center gap-1.5">
+                {[
+                  { label: '+24h', hours: 24 },
+                  { label: '+3d', hours: 72 },
+                  { label: '+7d', hours: 168 },
+                  { label: '+14d', hours: 336 },
+                ].map(p => (
+                  <button
+                    key={p.label}
+                    type="button"
+                    onClick={() => setPresetDeadline(p.hours)}
+                    className="font-mono-bold text-[10px] px-2 py-0.5 rounded-full border-[1.5px] border-[#111] bg-white hover:bg-[#FFE600] transition-colors cursor-pointer"
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <input type="datetime-local" value={deadlineDate} onChange={e => setDeadlineDate(e.target.value)}
               min={MIN_DEADLINE_DATE}
-              className="border-[3px] border-[#111] rounded-lg px-3 py-2.5 text-[15px] font-body bg-white focus:outline-none focus:bg-[#FFFDF0] w-full"
+              className="input-neo rounded-xl px-3.5 py-2.5 text-[15px] font-body w-full"
             />
           </div>
         </div>
 
         {/* Total escrow preview */}
         {canApprove && (
-          <div className="border-[3px] border-[#111] rounded-lg bg-[#7FF3F0]/40 px-4 py-3">
+          <div className="border-[3px] border-[#111] rounded-xl bg-[#7FF3F0]/40 px-4 py-3.5 shadow-hard-sm">
             <div className="flex items-center justify-between">
               <span className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111]">Total to lock in escrow</span>
               <span className="font-heading text-[28px] font-extrabold text-[#111] tabular-nums" style={{ letterSpacing: '-0.02em' }}>
-                {totalEscrowDisplay} USDC
+                ${totalEscrowDisplay} USDC
               </span>
             </div>
-            <div className="font-mono-ui text-[10px] text-[#111]/50 mt-1">
-              {rewardPerWinner} USDC × {maxWinnersNum} winner{maxWinnersNum > 1 ? 's' : ''} = {totalEscrowDisplay} USDC locked upfront
+            <div className="font-mono-ui text-[10px] text-[#111]/65 mt-1">
+              ${rewardPerWinner} USDC × {maxWinnersNum} winner{maxWinnersNum > 1 ? 's' : ''} = ${totalEscrowDisplay} USDC locked upfront
             </div>
           </div>
         )}
 
         {/* CTA flow */}
         {!address ? (
-          <div className="font-mono-ui text-[12px] text-[#111]/60 text-center py-2">Connect your wallet to post a bounty</div>
+          <div className="font-mono-bold text-[12px] uppercase tracking-wider text-[#111]/70 text-center py-3 rounded-xl border-[2px] border-dashed border-[#111]/30 bg-white">
+            Connect your wallet to post a bounty
+          </div>
         ) : isWrongChain ? (
           <PillButton variant="pink" onClick={() => switchChain({ chainId: CHAIN_ID })} showArrow={false}>Switch Network</PillButton>
         ) : !approveSuccess ? (
@@ -469,28 +565,28 @@ export function CreateBountyForm({ onClose, onSuccess }: CreateBountyFormProps) 
               error={approveErr ? parseOnchainError(approveErr) : undefined}
               successMessage="USDC approved!"
             />
-            <PillButton onClick={handleApprove} disabled={!canApprove} loading={approvePending || approveConfirming} variant="yellow">
+            <PillButton onClick={handleApprove} disabled={!canApprove} loading={approvePending || approveConfirming} variant="yellow" size="lg">
               Step 1: Approve USDC
             </PillButton>
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            <div className="border-2 border-[#C6F23A] border-dashed rounded-lg px-3 py-2 bg-[#C6F23A]/20">
-              <span className="font-mono-bold text-[11px] uppercase tracking-wider text-[#111]">USDC approved. Ready to lock prize.</span>
+            <div className="border-[2px] border-[#111] rounded-xl px-3.5 py-2.5 bg-[#C6F23A]/35 shadow-hard-xs">
+              <span className="font-mono-bold text-[11px] uppercase tracking-wider text-[#111]">✓ USDC approved. Ready to lock prize &amp; publish.</span>
             </div>
             <TxStatus hash={createHash} isPending={createPending} isConfirming={createConfirming}
               isSuccess={createSuccess} isError={!!createErr}
               error={createErr ? parseOnchainError(createErr) : undefined}
               successMessage="Prize locked & bounty live!"
             />
-            <PillButton onClick={handleCreate} loading={createPending || createConfirming} variant="lime">
+            <PillButton onClick={handleCreate} loading={createPending || createConfirming} variant="lime" size="lg">
               Step 2: Lock prize &amp; publish →
             </PillButton>
           </div>
         )}
 
         {/* Permanent notice */}
-        <p className="font-mono-ui text-[10px] text-[#111]/40 text-center">
+        <p className="font-mono-ui text-[10px] text-[#111]/55 text-center">
           Text posted onchain is permanent and public.
         </p>
       </div>

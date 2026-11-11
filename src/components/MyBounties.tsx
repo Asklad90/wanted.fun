@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAccount, useReadContract } from 'wagmi'
 import { BountyCard, BountyData } from './BountyCard'
+import { SkeletonBountyCard } from './Skeleton'
 import { WindowCard } from './WindowCard'
 import { PillButton } from './PillButton'
 import { TrophyIcon, FolderIcon } from './Icons'
@@ -22,7 +23,7 @@ function useBounty(id: bigint) {
 
 function BountyItem({ id, onSelect }: { id: bigint; onSelect: (id: bigint) => void }) {
   const bounty = useBounty(id)
-  if (!bounty) return <div className="border-[3px] border-[#111] rounded-lg bg-[#FFFDF0] animate-pulse h-52" />
+  if (!bounty) return <SkeletonBountyCard />
   return <BountyCard bounty={bounty} onClick={() => onSelect(id)} />
 }
 
@@ -37,7 +38,12 @@ export function MyBounties({ onSelectBounty, onCreateBounty }: MyBountiesProps) 
 
   if (!address) return (
     <WindowCard title="MY_BOUNTIES.EXE" titleBarColor="#FF3E9A">
-      <div className="font-mono-bold text-[12px] uppercase tracking-widest text-[#111]/60 text-center py-8">Connect wallet to see your bounties</div>
+      <div className="checkerboard rounded-xl border-[2px] border-[#111] py-12 px-4 flex flex-col items-center gap-3 text-center">
+        <TrophyIcon size={40} />
+        <div className="font-mono-bold text-[12px] uppercase tracking-widest text-[#111] bg-[#FFFDF0] border-[2px] border-[#111] px-3.5 py-1.5 rounded-lg shadow-hard-sm">
+          Connect wallet to see your bounties
+        </div>
+      </div>
     </WindowCard>
   )
 
@@ -45,9 +51,11 @@ export function MyBounties({ onSelectBounty, onCreateBounty }: MyBountiesProps) 
 
   if (list.length === 0) return (
     <WindowCard title="MY_BOUNTIES.EXE" titleBarColor="#FF3E9A">
-      <div className="checkerboard rounded-lg py-12 flex flex-col items-center gap-4">
+      <div className="checkerboard rounded-xl border-[2px] border-[#111] py-12 px-4 flex flex-col items-center gap-4 text-center">
         <TrophyIcon size={40} />
-        <div className="font-mono-bold text-[12px] uppercase tracking-widest text-[#111]/60">You haven't posted any bounties yet</div>
+        <div className="font-mono-bold text-[12px] uppercase tracking-widest text-[#111] bg-[#FFFDF0] border-[2px] border-[#111] px-3.5 py-1.5 rounded-lg shadow-hard-sm">
+          You haven't posted any bounties yet
+        </div>
         <PillButton onClick={onCreateBounty} variant="yellow">Post a bounty</PillButton>
       </div>
     </WindowCard>
@@ -55,8 +63,10 @@ export function MyBounties({ onSelectBounty, onCreateBounty }: MyBountiesProps) 
 
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="font-heading text-[18px] font-bold text-[#111]">My Bounties ({list.length})</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="font-heading text-[20px] font-extrabold text-[#111]">My Bounties ({list.length})</h2>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 desk:grid-cols-3 gap-4 items-stretch">
         {[...list].reverse().map(id => <BountyItem key={id.toString()} id={id} onSelect={onSelectBounty} />)}
       </div>
     </div>
@@ -72,8 +82,6 @@ export function MySubmissions({ onSelectBounty }: MySubmissionsProps) {
   const [bountyIds, setBountyIds] = useState<bigint[] | null>(null)
   const [fetchedFor, setFetchedFor] = useState<string | null>(null)
 
-  // Kick off a fetch whenever the address changes; track which address was fetched
-  // so we can show a spinner while the new result is in-flight.
   useEffect(() => {
     if (!address) return
     void fetch(`/api/submissions-by-wallet?wallet=${address.toLowerCase()}`)
@@ -88,37 +96,42 @@ export function MySubmissions({ onSelectBounty }: MySubmissionsProps) {
       })
   }, [address])
 
-  // Loading: wallet connected but result not yet back for this address
   const isLoading = !!address && fetchedFor !== address.toLowerCase()
   const effectiveIds = address ? bountyIds : null
 
   if (!address) return (
     <WindowCard title="MY_SUBMISSIONS.EXE" titleBarColor="#A78BFA">
-      <div className="font-mono-bold text-[12px] uppercase tracking-widest text-[#111]/60 text-center py-8">Connect wallet to see your submissions</div>
-    </WindowCard>
-  )
-
-  if (isLoading || effectiveIds === null) return (
-    <WindowCard title="MY_SUBMISSIONS.EXE" titleBarColor="#A78BFA">
-      <div className="py-10 flex justify-center">
-        <span className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111]/50 animate-pulse">Loading...</span>
+      <div className="checkerboard rounded-xl border-[2px] border-[#111] py-12 px-4 flex flex-col items-center gap-3 text-center">
+        <FolderIcon size={40} />
+        <div className="font-mono-bold text-[12px] uppercase tracking-widest text-[#111] bg-[#FFFDF0] border-[2px] border-[#111] px-3.5 py-1.5 rounded-lg shadow-hard-sm">
+          Connect wallet to see your submissions
+        </div>
       </div>
     </WindowCard>
   )
 
+  if (isLoading || effectiveIds === null) return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 desk:grid-cols-3 gap-4">
+      <SkeletonBountyCard />
+      <SkeletonBountyCard />
+    </div>
+  )
+
   if (effectiveIds.length === 0) return (
     <WindowCard title="MY_SUBMISSIONS.EXE" titleBarColor="#A78BFA">
-      <div className="checkerboard rounded-lg py-12 flex flex-col items-center gap-4">
+      <div className="checkerboard rounded-xl border-[2px] border-[#111] py-12 px-4 flex flex-col items-center gap-3 text-center">
         <FolderIcon size={40} />
-        <div className="font-mono-bold text-[12px] uppercase tracking-widest text-[#111]/60">No submissions yet</div>
+        <div className="font-mono-bold text-[12px] uppercase tracking-widest text-[#111] bg-[#FFFDF0] border-[2px] border-[#111] px-3.5 py-1.5 rounded-lg shadow-hard-sm">
+          No submissions yet
+        </div>
       </div>
     </WindowCard>
   )
 
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="font-heading text-[18px] font-bold text-[#111]">My Submissions ({effectiveIds.length})</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <h2 className="font-heading text-[20px] font-extrabold text-[#111]">My Submissions ({effectiveIds.length})</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 desk:grid-cols-3 gap-4 items-stretch">
         {effectiveIds.map(id => <BountyItem key={id.toString()} id={id} onSelect={onSelectBounty} />)}
       </div>
     </div>

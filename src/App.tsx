@@ -113,9 +113,9 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, Error
 }
 
 const pageVariants = {
-  initial: { opacity: 0, y: 12 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] } },
-  exit:    { opacity: 0, y: -8, transition: { duration: 0.15, ease: 'easeIn' } },
+  initial: { opacity: 0, y: 14, scale: 0.992 },
+  animate: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.26, ease: [0.22, 1, 0.36, 1] } },
+  exit:    { opacity: 0, y: -8, scale: 0.995, transition: { duration: 0.15, ease: 'easeIn' } },
 }
 
 function PageView({ children, narrow = false }: { children: React.ReactNode; narrow?: boolean }) {
@@ -306,23 +306,55 @@ export default function App() {
           </button>
 
           {/* Nav (desktop) */}
-          <nav className="hidden desk:flex items-center gap-8" aria-label="Main">
+          <nav className="hidden desk:flex items-center gap-2.5 bg-white/5 border-[2px] border-white/15 rounded-full p-1" aria-label="Main">
             <button
+              type="button"
               onClick={() => goTo('wall')}
-              className={`font-mono-bold text-[13px] pb-0.5 border-b-[3px] transition-colors ${view === 'wall' ? 'text-[#FFFDF0] border-[#FFE600]' : 'text-[#FFFDF0]/70 border-transparent hover:text-[#FFE600]'}`}
+              className={`font-mono-bold text-[12px] uppercase tracking-wider px-4 py-1.5 rounded-full transition-all cursor-pointer ${
+                view === 'wall'
+                  ? 'bg-[#FFE600] text-[#111] shadow-[2px_2px_0_#FF3E9A]'
+                  : 'text-[#FFFDF0]/85 hover:text-[#FFE600] hover:bg-white/10'
+              }`}
             >
               Bounty Wall
             </button>
             <button
+              type="button"
               onClick={() => openGuide()}
-              className={`font-mono-bold text-[13px] pb-0.5 border-b-[3px] transition-colors ${view === 'how-it-works' ? 'text-[#FFFDF0] border-[#FFE600]' : 'text-[#FFFDF0]/70 border-transparent hover:text-[#FFE600]'}`}
+              className={`font-mono-bold text-[12px] uppercase tracking-wider px-4 py-1.5 rounded-full transition-all cursor-pointer ${
+                view === 'how-it-works'
+                  ? 'bg-[#FFE600] text-[#111] shadow-[2px_2px_0_#FF3E9A]'
+                  : 'text-[#FFFDF0]/85 hover:text-[#FFE600] hover:bg-white/10'
+              }`}
             >
               How it works
             </button>
+            <button
+              type="button"
+              onClick={openCreate}
+              className={`font-mono-bold text-[12px] uppercase tracking-wider px-4 py-1.5 rounded-full transition-all cursor-pointer ${
+                view === 'create'
+                  ? 'bg-[#C6F23A] text-[#111] shadow-[2px_2px_0_#FFE600]'
+                  : 'text-[#C6F23A] hover:bg-[#C6F23A] hover:text-[#111]'
+              }`}
+            >
+              + Post Bounty
+            </button>
           </nav>
 
-          {/* Right: connect button with embedded profile dropdown */}
+          {/* Right: mobile quick-links + connect button */}
           <div className="flex items-center gap-2 min-w-0 shrink-0">
+            <button
+              type="button"
+              onClick={() => openGuide()}
+              className={`desk:hidden font-mono-bold text-[11px] uppercase tracking-wider px-2.5 py-2 rounded-full border-[2px] transition-colors cursor-pointer ${
+                view === 'how-it-works'
+                  ? 'bg-[#7FF3F0] text-[#111] border-white'
+                  : 'bg-white/10 text-[#FFFDF0] border-white/25 hover:border-[#FFE600]'
+              }`}
+            >
+              Guide
+            </button>
             <ConnectButton
               onProfileClick={(addr) => {
                 const target = addr || connectedAddr
@@ -411,7 +443,7 @@ export default function App() {
               </PageView>
             ) : view === 'create' ? (
               <PageView key="create" narrow>
-                <div className="max-w-lg mx-auto">
+                <div className="max-w-2xl mx-auto">
                   <CreateBountyForm onClose={goBack} onSuccess={onCreated} />
                 </div>
               </PageView>
@@ -437,36 +469,63 @@ export default function App() {
       </main>
 
       {/* ─── Footer ───────────────────────────────────────────────────────────── */}
-      <footer className="border-t-[3px] border-[#111] bg-[#111] px-4 py-4 mt-auto">
-        <div className="max-w-[1280px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
-          <span className="font-mono-ui text-[11px] text-[#FFFDF0]/50 uppercase tracking-wider">
-            Text posted onchain is permanent and public. Review before submitting.
-          </span>
-          <span className="font-mono-ui text-[11px] text-[#FFFDF0]/30 flex items-center gap-2 flex-wrap justify-center sm:justify-end">
+      <footer className="border-t-[3px] border-[#111] bg-[#111] px-4 py-6 mt-auto relative z-10">
+        <div className="max-w-[1280px] mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <button
+              onClick={() => goTo('wall')}
+              className="inline-flex items-center gap-1.5 bg-[#FFFDF0] text-[#111] border-[2px] border-[#FFFDF0] rounded-lg px-2.5 py-1 shadow-[2px_2px_0_#FFE600] hover:translate-y-[-1px] transition-transform cursor-pointer"
+            >
+              <span className="font-display font-extrabold text-[11px] uppercase tracking-wider">WANT</span>
+              <span className="bg-[#FFE600] text-[#111] font-mono-ui font-bold text-[9px] px-1 py-0.5 rounded border border-[#111]">.fun</span>
+            </button>
+            <span className="font-mono-ui text-[11px] text-[#FFFDF0]/75 uppercase tracking-wider">
+              Onchain escrow bounties on {CHAIN_NAME} · Paid in USDC
+            </span>
+          </div>
+
+          <div className="font-mono-ui text-[11px] text-[#FFFDF0]/80 flex items-center gap-3 flex-wrap justify-center md:justify-end">
+            <button
+              onClick={() => goTo('wall')}
+              className="text-[#FFFDF0]/80 hover:text-[#FFE600] transition-colors font-mono-ui font-bold uppercase cursor-pointer"
+            >
+              Bounty Wall
+            </button>
+            <span className="text-[#FFFDF0]/30">·</span>
             <button
               onClick={() => openGuide()}
-              className="text-[#FFFDF0]/60 hover:text-[#FFE600] transition-colors underline underline-offset-2 font-mono-ui cursor-pointer"
+              className="text-[#FFFDF0]/80 hover:text-[#FFE600] transition-colors font-mono-ui font-bold uppercase cursor-pointer"
             >
               How it works
             </button>
-            ·
+            <span className="text-[#FFFDF0]/30">·</span>
             <button
               onClick={() => { window.location.hash = '#/privacy' }}
-              className="text-[#FFFDF0]/60 hover:text-[#FFE600] transition-colors underline underline-offset-2 font-mono-ui cursor-pointer"
+              className="text-[#FFFDF0]/80 hover:text-[#FFE600] transition-colors font-mono-ui font-bold uppercase cursor-pointer"
             >
               Privacy & Terms
             </button>
-            · Want.fun · {CHAIN_NAME} · USDC
             {CONTRACT_DEPLOYED && (
-              <a
-                href={getAddressUrl(CONTRACT_ADDRESS)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[#C6F23A]/60 hover:text-[#C6F23A] transition-colors underline underline-offset-2"
-              >
-                Verify contract ↗
-              </a>
+              <>
+                <span className="text-[#FFFDF0]/30">·</span>
+                <a
+                  href={getAddressUrl(CONTRACT_ADDRESS)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#C6F23A]/15 border border-[#C6F23A]/40 text-[#C6F23A] hover:bg-[#C6F23A] hover:text-[#111] transition-colors font-bold uppercase text-[10px]"
+                >
+                  Verify Escrow Contract ↗
+                </a>
+              </>
             )}
+          </div>
+        </div>
+        <div className="max-w-[1280px] mx-auto mt-3 pt-3 border-t border-[#FFFDF0]/10 flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
+          <span className="font-mono-ui text-[10px] text-[#FFFDF0]/60 uppercase tracking-wider">
+            Notice: Data posted onchain is permanent and public. Always review before submitting.
+          </span>
+          <span className="font-mono-ui text-[10px] text-[#FFFDF0]/60 uppercase tracking-wider">
+            100% Upfront Escrow · Zero Platform Fee
           </span>
         </div>
       </footer>
