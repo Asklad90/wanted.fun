@@ -320,17 +320,6 @@ export default function App() {
             </button>
             <button
               type="button"
-              onClick={() => openGuide()}
-              className={`font-mono-bold text-[12px] uppercase tracking-wider px-4 py-1.5 rounded-full transition-all cursor-pointer ${
-                view === 'how-it-works'
-                  ? 'bg-[#FFE600] text-[#111] shadow-[2px_2px_0_#FF3E9A]'
-                  : 'text-[#FFFDF0]/85 hover:text-[#FFE600] hover:bg-white/10'
-              }`}
-            >
-              How it works
-            </button>
-            <button
-              type="button"
               onClick={openCreate}
               className={`font-mono-bold text-[12px] uppercase tracking-wider px-4 py-1.5 rounded-full transition-all cursor-pointer ${
                 view === 'create'
@@ -342,19 +331,8 @@ export default function App() {
             </button>
           </nav>
 
-          {/* Right: mobile quick-links + connect button */}
+          {/* Right: connect button */}
           <div className="flex items-center gap-2 min-w-0 shrink-0">
-            <button
-              type="button"
-              onClick={() => openGuide()}
-              className={`desk:hidden font-mono-bold text-[11px] uppercase tracking-wider px-2.5 py-2 rounded-full border-[2px] transition-colors cursor-pointer ${
-                view === 'how-it-works'
-                  ? 'bg-[#7FF3F0] text-[#111] border-white'
-                  : 'bg-white/10 text-[#FFFDF0] border-white/25 hover:border-[#FFE600]'
-              }`}
-            >
-              Guide
-            </button>
             <ConnectButton
               onProfileClick={(addr) => {
                 const target = addr || connectedAddr
@@ -469,16 +447,10 @@ export default function App() {
       </main>
 
       {/* ─── Footer ───────────────────────────────────────────────────────────── */}
-      <footer className="border-t-[3px] border-[#111] bg-[#111] px-4 py-6 mt-auto relative z-10">
+      <footer className="border-t-[3px] border-[#111] bg-[#111] px-4 py-6 mt-auto relative z-10 overflow-hidden">
         <div className="max-w-[1280px] mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
-          <div className="flex flex-col sm:flex-row items-center gap-3">
-            <button
-              onClick={() => goTo('wall')}
-              className="inline-flex items-center gap-1.5 bg-[#FFFDF0] text-[#111] border-[2px] border-[#FFFDF0] rounded-lg px-2.5 py-1 shadow-[2px_2px_0_#FFE600] hover:translate-y-[-1px] transition-transform cursor-pointer"
-            >
-              <span className="font-display font-extrabold text-[11px] uppercase tracking-wider">WANT</span>
-              <span className="bg-[#FFE600] text-[#111] font-mono-ui font-bold text-[9px] px-1 py-0.5 rounded border border-[#111]">.fun</span>
-            </button>
+          <div className="flex flex-col sm:flex-row items-center gap-3.5">
+            <FooterLogo />
             <span className="font-mono-ui text-[11px] text-[#FFFDF0]/75 uppercase tracking-wider">
               Onchain escrow bounties on {CHAIN_NAME} · Paid in USDC
             </span>
@@ -530,5 +502,181 @@ export default function App() {
         </div>
       </footer>
     </div>
+  )
+}
+
+// ─── Interactive Kinetic Footer Logo ────────────────────────────────────────
+const WANT_CHARS = [
+  { char: 'W', dx: -18, dy: -16, rot: -28 },
+  { char: 'A', dx: -6,  dy: 18,  rot: 22 },
+  { char: 'N', dx: 8,   dy: -18, rot: -20 },
+  { char: 'T', dx: 20,  dy: 15,  rot: 32 },
+]
+
+const FUN_CHARS = [
+  { char: '.', dx: -10, dy: 20,  rot: -45, flash: '#FFE600' },
+  { char: 'f', dx: 6,   dy: -22, rot: 28,  flash: '#7FF3F0' },
+  { char: 'u', dx: 18,  dy: 22,  rot: -32, flash: '#C6F23A' },
+  { char: 'n', dx: 30,  dy: -16, rot: 36,  flash: '#FF3E9A' },
+]
+
+const SPARKS = [
+  { x: -42, y: -24, color: '#FFE600', rot: 45 },
+  { x: -12, y: -32, color: '#7FF3F0', rot: -30 },
+  { x: 28,  y: -28, color: '#C6F23A', rot: 60 },
+  { x: 54,  y: -18, color: '#FF3E9A', rot: -45 },
+  { x: -34, y: 24,  color: '#A78BFA', rot: -60 },
+  { x: 14,  y: 28,  color: '#FFE600', rot: 35 },
+  { x: 48,  y: 22,  color: '#7FF3F0', rot: -25 },
+]
+
+function FooterLogo() {
+  const [burstId, setBurstId] = useState(0)
+  const [isPlaying, setIsPlaying] = useState(false)
+
+  const triggerAnimation = () => {
+    setBurstId(n => n + 1)
+    setIsPlaying(true)
+  }
+
+  useEffect(() => {
+    if (!isPlaying) return
+    const timer = window.setTimeout(() => setIsPlaying(false), 950)
+    return () => window.clearTimeout(timer)
+  }, [burstId, isPlaying])
+
+  return (
+    <button
+      type="button"
+      onClick={triggerAnimation}
+      className="relative inline-flex items-center gap-1 select-none py-1 px-1 cursor-pointer group focus:outline-none"
+      aria-label="Animate WANT.fun logo"
+      title="Tap to animate!"
+    >
+      {/* Burst sparks on tap/click */}
+      <AnimatePresence>
+        {isPlaying && (
+          <span key={burstId} className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">
+            {SPARKS.map((sp, i) => (
+              <motion.span
+                key={i}
+                initial={{ x: 0, y: 0, scale: 0, rotate: 0, opacity: 1 }}
+                animate={{
+                  x: sp.x,
+                  y: sp.y,
+                  scale: [0, 1.15, 0],
+                  rotate: sp.rot,
+                  opacity: [1, 1, 0],
+                }}
+                transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                className="absolute w-2 h-2 rounded-[2px] border border-[#111]"
+                style={{ backgroundColor: sp.color }}
+              />
+            ))}
+          </span>
+        )}
+      </AnimatePresence>
+
+      {/* "WANT" tilted pink stamp matching the main header logo */}
+      <motion.span
+        key={`want-box-${burstId}`}
+        animate={
+          burstId > 0
+            ? {
+                x: [0, -14, 6, -2, 0],
+                y: [0, 12, -8, 2, 0],
+                rotate: [-8, -26, 10, -11, -8],
+                scale: [1, 0.9, 1.12, 0.97, 1],
+              }
+            : { rotate: -8 }
+        }
+        transition={{
+          duration: 0.85,
+          times: [0, 0.28, 0.62, 0.84, 1],
+          ease: [0.22, 1, 0.36, 1],
+        }}
+        whileHover={!isPlaying ? { rotate: -11, scale: 1.05 } : undefined}
+        className="px-[9px] py-[4px] text-[15px] sm:text-[17px]"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          color: '#000000',
+          backgroundColor: '#FF3E9A',
+          border: '2.5px solid white',
+          borderRadius: '7px',
+          letterSpacing: '0.08em',
+          lineHeight: 1,
+          boxShadow: '2.5px 2.5px 0 white, 4.5px 4.5px 0 #FF3E9A',
+          fontFamily: '"Space Mono", monospace',
+          fontWeight: 900,
+          textTransform: 'uppercase',
+        }}
+      >
+        {WANT_CHARS.map((item, idx) => (
+          <motion.span
+            key={idx}
+            animate={
+              burstId > 0
+                ? {
+                    x: [0, item.dx, -item.dx * 0.25, 0],
+                    y: [0, item.dy, -item.dy * 0.3, 0],
+                    rotate: [0, item.rot, -item.rot * 0.35, 0],
+                    scale: [1, 1.3, 0.9, 1],
+                  }
+                : undefined
+            }
+            transition={{
+              duration: 0.82,
+              delay: idx * 0.025,
+              times: [0, 0.32, 0.68, 1],
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            className="inline-block"
+          >
+            {item.char}
+          </motion.span>
+        ))}
+      </motion.span>
+
+      {/* ".fun" purple stroked wordmark matching the main header logo */}
+      <span
+        className="text-[26px] sm:text-[30px] inline-flex items-baseline"
+        style={{
+          color: '#A78BFA',
+          letterSpacing: 0,
+          fontFamily: '"Fredoka One", cursive',
+          lineHeight: 1,
+          marginLeft: '4px',
+          WebkitTextStroke: '2.5px #111',
+          paintOrder: 'stroke fill',
+        }}
+      >
+        {FUN_CHARS.map((item, idx) => (
+          <motion.span
+            key={`${burstId}-${idx}`}
+            animate={
+              burstId > 0
+                ? {
+                    x: [0, item.dx, -item.dx * 0.2, 0],
+                    y: [0, item.dy, -10, 3, 0],
+                    rotate: [0, item.rot, -item.rot * 0.4, 0],
+                    scale: [1, 1.28, 0.88, 1.08, 1],
+                    color: ['#A78BFA', item.flash, '#FFE600', '#A78BFA'],
+                  }
+                : undefined
+            }
+            transition={{
+              duration: 0.88,
+              delay: 0.04 + idx * 0.035,
+              times: [0, 0.3, 0.62, 0.84, 1],
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            className="inline-block"
+          >
+            {item.char}
+          </motion.span>
+        ))}
+      </span>
+    </button>
   )
 }
