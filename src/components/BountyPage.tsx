@@ -789,47 +789,60 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
       {/* Auto-paid notice */}
       {userPayoutStatus === PAYOUT_PAID && (
         <WindowCard title="YOU_WON.EXE" titleBarColor="#C6F23A">
-          <div className="font-heading text-[20px] font-extrabold text-[#111]">Paid! {formatUsdc(bounty.rewardPerWinner)} USDC sent to your wallet.</div>
+          <div className="flex items-center gap-3 border-[2.5px] border-[#111] rounded-xl p-4 bg-[#C6F23A]/25 shadow-hard-xs">
+            <div className="w-10 h-10 rounded-xl bg-[#C6F23A] border-[2px] border-[#111] flex items-center justify-center shrink-0">
+              <TrophyIcon size={20} className="text-[#111]" />
+            </div>
+            <div className="flex flex-col">
+              <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/60">Winner Verified</span>
+              <span className="font-heading text-[20px] font-extrabold text-[#111]">Paid! {formatUsdc(bounty.rewardPerWinner)} USDC sent to your wallet.</span>
+            </div>
+          </div>
         </WindowCard>
       )}
 
       {/* Submit form — free, off-chain */}
       {!isPoster && status === 'OPEN' && !alreadySubmitted && address && (userPayoutStatus === undefined || userPayoutStatus === 0) && (
         <WindowCard title="SUBMIT_WORK.EXE" titleBarColor="#A78BFA">
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3.5">
             {/* Info banner */}
-            <div className="font-mono-ui text-[11px] text-[#111] border-[2px] border-[#111] rounded-xl p-2.5 bg-[#C6F23A]/25 shadow-hard-xs">
-              <strong>Free submission</strong> — no gas required, stored off-chain.
+            <div className="flex items-center justify-between gap-2 font-mono-ui text-[11px] text-[#111] border-[2px] border-[#111] rounded-xl px-3.5 py-2.5 bg-[#C6F23A]/30 shadow-hard-xs">
+              <span><strong className="font-mono-bold">Free Proof-of-Work Submission</strong> — no gas required.</span>
+              <span className="font-mono-bold text-[9px] uppercase tracking-widest px-2 py-0.5 rounded-full bg-[#111] text-[#C6F23A]">
+                0 GAS
+              </span>
             </div>
 
             {/* Text / link */}
-            <div className="flex flex-col gap-1">
-              <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/60">Text / Link</span>
+            <div className="flex flex-col gap-1.5 bg-white border-[2px] border-[#111] rounded-xl p-3 shadow-hard-xs">
+              <div className="flex items-center justify-between">
+                <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]">1. Proof Link or Description</span>
+                <span className={`font-mono-bold text-[10px] ${submissionText.length > 1000 ? 'text-[#FF6B57]' : 'text-[#111]/50'}`}>
+                  {submissionText.length}/1000
+                </span>
+              </div>
               <textarea
                 value={submissionText}
                 onChange={e => setSubmissionText(e.target.value)}
-                placeholder="Paste a link, YouTube URL, or describe your work..."
+                placeholder="Paste a link (X post, GitHub PR, deployed demo, YouTube URL) or describe your completed work..."
                 rows={4}
                 className="input-neo rounded-xl px-3.5 py-2.5 text-[15px] font-body w-full resize-none"
               />
-              <div className={`font-mono-ui text-[10px] text-right ${submissionText.length > 1000 ? 'text-[#FF6B57]' : 'text-[#111]/50'}`}>
-                {submissionText.length}/1000
-              </div>
             </div>
 
             {/* File upload */}
-            <div className="flex flex-col gap-2">
-              <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/60">Attach image or video (optional)</span>
+            <div className="flex flex-col gap-2 bg-white border-[2px] border-[#111] rounded-xl p-3 shadow-hard-xs">
+              <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]">2. Attach Image or Video (Optional)</span>
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="border-[3px] border-dashed border-[#111] rounded-xl p-4 flex flex-col items-center gap-1.5 bg-[#FFFDF0] hover:bg-[#A78BFA]/15 transition-colors cursor-pointer"
+                className="border-[2.5px] border-dashed border-[#111] rounded-xl p-4 flex flex-col items-center gap-1.5 bg-[#FFFDF0] hover:bg-[#A78BFA]/15 transition-colors cursor-pointer"
               >
                 <UploadIcon />
-                <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/70">
+                <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]">
                   {uploadFile ? uploadFile.name : 'Tap to choose image or video'}
                 </span>
-                <span className="font-mono-ui text-[9px] text-[#111]/50">Max 3 MB · JPG, PNG, GIF, WEBP, MP4, MOV, WEBM</span>
+                <span className="font-mono-ui text-[9px] text-[#111]/55">Max 3 MB · JPG, PNG, GIF, WEBP, MP4, MOV, WEBM</span>
               </button>
               <input
                 ref={fileInputRef}
@@ -885,14 +898,27 @@ export function BountyPage({ bountyId, onBack, onDataChange }: BountyPageProps) 
       {/* Not connected — prompt */}
       {!address && status === 'OPEN' && (
         <WindowCard title="SUBMIT_WORK.EXE" titleBarColor="#A78BFA">
-          <div className="font-mono-bold text-[13px] uppercase tracking-wider text-[#111]/60 text-center py-4">Connect your wallet to submit work</div>
+          <div className="checkerboard rounded-xl p-5 border-[2.5px] border-[#111] flex flex-col items-center justify-center text-center gap-2">
+            <div className="bg-white border-[2.5px] border-[#111] rounded-xl px-5 py-4 shadow-hard-xs flex flex-col items-center gap-1.5">
+              <span className="font-heading text-[17px] font-extrabold text-[#111]">Ready to hunt this bounty?</span>
+              <span className="font-mono-ui text-[11px] text-[#111]/70">Connect your wallet in the top bar to submit proof of work for free.</span>
+            </div>
+          </div>
         </WindowCard>
       )}
 
       {/* Already submitted notice */}
       {!isPoster && alreadySubmitted && (userPayoutStatus === 0 || userPayoutStatus === undefined) && (
         <WindowCard title="SUBMITTED.EXE" titleBarColor="#7FF3F0">
-          <div className="font-mono-bold text-[12px] uppercase tracking-wider text-[#111]/70">You submitted to this bounty. Waiting for creator review.</div>
+          <div className="flex items-center gap-3 border-[2px] border-[#111] rounded-xl p-3.5 bg-white shadow-hard-xs">
+            <div className="w-8 h-8 rounded-lg bg-[#7FF3F0] border-[2px] border-[#111] flex items-center justify-center shrink-0">
+              <CheckCircleIcon size={16} className="text-[#111]" />
+            </div>
+            <div className="flex flex-col">
+              <span className="font-mono-bold text-[11px] uppercase tracking-wider text-[#111]">Submission Received</span>
+              <span className="font-mono-ui text-[11px] text-[#111]/70">You submitted to this bounty. Waiting for creator review.</span>
+            </div>
+          </div>
         </WindowCard>
       )}
 
@@ -1246,22 +1272,30 @@ function OffchainSubmissionList({
           <span className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111]/50">Loading submissions…</span>
         </div>
       ) : isPrivateForViewer ? (
-        <div className="checkerboard rounded-xl py-10 flex flex-col items-center gap-3 text-center px-4 border-[2px] border-[#111]">
-          <LockIcon size={36} />
-          <div className="font-mono-bold text-[12px] uppercase tracking-widest text-[#111]">
-            The submissions for this bounty are private
+        <div className="checkerboard rounded-xl p-6 flex flex-col items-center justify-center text-center border-[2.5px] border-[#111]">
+          <div className="bg-white border-[2.5px] border-[#111] rounded-2xl p-5 shadow-hard-sm flex flex-col items-center gap-2.5 max-w-sm">
+            <div className="w-11 h-11 rounded-xl bg-[#FFE600] border-[2px] border-[#111] flex items-center justify-center shadow-hard-xs">
+              <LockIcon size={24} />
+            </div>
+            <div className="font-heading font-extrabold text-[16px] uppercase tracking-wide text-[#111]">
+              Submissions Are Private
+            </div>
+            <p className="font-mono-ui text-[11px] text-[#111]/70">
+              Only the bounty creator can view proof-of-work entries for this bounty.
+            </p>
           </div>
-          <p className="font-mono-ui text-[11px] text-[#111]/70 max-w-sm">
-            Only the bounty creator can view submissions for this bounty.
-          </p>
         </div>
       ) : submissions.length === 0 ? (
-        <div className="checkerboard rounded-xl py-10 flex flex-col items-center gap-3 text-center px-4 border-[2px] border-[#111]">
-          <FolderIcon size={36} />
-          <div className="font-mono-bold text-[12px] uppercase tracking-widest text-[#111]/70">No submissions yet</div>
-          <p className="font-mono-ui text-[11px] text-[#111]/70 max-w-xs">
-            Be the first hunter to submit proof of work and claim the bounty!
-          </p>
+        <div className="checkerboard rounded-xl p-6 flex flex-col items-center justify-center text-center border-[2.5px] border-[#111]">
+          <div className="bg-white border-[2.5px] border-[#111] rounded-2xl p-5 shadow-hard-sm flex flex-col items-center gap-2.5 max-w-sm">
+            <div className="w-11 h-11 rounded-xl bg-[#7FF3F0] border-[2px] border-[#111] flex items-center justify-center shadow-hard-xs">
+              <FolderIcon size={24} />
+            </div>
+            <div className="font-heading font-extrabold text-[16px] uppercase tracking-wide text-[#111]">No Submissions Yet</div>
+            <p className="font-mono-ui text-[11px] text-[#111]/70">
+              Be the first hunter to submit proof of work and claim the USDC bounty!
+            </p>
+          </div>
         </div>
       ) : (
         <>

@@ -492,24 +492,24 @@ export default function App() {
             )}
           </div>
         </div>
-        <div className="max-w-[1280px] mx-auto mt-4 pt-3.5 border-t border-[#FFFDF0]/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+        <div className="max-w-[1280px] mx-auto mt-4 pt-4 border-t border-[#FFFDF0]/15 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
           <span className="font-mono-ui text-[10px] text-[#FFFDF0]/60 uppercase tracking-wider">
             Notice: Data posted onchain is permanent and public. Always review before submitting.
           </span>
 
-          <div className="flex items-center gap-2.5">
-            <span className="font-mono-bold text-[10px] text-[#FFFDF0]/70 uppercase tracking-widest">
+          <div className="flex items-center gap-3">
+            <span className="font-mono-bold text-[11px] text-[#FFFDF0]/85 uppercase tracking-widest">
               Contact us
             </span>
             <a
               href="https://x.com/wantdotfun"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Contact us on X (@wantdotfun)"
-              title="@wantdotfun on X"
-              className="w-8 h-8 rounded-lg bg-[#FFFDF0]/10 hover:bg-[#FFE600] text-[#FFFDF0] hover:text-[#111] border border-[#FFFDF0]/25 hover:border-[#111] flex items-center justify-center transition-all hover:-translate-y-0.5 cursor-pointer"
+              aria-label="Contact us on X"
+              title="Contact us on X"
+              className="w-9 h-9 rounded-xl bg-white hover:bg-[#FFE600] text-[#111] border-[2px] border-[#111] shadow-[2px_2px_0_#FFE600] hover:shadow-[3px_3px_0_#FF3E9A] flex items-center justify-center transition-all hover:-translate-y-0.5 cursor-pointer"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
               </svg>
             </a>

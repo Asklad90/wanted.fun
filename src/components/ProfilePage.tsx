@@ -905,35 +905,49 @@ export function ProfilePage({ address, onBack, onSelectBounty, onCreateBounty, o
       {/* ── Wallet window (own profile only) ───────────────────────────────── */}
       {isOwn && (
         <WindowCard title="WALLET.EXE" titleBarColor="#C6F23A" bodyClassName="flex flex-col gap-4">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-2">
-              <CoinIcon size={32} />
-              <div>
-                <p className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/50">USDC Balance</p>
-                <p className="font-heading text-[28px] font-extrabold tabular-nums text-[#111]">{formatUsdc(balance)} <span className="text-[16px]">USDC</span></p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div className="dark-grid-surface bg-[#111] border-[2.5px] border-[#111] rounded-xl p-4 flex items-center gap-3.5 text-white shadow-hard-sm">
+              <div className="w-11 h-11 rounded-xl bg-[#FFE600] border-[2px] border-[#111] flex items-center justify-center shrink-0">
+                <CoinIcon size={26} />
+              </div>
+              <div className="flex flex-col">
+                <p className="font-mono-bold text-[10px] uppercase tracking-widest text-white/60">Available Balance</p>
+                <p className="font-heading text-[26px] font-extrabold tabular-nums text-[#FFE600] leading-none">
+                  {formatUsdc(balance)} <span className="text-[14px] text-white/80">USDC</span>
+                </p>
               </div>
             </div>
-            {hasPosted && (
-              <div className="flex items-center gap-2">
-                <LockIcon size={28} />
-                <div>
-                  <p className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/50">In Escrow</p>
-                  <p className="font-heading text-[20px] font-extrabold tabular-nums text-[#111]">{formatUsdc(escrowTotal)} <span className="text-[13px]">USDC</span></p>
+
+            <div className="bg-white border-[2.5px] border-[#111] rounded-xl p-4 flex items-center justify-between gap-3 shadow-hard-sm">
+              {hasPosted ? (
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#7FF3F0] border-[2px] border-[#111] flex items-center justify-center shrink-0">
+                    <LockIcon size={20} />
+                  </div>
+                  <div>
+                    <p className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/55">Locked in Escrow</p>
+                    <p className="font-heading text-[22px] font-extrabold tabular-nums text-[#111] leading-none">{formatUsdc(escrowTotal)} <span className="text-[12px]">USDC</span></p>
+                  </div>
                 </div>
+              ) : (
+                <div className="flex flex-col">
+                  <span className="font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/55">Quick Transfer</span>
+                  <span className="font-mono-ui text-[11px] text-[#111]/70">Deposit or withdraw USDC on Arc</span>
+                </div>
+              )}
+              <div className="flex gap-2 ml-auto shrink-0">
+                <button onClick={() => setShowReceive(true)} className="font-mono-bold text-[11px] uppercase tracking-widest bg-[#7FF3F0] hover:bg-[#FFE600] border-[2.5px] border-[#111] rounded-full px-3.5 py-2 shadow-hard-xs btn-press cursor-pointer transition-colors">Receive</button>
+                <button onClick={() => setShowSend(true)} className="font-mono-bold text-[11px] uppercase tracking-widest bg-[#FFE600] hover:bg-[#111] hover:text-[#FFE600] border-[2.5px] border-[#111] rounded-full px-3.5 py-2 shadow-hard-xs btn-press cursor-pointer transition-colors">Send →</button>
               </div>
-            )}
-            <div className="flex gap-2 ml-auto">
-              <button onClick={() => setShowReceive(true)} className="font-mono-bold text-[12px] uppercase tracking-widest bg-[#7FF3F0] border-[3px] border-[#111] rounded-full px-4 py-2.5 shadow-hard-sm btn-press cursor-pointer">Receive</button>
-              <button onClick={() => setShowSend(true)} className="font-mono-bold text-[12px] uppercase tracking-widest bg-[#FFE600] border-[3px] border-[#111] rounded-full px-4 py-2.5 shadow-hard-sm btn-press cursor-pointer">Send →</button>
             </div>
           </div>
           {hasPosted && (balance + escrowTotal) > 0n && (
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center justify-between font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/50">
-                <span>Escrow usage</span>
+            <div className="flex flex-col gap-1.5 bg-white border-[2px] border-[#111] rounded-xl p-3 shadow-hard-xs">
+              <div className="flex items-center justify-between font-mono-bold text-[10px] uppercase tracking-widest text-[#111]/70">
+                <span>Active Escrow Allocation</span>
                 <span>{formatUsdc(escrowTotal)} / {formatUsdc(balance + escrowTotal)} USDC</span>
               </div>
-              <div className="h-2.5 rounded-full border-[2px] border-[#111] bg-[#FFFDF0] overflow-hidden">
+              <div className="h-3 rounded-full border-[2px] border-[#111] bg-[#FFFDF0] overflow-hidden">
                 <div
                   className="h-full bg-[#FF3E9A]"
                   style={{ width: `${Math.min(100, Number((escrowTotal * 100n) / (balance + escrowTotal)))}%` }}
@@ -941,7 +955,7 @@ export function ProfilePage({ address, onBack, onSelectBounty, onCreateBounty, o
               </div>
             </div>
           )}
-          <p className="font-mono-ui text-[10px] uppercase tracking-widest text-[#111]/40">Your connected wallet is your Want.fun wallet. Keys never leave your wallet app.</p>
+          <p className="font-mono-ui text-[10px] uppercase tracking-widest text-[#111]/50">Your connected wallet is your Want.fun wallet. Keys never leave your wallet app.</p>
         </WindowCard>
       )}
 
@@ -1021,51 +1035,57 @@ function BountyList({ ids, profileAddr, onSelect, emptyMsg, tabMode, onBrowseWal
   if (ids.length === 0) {
     if (tabMode === 'participating') {
       return (
-        <div className="checkerboard rounded-lg py-10 flex flex-col items-center justify-center gap-3 text-center px-4">
-          <span className="font-mono-bold text-[13px] uppercase tracking-wider text-[#111] bg-[#FFFDF0] border-[2px] border-[#111] px-3 py-1.5 rounded-lg shadow-hard-sm">
-            No active submissions yet
-          </span>
-          <p className="font-mono-ui text-[11px] text-[#111]/70 max-w-sm">
-            Hunt open bounties on the wall, submit proof of work, and earn USDC directly to your wallet.
-          </p>
-          {onBrowseWall && (
-            <button
-              onClick={onBrowseWall}
-              className="font-mono-bold text-[11px] uppercase tracking-widest bg-[#FFE600] border-[2px] border-[#111] px-4 py-2 rounded-full shadow-hard-sm hover:shadow-hard btn-press cursor-pointer mt-1"
-            >
-              Browse Open Bounties →
-            </button>
-          )}
+        <div className="checkerboard rounded-xl p-6 border-[2.5px] border-[#111] flex flex-col items-center justify-center text-center">
+          <div className="bg-white border-[2.5px] border-[#111] rounded-2xl p-5 shadow-hard-sm flex flex-col items-center gap-2.5 max-w-sm">
+            <span className="font-mono-bold text-[12px] uppercase tracking-wider text-[#111] bg-[#FFE600] border-[2px] border-[#111] px-3 py-1 rounded-full shadow-hard-xs">
+              No active submissions yet
+            </span>
+            <p className="font-mono-ui text-[11px] text-[#111]/75">
+              Hunt open bounties on the wall, submit proof of work, and earn USDC directly to your wallet.
+            </p>
+            {onBrowseWall && (
+              <button
+                onClick={onBrowseWall}
+                className="font-mono-bold text-[11px] uppercase tracking-widest bg-[#111] text-[#FFE600] hover:bg-[#FFE600] hover:text-[#111] border-[2px] border-[#111] px-4 py-2 rounded-full shadow-hard-xs transition-colors btn-press cursor-pointer mt-1"
+              >
+                Browse Open Bounties →
+              </button>
+            )}
+          </div>
         </div>
       )
     }
 
     if (tabMode === 'posted') {
       return (
-        <div className="checkerboard rounded-lg py-10 flex flex-col items-center justify-center gap-3 text-center px-4">
-          <span className="font-mono-bold text-[13px] uppercase tracking-wider text-[#111] bg-[#FFFDF0] border-[2px] border-[#111] px-3 py-1.5 rounded-lg shadow-hard-sm">
-            No bounties created yet
-          </span>
-          <p className="font-mono-ui text-[11px] text-[#111]/70 max-w-sm">
-            Put your tasks onchain with automated USDC escrow and let the world build for you.
-          </p>
-          {onCreateBounty && (
-            <button
-              onClick={onCreateBounty}
-              className="font-mono-bold text-[11px] uppercase tracking-widest bg-[#FF3E9A] text-white border-[2px] border-[#111] px-4 py-2 rounded-full shadow-hard-sm hover:shadow-hard btn-press cursor-pointer mt-1"
-            >
-              Post a Bounty →
-            </button>
-          )}
+        <div className="checkerboard rounded-xl p-6 border-[2.5px] border-[#111] flex flex-col items-center justify-center text-center">
+          <div className="bg-white border-[2.5px] border-[#111] rounded-2xl p-5 shadow-hard-sm flex flex-col items-center gap-2.5 max-w-sm">
+            <span className="font-mono-bold text-[12px] uppercase tracking-wider text-white bg-[#FF3E9A] border-[2px] border-[#111] px-3 py-1 rounded-full shadow-hard-xs">
+              No bounties created yet
+            </span>
+            <p className="font-mono-ui text-[11px] text-[#111]/75">
+              Put your tasks onchain with automated USDC escrow and let the world build for you.
+            </p>
+            {onCreateBounty && (
+              <button
+                onClick={onCreateBounty}
+                className="font-mono-bold text-[11px] uppercase tracking-widest bg-[#FFE600] text-[#111] hover:bg-[#111] hover:text-[#FFE600] border-[2px] border-[#111] px-4 py-2 rounded-full shadow-hard-xs transition-colors btn-press cursor-pointer mt-1"
+              >
+                Post a Bounty →
+              </button>
+            )}
+          </div>
         </div>
       )
     }
 
     return (
-      <div className="checkerboard rounded-lg py-8 flex flex-col items-center justify-center gap-2 text-center px-4">
-        <span className="font-mono-bold text-[12px] uppercase tracking-widest text-[#111] bg-[#FFFDF0] border-[2px] border-[#111] px-3 py-1.5 rounded-lg shadow-hard-sm">
-          {emptyMsg}
-        </span>
+      <div className="checkerboard rounded-xl p-6 border-[2.5px] border-[#111] flex flex-col items-center justify-center text-center">
+        <div className="bg-white border-[2.5px] border-[#111] rounded-2xl px-5 py-4 shadow-hard-sm">
+          <span className="font-mono-bold text-[12px] uppercase tracking-widest text-[#111]">
+            {emptyMsg}
+          </span>
+        </div>
       </div>
     )
   }
