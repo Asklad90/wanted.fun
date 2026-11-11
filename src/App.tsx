@@ -457,19 +457,6 @@ export default function App() {
           </div>
 
           <div className="font-mono-ui text-[11px] text-[#FFFDF0]/80 flex items-center gap-3 flex-wrap justify-center md:justify-end">
-            <a
-              href="https://x.com/wantdotfun"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white text-[#111] border-[2px] border-white shadow-[2px_2px_0_#FF3E9A] hover:bg-[#FFE600] hover:border-[#FFE600] transition-colors font-mono-bold text-[11px] cursor-pointer"
-              title="Follow @wantdotfun on X"
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-              </svg>
-              <span>@wantdotfun</span>
-            </a>
-            <span className="text-[#FFFDF0]/30">·</span>
             <button
               onClick={() => goTo('wall')}
               className="text-[#FFFDF0]/80 hover:text-[#FFE600] transition-colors font-mono-ui font-bold uppercase cursor-pointer"
@@ -505,13 +492,28 @@ export default function App() {
             )}
           </div>
         </div>
-        <div className="max-w-[1280px] mx-auto mt-3 pt-3 border-t border-[#FFFDF0]/10 flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
+        <div className="max-w-[1280px] mx-auto mt-4 pt-3.5 border-t border-[#FFFDF0]/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
           <span className="font-mono-ui text-[10px] text-[#FFFDF0]/60 uppercase tracking-wider">
             Notice: Data posted onchain is permanent and public. Always review before submitting.
           </span>
-          <span className="font-mono-ui text-[10px] text-[#FFFDF0]/60 uppercase tracking-wider">
-            Official X: <a href="https://x.com/wantdotfun" target="_blank" rel="noopener noreferrer" className="text-[#FFE600] hover:underline font-bold">@wantdotfun</a> · 100% Upfront Escrow · Zero Platform Fee
-          </span>
+
+          <div className="flex items-center gap-2.5">
+            <span className="font-mono-bold text-[10px] text-[#FFFDF0]/70 uppercase tracking-widest">
+              Contact us
+            </span>
+            <a
+              href="https://x.com/wantdotfun"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Contact us on X (@wantdotfun)"
+              title="@wantdotfun on X"
+              className="w-8 h-8 rounded-lg bg-[#FFFDF0]/10 hover:bg-[#FFE600] text-[#FFFDF0] hover:text-[#111] border border-[#FFFDF0]/25 hover:border-[#111] flex items-center justify-center transition-all hover:-translate-y-0.5 cursor-pointer"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+              </svg>
+            </a>
+          </div>
         </div>
       </footer>
     </div>
