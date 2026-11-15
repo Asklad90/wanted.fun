@@ -8,6 +8,13 @@
 
 import { getWalletClient } from '@wagmi/core'
 import { config } from '../config'
+import {
+  getFallbackExternalBounties,
+  handleToPseudoAddress,
+  type ExternalBounty,
+} from './external-bounties-seed'
+
+export { handleToPseudoAddress, type ExternalBounty }
 
 // ── Auth helpers ─────────────────────────────────────────────────────────────
 
@@ -321,4 +328,59 @@ export async function saveProfile(
   } catch {
     return { ok: false, error: 'Network error saving profile' }
   }
+}
+
+// ── External Bounties (Curated / Scanned from outside Want.fun) ─────────────
+
+/**
+ * Fetch 10–20 live guaranteed external bounties.
+ * Falls back to the built-in curated list if the local backend is offline.
+ */
+export async function fetchExternalBounties(): Promise<ExternalBounty[]> {
+  try {
+    const res = await fetch('/api/external-bounties')
+    if (!res.ok) return getFallbackExternalBounties()
+    const data = (await res.json()) as { bounties?: ExternalBounty[] }
+    if (Array.isArray(data.bounties) && data.bounties.length > 0) {
+      return data.bounties
+    }
+    return getFallbackExternalBounties()
+  } catch {
+    return getFallbackExternalBounties()
+  }
+}
+
+/**
+ * Fetch a single external bounty by its ID (e.g. `ext-circle-cctp-widget`).
+ */
+export async function fetchSingleExternalBounty(id: string): Promise<ExternalBounty | null> {
+  try {
+    const res = await fetch(`/api/external-bounties?id=${encodeURIComponent(id)}`)
+    if (res.ok) {
+      const data = (await res.json()) as { bounty?: ExternalBounty }
+      if (data.bounty) return data.bounty
+    }
+  } catch {
+    // fall through to local lookup
+  }
+  const fallback = getFallbackExternalBounties()
+  return fallback.find(b => b.id === id) ?? null
+}
+
+/**
+ * Trigger a live scan/sync of external bounties.
+ */
+export async function syncExternalBounties(): Promise<{ bounties: ExternalBounty[]; source?: string }> {
+  try {
+    const res = await fetch('/api/external-bounties', { method: 'POST' })
+    if (res.ok) {
+      const data = (await res.json()) as { bounties?: ExternalBounty[]; source?: string }
+      if (Array.isArray(data.bounties) && data.bounties.length > 0) {
+        return { bounties: data.bounties, source: data.source }
+      }
+    }
+  } catch {
+    // fall through
+  }
+  return { bounties: getFallbackExternalBounties(), source: 'curated-feed' }
 }

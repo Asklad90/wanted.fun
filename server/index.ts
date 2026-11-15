@@ -6,6 +6,7 @@
 
 import { Database } from 'bun:sqlite'
 import path from 'path'
+import { scanLiveGuaranteedBounties, type ScannedExternalBounty } from '../api/_x-scanner'
 
 const DB_PATH = path.join(import.meta.dir, '..', 'data', 'submissions.db')
 
@@ -36,6 +37,24 @@ db.exec(`
     bounty_id TEXT NOT NULL,
     content TEXT NOT NULL,
     sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL DEFAULT (unixepoch())
+  );
+  CREATE TABLE IF NOT EXISTS external_bounties (
+    id TEXT PRIMARY KEY,
+    tweet_id TEXT UNIQUE NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    reward_usdc INTEGER NOT NULL,
+    reward_label TEXT NOT NULL DEFAULT 'USDC',
+    max_winners INTEGER NOT NULL DEFAULT 1,
+    deadline INTEGER NOT NULL,
+    poster_handle TEXT NOT NULL,
+    poster_name TEXT NOT NULL,
+    verified_source TEXT NOT NULL,
+    tweet_url TEXT NOT NULL,
+    participation_url TEXT NOT NULL,
+    category TEXT NOT NULL DEFAULT 'dev',
+    requirements_summary TEXT NOT NULL DEFAULT '',
     created_at INTEGER NOT NULL DEFAULT (unixepoch())
   );
 `)
@@ -69,6 +88,56 @@ const stmtDeleteExamples = db.prepare('DELETE FROM bounty_examples WHERE bounty_
 const stmtInsertExample = db.prepare(
   'INSERT INTO bounty_examples (bounty_id, content, sort_order) VALUES (?, ?, ?)'
 )
+const stmtUpsertExternalBounty = db.prepare(`
+  INSERT INTO external_bounties (
+    id, tweet_id, title, description, reward_usdc, reward_label,
+    max_winners, deadline, poster_handle, poster_name, verified_source,
+    tweet_url, participation_url, category, requirements_summary, created_at
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  ON CONFLICT(id) DO UPDATE SET
+    title = excluded.title,
+    description = excluded.description,
+    reward_usdc = excluded.reward_usdc,
+    reward_label = excluded.reward_label,
+    max_winners = excluded.max_winners,
+    deadline = excluded.deadline,
+    poster_handle = excluded.poster_handle,
+    poster_name = excluded.poster_name,
+    verified_source = excluded.verified_source,
+    tweet_url = excluded.tweet_url,
+    participation_url = excluded.participation_url,
+    category = excluded.category,
+    requirements_summary = excluded.requirements_summary
+`)
+const stmtGetActiveExternalBounties = db.prepare<ScannedExternalBounty, [number]>(
+  'SELECT * FROM external_bounties WHERE deadline > ? ORDER BY reward_usdc DESC, deadline ASC LIMIT 20'
+)
+const stmtGetSingleExternalBounty = db.prepare<ScannedExternalBounty, [string]>(
+  'SELECT * FROM external_bounties WHERE id = ? LIMIT 1'
+)
+
+function saveExternalBountiesToSqlite(bounties: ScannedExternalBounty[]) {
+  for (const b of bounties) {
+    stmtUpsertExternalBounty.run(
+      b.id,
+      b.tweet_id,
+      b.title,
+      b.description,
+      b.reward_usdc,
+      b.reward_label,
+      b.max_winners,
+      b.deadline,
+      b.poster_handle,
+      b.poster_name,
+      b.verified_source,
+      b.tweet_url,
+      b.participation_url,
+      b.category,
+      b.requirements_summary,
+      b.created_at,
+    )
+  }
+}
 
 // ── CORS headers ─────────────────────────────────────────────────────────────
 // In local dev the frontend is on the same Vite dev server (proxied), so
@@ -246,6 +315,43 @@ const server = Bun.serve({
     }
 
     if (visMatch) return err('Method not allowed', 405, origin)
+
+    // GET / POST /api/external-bounties — live external bounties scanner & feed
+    if (pathname === '/api/external-bounties') {
+      const nowSec = Math.floor(Date.now() / 1000)
+      const isSync = req.method === 'POST' || url.searchParams.get('sync') === '1'
+      if (isSync) {
+        if (isRateLimited(`extsync:${ip}`, 10, 5 * 60 * 1000)) return err('Too many sync requests', 429, origin)
+        const { bounties: scanned, source } = await scanLiveGuaranteedBounties()
+        saveExternalBountiesToSqlite(scanned)
+        const active = stmtGetActiveExternalBounties.all(nowSec)
+        return json({ ok: true, source, bounties: active, synced_at: nowSec }, 200, origin)
+      }
+
+      if (req.method === 'GET') {
+        if (isRateLimited(`extget:${ip}`, 60, 60 * 1000)) return err('Too many requests', 429, origin)
+        const singleId = url.searchParams.get('id')
+        if (singleId) {
+          let row = stmtGetSingleExternalBounty.get(singleId)
+          if (!row) {
+            const { bounties: scanned } = await scanLiveGuaranteedBounties()
+            saveExternalBountiesToSqlite(scanned)
+            row = stmtGetSingleExternalBounty.get(singleId)
+          }
+          if (!row) return err('External bounty not found', 404, origin)
+          return json({ bounty: row }, 200, origin)
+        }
+
+        let active = stmtGetActiveExternalBounties.all(nowSec)
+        if (active.length < 10) {
+          const { bounties: scanned } = await scanLiveGuaranteedBounties()
+          saveExternalBountiesToSqlite(scanned)
+          active = stmtGetActiveExternalBounties.all(nowSec)
+        }
+        return json({ bounties: active, synced_at: nowSec }, 200, origin)
+      }
+      return err('Method not allowed', 405, origin)
+    }
 
     // Health check
     if (pathname === '/api/health' && req.method === 'GET') {

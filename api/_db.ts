@@ -121,6 +121,26 @@ export function ensureSchema(): Promise<void> {
       await pool.sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS website TEXT`
       await pool.sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS created_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM NOW())::BIGINT`
       await pool.sql`UPDATE profiles SET created_at = EXTRACT(EPOCH FROM NOW())::BIGINT WHERE created_at IS NULL OR created_at = 0`
+      await pool.sql`
+        CREATE TABLE IF NOT EXISTS external_bounties (
+          id TEXT PRIMARY KEY,
+          tweet_id TEXT UNIQUE NOT NULL,
+          title TEXT NOT NULL,
+          description TEXT NOT NULL,
+          reward_usdc BIGINT NOT NULL,
+          reward_label TEXT NOT NULL DEFAULT 'USDC',
+          max_winners INTEGER NOT NULL DEFAULT 1,
+          deadline BIGINT NOT NULL,
+          poster_handle TEXT NOT NULL,
+          poster_name TEXT NOT NULL,
+          verified_source TEXT NOT NULL,
+          tweet_url TEXT NOT NULL,
+          participation_url TEXT NOT NULL,
+          category TEXT NOT NULL DEFAULT 'dev',
+          requirements_summary TEXT NOT NULL DEFAULT '',
+          created_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM NOW())::BIGINT
+        )
+      `
     })().catch((e) => {
       schemaReady = null // allow retry on next request
       throw e

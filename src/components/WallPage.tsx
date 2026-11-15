@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { useReadContract } from 'wagmi'
-import { BountyCard, BountyData } from './BountyCard'
+import { toast } from 'sonner'
+import { BountyCard, ExternalBountyCard, BountyData } from './BountyCard'
 import { SkeletonBountyCard } from './Skeleton'
 import { WindowCard } from './WindowCard'
 import { PillButton } from './PillButton'
 import { StatusTag } from './StatusTag'
 import { LoadingBar } from './LoadingBar'
 import { PixelAvatar } from './PixelAvatar'
-import { TrophyIcon, CoinIcon, ClockIcon, ArrowRightIcon, LockIcon } from './Icons'
+import { TrophyIcon, CoinIcon, ClockIcon, ArrowRightIcon, LockIcon, GlobeIcon } from './Icons'
 import { TrophyBigIcon, NotepadIcon, UsdcCoinIcon } from './StatIcons'
 import { AnimatedCounter } from './AnimatedCounter'
 import { MyBounties, MySubmissions } from './MyBounties'
@@ -16,9 +17,16 @@ import { BOUNTY_BOARD_ABI } from '../bounty-abi'
 import { CHAIN_ID, CONTRACT_ADDRESS, CONTRACT_DEPLOYED } from '../bounty-config'
 import { barColor, formatUsdc, formatAddress, timeLeft, bountyStatus, decodeBytes } from '../lib/utils'
 import type { BountyStatusType } from '../lib/utils'
+import {
+  fetchExternalBounties,
+  syncExternalBounties,
+  handleToPseudoAddress,
+  type ExternalBounty,
+} from '../lib/submissions-api'
 
 type Tab = 'wall' | 'my-bounties' | 'my-submissions'
 type StatusFilter = 'all' | 'open' | 'full' | 'ended'
+type SourceFilter = 'all' | 'native' | 'external'
 
 const TAB_LABELS: { id: Tab; label: string; color: string }[] = [
   { id: 'wall',            label: 'BOUNTY WALL',    color: '#FFE600' },
@@ -33,6 +41,12 @@ const FILTERS: { id: StatusFilter; label: string }[] = [
   { id: 'ended', label: 'Ended' },
 ]
 
+const SOURCE_FILTERS: { id: SourceFilter; label: string }[] = [
+  { id: 'all',      label: 'All Bounties' },
+  { id: 'native',   label: 'Want.fun Escrow' },
+  { id: 'external', label: 'External Bounties' },
+]
+
 function matchesFilter(status: BountyStatusType, filter: StatusFilter): boolean {
   if (filter === 'all') return true
   if (filter === 'open') return status === 'OPEN'
@@ -42,6 +56,7 @@ function matchesFilter(status: BountyStatusType, filter: StatusFilter): boolean 
 
 interface WallPageProps {
   onSelectBounty: (id: bigint) => void
+  onSelectExternalBounty: (id: string) => void
   onCreateBounty: () => void
   refreshKey: number
 }
@@ -206,6 +221,136 @@ function WallBountyCard({ bounty, onClick }: { bounty: BountyData; onClick: () =
   )
 }
 
+// ─── Desktop wall card for External / Outside Bounties ──────────────────────
+function WallExternalBountyCard({
+  bounty,
+  index,
+  onClick,
+}: {
+  bounty: ExternalBounty
+  index: number
+  onClick: () => void
+}) {
+  const [spotlight, setSpotlight] = useState<{ x: number; y: number; opacity: number }>({ x: 0, y: 0, opacity: 0 })
+  const deadlineSec = Number(bounty.deadline)
+  const isExpired = _wallNowSec() > deadlineSec
+  const status: BountyStatusType = isExpired ? 'EXPIRED' : 'OPEN'
+  const rewardBig = BigInt(bounty.reward_usdc)
+  const maxWinnersNum = Number(bounty.max_winners) || 1
+  const totalPoolBig = rewardBig * BigInt(maxWinnersNum)
+  const pseudoAddress = handleToPseudoAddress(bounty.poster_handle)
+  const accentColor = barColor(index + 2)
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    setSpotlight({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+      opacity: 1,
+    })
+  }
+
+  const handleMouseLeave = () => {
+    setSpotlight(s => ({ ...s, opacity: 0 }))
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      className="group relative overflow-hidden text-left w-full h-full flex flex-col rounded-xl border-[3px] border-[#111] bg-[#FFFDF0] shadow-hard-sm transition-all duration-150 hover:shadow-[7px_7px_0_#111] hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0_#111] cursor-pointer"
+    >
+      {/* Top accent bar */}
+      <div
+        className="w-full px-3.5 py-2 border-b-[2.5px] border-[#111] flex items-center justify-between gap-2"
+        style={{
+          backgroundColor: accentColor,
+          boxShadow: 'inset 0 2px 0 rgba(255,255,255,0.45)',
+        }}
+      >
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="inline-flex items-center gap-1 font-mono-bold text-[9.5px] uppercase tracking-wider text-[#111] bg-[#7FF3F0] px-2 py-0.5 rounded border-[1.5px] border-[#111]">
+            <GlobeIcon size={10} />
+            EXTERNAL
+          </span>
+          <StatusTag status={status} />
+        </div>
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/90 border-[1.5px] border-[#111] text-[#111]">
+          <ClockIcon size={11} />
+          <span className="font-mono-bold text-[10px] uppercase tracking-wider">{timeLeft(deadlineSec)}</span>
+        </span>
+      </div>
+
+      {/* Interactive cursor spotlight sheen */}
+      <div
+        className="pointer-events-none absolute inset-0 transition-opacity duration-300"
+        style={{
+          opacity: spotlight.opacity,
+          background: `radial-gradient(240px circle at ${spotlight.x}px ${spotlight.y}px, rgba(127, 243, 240, 0.22), transparent 70%)`,
+        }}
+        aria-hidden="true"
+      />
+
+      <div className="relative z-10 p-4 flex flex-col gap-2.5 flex-1">
+        <h3 className="font-heading text-[18px] font-extrabold leading-tight text-[#111] line-clamp-2 group-hover:underline decoration-2 underline-offset-2">
+          {bounty.title}
+        </h3>
+
+        <p className="font-mono-ui text-[11.5px] leading-relaxed text-[#111]/75 line-clamp-2">
+          {bounty.description}
+        </p>
+
+        <div className="mt-auto flex flex-col gap-2.5 pt-2">
+          {/* Reward block */}
+          <div className="rounded-xl border-[2px] border-[#111] bg-white p-3 shadow-[2px_2px_0_#111] flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5">
+              <UsdcCoinIcon size={22} />
+              <div className="flex items-baseline gap-1">
+                <span className="font-heading text-[20px] font-extrabold tabular-nums text-[#111] leading-none">
+                  ${formatUsdc(rewardBig)}
+                </span>
+                <span className="font-mono-bold text-[9px] uppercase tracking-wider text-[#111]/60">
+                  {bounty.reward_label} / win
+                </span>
+              </div>
+            </div>
+            <span className="inline-flex items-center gap-1 bg-[#FFE600] border-[1.5px] border-[#111] rounded-full px-2 py-0.5 font-mono-bold text-[9px] uppercase tracking-wider text-[#111]">
+              ${formatUsdc(totalPoolBig)} pool · {maxWinnersNum} slot{maxWinnersNum !== 1 ? 's' : ''}
+            </span>
+          </div>
+
+          {/* Subtle notice that this bounty was not launched on Want.fun */}
+          <div className="rounded-lg border-[1.5px] border-[#111]/25 bg-white/80 px-2.5 py-1.5 flex items-center justify-between gap-2">
+            <span className="font-mono-ui text-[9.5px] text-[#111]/75 truncate">
+              Not launched on Want.fun · View-only
+            </span>
+            <span className="font-mono-bold text-[9px] uppercase tracking-wider text-[#111] bg-[#7FF3F0]/60 px-1.5 py-0.5 rounded border border-[#111]/30 shrink-0">
+              {bounty.verified_source}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between gap-2 border-t-[2px] border-[#111]/12 pt-2.5">
+            <span className="flex items-center gap-2 min-w-0">
+              <span className="inline-flex shrink-0 rounded-full overflow-hidden border-[2px] border-[#111]">
+                <PixelAvatar address={pseudoAddress} size={24} />
+              </span>
+              <span className="flex flex-col min-w-0">
+                <span className="font-mono-bold text-[10px] text-[#111] truncate">@{bounty.poster_handle}</span>
+                <span className="font-mono-ui text-[9px] text-[#111]/60 truncate">{bounty.poster_name}</span>
+              </span>
+            </span>
+            <span className="inline-flex items-center gap-1 shrink-0 font-mono-bold text-[10px] uppercase text-[#111] bg-[#7FF3F0] border-[1.5px] border-[#111] rounded-full px-2.5 py-1 shadow-[2px_2px_0_#111] group-hover:translate-x-0.5 transition-transform">
+              View Only <ArrowRightIcon size={10} />
+            </span>
+          </div>
+        </div>
+      </div>
+    </button>
+  )
+}
+
 interface BountyItemProps {
   bountyId: bigint
   index: number
@@ -269,9 +414,22 @@ function BountyItem({ bountyId, index, onSelect, filter, query, onReport }: Boun
   )
 }
 
-function BountyGrid({ total, onSelectBounty, filter, query, onResetFilters, onAllHiddenChange }: {
+function BountyGrid({
+  total,
+  externalBounties,
+  sourceFilter,
+  onSelectBounty,
+  onSelectExternalBounty,
+  filter,
+  query,
+  onResetFilters,
+  onAllHiddenChange,
+}: {
   total: number
+  externalBounties: ExternalBounty[]
+  sourceFilter: SourceFilter
   onSelectBounty: (id: bigint) => void
+  onSelectExternalBounty: (id: string) => void
   filter: StatusFilter
   query: string
   onResetFilters: () => void
@@ -292,36 +450,80 @@ function BountyGrid({ total, onSelectBounty, filter, query, onResetFilters, onAl
   }, [filterKey])
 
   const allAgedReported = ids.length > 0 && ids.every(id => agedOffMap[id.toString()] !== undefined)
-  // A wall is only "all hidden" (swapping to the "Be the first to post a bounty" card)
-  // if every single bounty has aged off (>3 days past deadline), completely independent of filter/search!
   const allHidden = allAgedReported && ids.every(id => agedOffMap[id.toString()] === true)
   const activeCount = allAgedReported
     ? ids.filter(id => activeMap[id.toString()] === true).length
     : Math.max(0, total - Object.values(agedOffMap).filter(Boolean).length)
 
-  const allFilterReported = ids.length > 0 && ids.every(id => visibleMap[`${filterKey}::${id.toString()}`] !== undefined)
-  const noMatches = allFilterReported && ids.every(id => visibleMap[`${filterKey}::${id.toString()}`] === false)
-  const noActiveFilter = filter === 'all' && query.trim() === ''
-
   useEffect(() => {
     onAllHiddenChange(allHidden, activeCount)
   }, [allHidden, activeCount, onAllHiddenChange])
 
-  if (allHidden) return null
+  const showNative = sourceFilter !== 'external'
+  const showExternal = sourceFilter !== 'native'
+
+  const nowSec = _wallNowSec()
+  const q = query.trim().toLowerCase()
+  const visibleExternal = showExternal
+    ? externalBounties.filter(b => {
+        const isExpired = nowSec > Number(b.deadline)
+        const status: BountyStatusType = isExpired ? 'EXPIRED' : 'OPEN'
+        if (!matchesFilter(status, filter)) return false
+        if (!q) return true
+        const hay = `${b.title} ${b.description} ${b.poster_handle} ${b.poster_name} ${b.verified_source} ${b.category}`.toLowerCase()
+        return hay.includes(q)
+      })
+    : []
+
+  const allFilterReported = ids.length === 0 || ids.every(id => visibleMap[`${filterKey}::${id.toString()}`] !== undefined)
+  const noNativeMatches = !showNative || ids.length === 0 || (allFilterReported && ids.every(id => visibleMap[`${filterKey}::${id.toString()}`] === false))
+  const noMatches = noNativeMatches && visibleExternal.length === 0
+  const noActiveFilter = filter === 'all' && sourceFilter === 'all' && query.trim() === ''
+
+  if (allHidden && externalBounties.length === 0) return null
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 desk:grid-cols-2 xl:grid-cols-3 gap-4 items-stretch">
-      {ids.map((id, i) => (
-        <BountyItem
-          key={id.toString()}
-          bountyId={id}
-          index={i}
-          onSelect={onSelectBounty}
-          filter={filter}
-          query={query}
-          onReport={report}
-        />
-      ))}
+      {showNative &&
+        ids.map((id, i) => (
+          <BountyItem
+            key={id.toString()}
+            bountyId={id}
+            index={i}
+            onSelect={onSelectBounty}
+            filter={filter}
+            query={query}
+            onReport={report}
+          />
+        ))}
+      {showExternal &&
+        visibleExternal.map((ext, idx) => (
+          <motion.div
+            key={ext.id}
+            className="h-full"
+            custom={idx}
+            variants={cardVariants}
+            initial="hidden"
+            animate="visible"
+            whileHover={{ y: -3, transition: { duration: 0.15 } }}
+            whileTap={{ scale: 0.98, transition: { duration: 0.1 } }}
+          >
+            <div className="desk:hidden h-full">
+              <ExternalBountyCard
+                bounty={ext}
+                index={idx}
+                onClick={() => onSelectExternalBounty(ext.id)}
+              />
+            </div>
+            <div className="hidden desk:block h-full">
+              <WallExternalBountyCard
+                bounty={ext}
+                index={idx}
+                onClick={() => onSelectExternalBounty(ext.id)}
+              />
+            </div>
+          </motion.div>
+        ))}
       {noMatches && !noActiveFilter && (
         <div className="col-span-full rounded-2xl border-[3px] border-dashed border-[#111] bg-white py-12 px-4 flex flex-col items-center justify-center gap-3 text-center shadow-hard-xs">
           <span className="font-mono-bold text-[12px] uppercase tracking-widest text-[#111]/75">
@@ -340,11 +542,39 @@ function BountyGrid({ total, onSelectBounty, filter, query, onResetFilters, onAl
   )
 }
 
-export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshKey }: WallPageProps) {
+export function WallPage({ onSelectBounty, onSelectExternalBounty, onCreateBounty, refreshKey }: WallPageProps) {
   const [tab, setTab] = useState<Tab>('wall')
   const [filter, setFilter] = useState<StatusFilter>('all')
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all')
   const [query, setQuery] = useState('')
   const [hiddenSnapshot, setHiddenSnapshot] = useState<{ hidden: boolean; activeCount: number; totalBounties: number } | null>(null)
+  const [externalBounties, setExternalBounties] = useState<ExternalBounty[]>([])
+  const [syncingExternal, setSyncingExternal] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    fetchExternalBounties()
+      .then(list => {
+        if (!cancelled) setExternalBounties(list)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [refreshKey])
+
+  async function handleSyncExternal() {
+    setSyncingExternal(true)
+    try {
+      const res = await syncExternalBounties()
+      setExternalBounties(res.bounties)
+      toast.success(`Synced ${res.bounties.length} live external bounties!`)
+    } catch {
+      toast.error('Could not sync external bounties right now.')
+    } finally {
+      setSyncingExternal(false)
+    }
+  }
 
   const { data: totalBountiesRaw, isLoading: totalBountiesLoading } = useReadContract({
     address: CONTRACT_ADDRESS, abi: BOUNTY_BOARD_ABI, functionName: 'totalBounties',
@@ -509,7 +739,7 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
 
         {/* Bounty wall — only shown on wall tab */}
         {tab === 'wall' && (
-          !CONTRACT_DEPLOYED ? (
+          !CONTRACT_DEPLOYED && externalBounties.length === 0 ? (
             <WindowCard title="BOUNTIES.EXE" titleBarColor="#A78BFA">
               <div className="checkerboard rounded-lg py-16 flex flex-col items-center gap-4">
                 <TrophyIcon size={48} />
@@ -518,13 +748,13 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
                 </div>
               </div>
             </WindowCard>
-          ) : totalBountiesLoading ? (
+          ) : totalBountiesLoading && externalBounties.length === 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 desk:grid-cols-2 xl:grid-cols-3 gap-4">
               <SkeletonBountyCard />
               <SkeletonBountyCard />
               <SkeletonBountyCard />
             </div>
-          ) : totalBounties === 0 || allBountiesHidden ? (
+          ) : (totalBounties === 0 || allBountiesHidden) && externalBounties.length === 0 ? (
             <WindowCard title="BOUNTIES.EXE" titleBarColor="#A78BFA">
               <div className="checkerboard rounded-lg py-16 flex flex-col items-center gap-4">
                 <TrophyIcon size={48} />
@@ -538,12 +768,12 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
             <div className="border-[3px] border-[#111] rounded-2xl shadow-hard bg-[#FFFDF0] overflow-hidden">
               {/* Responsive toolbar: title, count, search */}
               <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 flex-wrap checkerboard border-b-[3px] border-[#111] px-4 sm:px-6 py-4 sm:py-5">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2.5 flex-wrap">
                   <span className="font-heading text-[18px] sm:text-[20px] font-extrabold uppercase tracking-wide text-[#111] bg-[#FFE600] border-[3px] border-[#111] shadow-hard-sm rounded-lg px-3.5 py-1">
                     Bounty Wall
                   </span>
                   <span className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111] bg-white/90 border-[2px] border-[#111] rounded-full px-3 py-1">
-                    {activeBountiesCount} active
+                    {activeBountiesCount} onchain · {externalBounties.length} external
                   </span>
                 </div>
 
@@ -577,8 +807,8 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
               </div>
 
               <div className="flex flex-col gap-5 p-4 sm:p-6">
-                {/* Filter pills — available on both mobile and desktop */}
-                <div className="flex items-center justify-between gap-2 flex-wrap">
+                {/* Filter pills + Source selector */}
+                <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div className="flex items-center gap-2 flex-wrap">
                     {FILTERS.map(f => {
                       const active = filter === f.id
@@ -598,25 +828,78 @@ export function WallPage({ onSelectBounty, onCreateBounty, refreshKey: _refreshK
                         </button>
                       )
                     })}
+
+                    <span className="hidden sm:inline-block h-5 w-[2px] bg-[#111]/20 mx-1" aria-hidden="true" />
+
+                    {SOURCE_FILTERS.map(sf => {
+                      const active = sourceFilter === sf.id
+                      return (
+                        <button
+                          key={sf.id}
+                          type="button"
+                          onClick={() => setSourceFilter(sf.id)}
+                          aria-pressed={active}
+                          className={`font-mono-bold text-[11px] uppercase tracking-wider text-[#111] px-3.5 py-1.5 rounded-full border-[2.5px] border-[#111] transition-all cursor-pointer ${
+                            active
+                              ? 'bg-[#7FF3F0] shadow-hard-sm -translate-y-0.5'
+                              : 'bg-white hover:bg-[#7FF3F0]/35'
+                          }`}
+                        >
+                          {sf.label}
+                        </button>
+                      )
+                    })}
                   </div>
-                  {(filter !== 'all' || query.trim() !== '') && (
+
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    {(filter !== 'all' || sourceFilter !== 'all' || query.trim() !== '') && (
+                      <button
+                        type="button"
+                        onClick={() => { setFilter('all'); setSourceFilter('all'); setQuery('') }}
+                        className="font-mono-bold text-[10px] uppercase tracking-wider text-[#111]/70 hover:text-[#111] underline underline-offset-2 cursor-pointer"
+                      >
+                        Reset filters
+                      </button>
+                    )}
+
                     <button
                       type="button"
-                      onClick={() => { setFilter('all'); setQuery('') }}
-                      className="font-mono-bold text-[10px] uppercase tracking-wider text-[#111]/70 hover:text-[#111] underline underline-offset-2 cursor-pointer"
+                      onClick={() => { void handleSyncExternal() }}
+                      disabled={syncingExternal}
+                      className="inline-flex items-center gap-1.5 font-mono-bold text-[10px] uppercase tracking-wider text-[#111] bg-white hover:bg-[#C6F23A] border-[2px] border-[#111] px-3 py-1.5 rounded-full shadow-hard-xs transition-colors btn-press cursor-pointer disabled:opacity-60"
+                      title="Scan & refresh live external bounties"
                     >
-                      Reset filters
+                      <GlobeIcon size={12} />
+                      <span>{syncingExternal ? 'Scanning…' : 'Sync External ↻'}</span>
                     </button>
-                  )}
+                  </div>
                 </div>
+
+                {/* Notice banner explaining External / Outside Bounties */}
+                {sourceFilter !== 'native' && externalBounties.length > 0 && (
+                  <div className="rounded-xl border-[2.5px] border-[#111] bg-[#7FF3F0]/30 px-3.5 py-2.5 shadow-hard-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-start sm:items-center gap-2.5">
+                      <span className="inline-flex items-center gap-1 font-mono-bold text-[9.5px] uppercase tracking-wider px-2 py-0.5 rounded bg-[#7FF3F0] border-[1.5px] border-[#111] text-[#111] shrink-0">
+                        <GlobeIcon size={10} />
+                        Outside Bounties
+                      </span>
+                      <span className="font-mono-ui text-[11px] text-[#111]/85 leading-snug">
+                        External bounties were <strong>not posted or launched on Want.fun</strong>. They are curated live opportunities shown in view-only mode with direct links to each bounty&apos;s official participation page.
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 <div className="desk:grid desk:grid-cols-[minmax(0,1fr)_272px] desk:gap-6 desk:items-start">
                   <BountyGrid
                     total={totalBounties}
+                    externalBounties={externalBounties}
+                    sourceFilter={sourceFilter}
                     onSelectBounty={onSelectBounty}
+                    onSelectExternalBounty={onSelectExternalBounty}
                     filter={filter}
                     query={query}
-                    onResetFilters={() => { setFilter('all'); setQuery('') }}
+                    onResetFilters={() => { setFilter('all'); setSourceFilter('all'); setQuery('') }}
                     onAllHiddenChange={handleAllHiddenChange}
                   />
                   <aside className="hidden desk:flex flex-col rounded-2xl border-[3px] border-[#111] bg-white shadow-hard overflow-hidden sticky top-24">

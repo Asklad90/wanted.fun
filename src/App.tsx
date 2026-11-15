@@ -4,6 +4,7 @@ import { useAccount } from 'wagmi'
 import { ConnectButton } from './components/ConnectButton'
 import { WallPage } from './components/WallPage'
 import { BountyPage } from './components/BountyPage'
+import { ExternalBountyPage } from './components/ExternalBountyPage'
 import { CreateBountyForm } from './components/CreateBountyForm'
 import { ProfilePage } from './components/ProfilePage'
 import { HowItWorksPage } from './components/HowItWorksPage'
@@ -13,23 +14,24 @@ import { ReactiveBackground } from './components/ReactiveBackground'
 import { CHAIN_NAME, CONTRACT_ADDRESS, CONTRACT_DEPLOYED, getAddressUrl } from './bounty-config'
 import { updatePageMeta } from './lib/meta'
 
-type View = 'wall' | 'bounty' | 'create' | 'profile' | 'how-it-works' | 'privacy' | 'not-found'
+type View = 'wall' | 'bounty' | 'external-bounty' | 'create' | 'profile' | 'how-it-works' | 'privacy' | 'not-found'
 
 interface ParsedRoute {
   view: View
   bountyId: bigint | null
+  externalBountyId: string | null
   profileAddr: `0x${string}` | null
 }
 
 function parseRoute(): ParsedRoute {
   if (typeof window === 'undefined') {
-    return { view: 'wall', bountyId: null, profileAddr: null }
+    return { view: 'wall', bountyId: null, externalBountyId: null, profileAddr: null }
   }
   const hash = window.location.hash.replace(/^#\/?/, '').trim()
   const pathname = window.location.pathname.replace(/^\//, '').trim()
   const clean = hash || pathname
   if (!clean || clean === 'wall') {
-    return { view: 'wall', bountyId: null, profileAddr: null }
+    return { view: 'wall', bountyId: null, externalBountyId: null, profileAddr: null }
   }
 
   const parts = clean.split('/')
@@ -39,37 +41,44 @@ function parseRoute(): ParsedRoute {
     if (parts[1]) {
       try {
         const id = BigInt(parts[1])
-        if (id > 0n) return { view: 'bounty', bountyId: id, profileAddr: null }
+        if (id > 0n) return { view: 'bounty', bountyId: id, externalBountyId: null, profileAddr: null }
       } catch {
         // not a valid bigint
       }
     }
-    return { view: 'not-found', bountyId: null, profileAddr: null }
+    return { view: 'not-found', bountyId: null, externalBountyId: null, profileAddr: null }
+  }
+
+  if (section === 'external' || section === 'x-bounty') {
+    if (parts[1]) {
+      return { view: 'external-bounty', bountyId: null, externalBountyId: decodeURIComponent(parts[1]), profileAddr: null }
+    }
+    return { view: 'not-found', bountyId: null, externalBountyId: null, profileAddr: null }
   }
 
   if (section === 'profile') {
     if (parts[1]) {
       const addr = parts[1].toLowerCase()
       if (/^0x[0-9a-f]{40}$/i.test(addr)) {
-        return { view: 'profile', bountyId: null, profileAddr: addr as `0x${string}` }
+        return { view: 'profile', bountyId: null, externalBountyId: null, profileAddr: addr as `0x${string}` }
       }
     }
-    return { view: 'not-found', bountyId: null, profileAddr: null }
+    return { view: 'not-found', bountyId: null, externalBountyId: null, profileAddr: null }
   }
 
   if (section === 'create') {
-    return { view: 'create', bountyId: null, profileAddr: null }
+    return { view: 'create', bountyId: null, externalBountyId: null, profileAddr: null }
   }
 
   if (section === 'how-it-works') {
-    return { view: 'how-it-works', bountyId: null, profileAddr: null }
+    return { view: 'how-it-works', bountyId: null, externalBountyId: null, profileAddr: null }
   }
 
   if (section === 'privacy') {
-    return { view: 'privacy', bountyId: null, profileAddr: null }
+    return { view: 'privacy', bountyId: null, externalBountyId: null, profileAddr: null }
   }
 
-  return { view: 'not-found', bountyId: null, profileAddr: null }
+  return { view: 'not-found', bountyId: null, externalBountyId: null, profileAddr: null }
 }
 
 interface ErrorBoundaryState {
@@ -145,6 +154,7 @@ export default function App() {
 
   const view = route.view
   const activeBountyId = route.bountyId
+  const activeExternalBountyId = route.externalBountyId
   const activeProfileAddr = route.profileAddr
 
   useEffect(() => {
@@ -191,6 +201,13 @@ export default function App() {
           canonicalPath: `#/bounty/${route.bountyId?.toString() || ''}`,
         })
         break
+      case 'external-bounty':
+        updatePageMeta({
+          title: 'External Bounty · View Only',
+          description: 'Curated external bounty on Want.fun (view-only with direct link to official participation page).',
+          canonicalPath: `#/external/${route.externalBountyId || ''}`,
+        })
+        break
       case 'profile':
         updatePageMeta({
           title: `Profile ${route.profileAddr ? route.profileAddr.slice(0, 6) + '...' + route.profileAddr.slice(-4) : ''}`,
@@ -215,6 +232,10 @@ export default function App() {
 
   const openBounty = useCallback((id: bigint) => {
     window.location.hash = `#/bounty/${id.toString()}`
+  }, [])
+
+  const openExternalBounty = useCallback((id: string) => {
+    window.location.hash = `#/external/${encodeURIComponent(id)}`
   }, [])
 
   const openProfile = useCallback((addr: `0x${string}`) => {
@@ -419,6 +440,10 @@ export default function App() {
               <PageView key={`bounty-${activeBountyId}`} narrow>
                 <BountyPage bountyId={activeBountyId} onBack={goBack} onDataChange={() => setRefreshKey(k => k + 1)} />
               </PageView>
+            ) : view === 'external-bounty' && activeExternalBountyId !== null ? (
+              <PageView key={`external-${activeExternalBountyId}`} narrow>
+                <ExternalBountyPage externalId={activeExternalBountyId} onBack={goBack} />
+              </PageView>
             ) : view === 'create' ? (
               <PageView key="create" narrow>
                 <div className="max-w-2xl mx-auto">
@@ -439,7 +464,12 @@ export default function App() {
               </PageView>
             ) : (
               <PageView key="wall">
-                <WallPage onSelectBounty={openBounty} onCreateBounty={openCreate} refreshKey={refreshKey} />
+                <WallPage
+                  onSelectBounty={openBounty}
+                  onSelectExternalBounty={openExternalBounty}
+                  onCreateBounty={openCreate}
+                  refreshKey={refreshKey}
+                />
               </PageView>
             )}
           </AnimatePresence>
