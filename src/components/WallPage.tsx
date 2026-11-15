@@ -855,7 +855,7 @@ export function WallPage({ onSelectBounty, onSelectExternalBounty, onCreateBount
                     Bounty Wall
                   </span>
                   <span className="font-mono-bold text-[11px] uppercase tracking-widest text-[#111] bg-white/90 border-[2px] border-[#111] rounded-full px-3 py-1">
-                    {totalLiveBountiesCount} live
+                    {activeBountiesCount} onchain · {activeExternalCount} external
                   </span>
                 </div>
 
