@@ -65,8 +65,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await ensureSchema()
     const nowSec = Math.floor(Date.now() / 1000)
 
-    // POST /api/external-bounties (or GET with ?sync=1 for Vercel Cron)
-    const isSyncRequest = req.method === 'POST' || req.query.sync === '1'
+    // POST /api/external-bounties (or GET with ?sync=1 or x-vercel-cron header)
+    const isCronHeader = Boolean(req.headers['x-vercel-cron'])
+    const isSyncRequest = req.method === 'POST' || req.query.sync === '1' || isCronHeader
     if (isSyncRequest) {
       if (syncLimiter.isLimited(ip)) {
         return res.status(429).json({ error: 'Sync rate limit reached. Try again in a few minutes.' })
