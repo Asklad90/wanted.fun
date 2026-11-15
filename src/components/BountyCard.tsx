@@ -160,7 +160,7 @@ export function ExternalBountyCard({
           </div>
           <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#111]/5 border border-[#111]/15 text-[#111]/80">
             <ClockIcon size={12} />
-            <span className="font-mono-bold text-[10px] uppercase tracking-wider">{timeLeft(deadlineSec)}</span>
+            <span className="font-mono-bold text-[10px] uppercase tracking-wider">{isExpired ? 'ENDED' : timeLeft(deadlineSec)}</span>
           </div>
         </div>
 

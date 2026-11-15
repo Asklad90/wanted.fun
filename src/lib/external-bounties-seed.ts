@@ -341,6 +341,24 @@ export function getFallbackExternalBounties(nowSec = Math.floor(Date.now() / 100
       category: 'content',
       requirementsSummary: 'Published technical article + companion Foundry test repository.',
     },
+    {
+      slug: 'ext-solana-pay-pos-terminal-ui',
+      tweetId: '189401209841217',
+      title: 'Merchant Tap-to-Pay Stablecoin Checkout Receipt UI (Ended)',
+      description:
+        'Design and prototype a clean merchant checkout & printable NFC receipt screen for instant stablecoin point-of-sale payments.\n\nThis external bounty window has concluded and submissions are being reviewed by the host.',
+      rewardUsd: 650,
+      rewardLabel: 'USDC',
+      maxWinners: 2,
+      hoursLeft: -18,
+      posterHandle: 'SuperteamEarn',
+      posterName: 'Superteam Earn',
+      verifiedSource: 'Superteam Guaranteed',
+      tweetUrl: 'https://x.com/SuperteamEarn',
+      participationUrl: 'https://earn.superteam.fun/bounties/',
+      category: 'design',
+      requirementsSummary: 'Submission window has ended on the external host platform.',
+    },
   ]
 
   return specs.map((s, idx) => ({

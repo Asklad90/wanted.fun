@@ -237,7 +237,7 @@ export function ExternalBountyPage({ externalId, onBack }: ExternalBountyPagePro
                 </div>
                 <div className="inline-flex items-center gap-1.5 border-[2px] border-[#111] rounded-full px-3 py-1 bg-white text-[#111] shadow-hard-xs">
                   <ClockIcon size={14} className="text-[#111]" />
-                  <span className="font-mono-bold text-[11px] sm:text-[12px] uppercase tracking-wider">{timeLeft(deadlineSec)}</span>
+                  <span className="font-mono-bold text-[11px] sm:text-[12px] uppercase tracking-wider">{isExpired ? 'ENDED' : timeLeft(deadlineSec)}</span>
                 </div>
               </div>
 
@@ -326,7 +326,7 @@ export function ExternalBountyPage({ externalId, onBack }: ExternalBountyPagePro
                   </div>
                   <div className="relative z-1 mt-3">
                     <div className="font-heading text-[24px] sm:text-[30px] font-black leading-tight text-white truncate">
-                      {timeLeft(deadlineSec)}
+                      {isExpired ? 'ENDED' : timeLeft(deadlineSec)}
                     </div>
                     <div className="font-mono-bold text-[10px] sm:text-[11px] uppercase tracking-wider text-white/70 mt-0.5">
                       DEADLINE

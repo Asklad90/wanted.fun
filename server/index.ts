@@ -109,8 +109,8 @@ const stmtUpsertExternalBounty = db.prepare(`
     category = excluded.category,
     requirements_summary = excluded.requirements_summary
 `)
-const stmtGetActiveExternalBounties = db.prepare<ScannedExternalBounty, [number]>(
-  'SELECT * FROM external_bounties WHERE deadline > ? ORDER BY reward_usdc DESC, deadline ASC LIMIT 20'
+const stmtGetActiveExternalBounties = db.prepare<ScannedExternalBounty, [number, number]>(
+  'SELECT * FROM external_bounties WHERE deadline > ? ORDER BY (deadline > ?) DESC, reward_usdc DESC, deadline ASC LIMIT 24'
 )
 const stmtGetSingleExternalBounty = db.prepare<ScannedExternalBounty, [string]>(
   'SELECT * FROM external_bounties WHERE id = ? LIMIT 1'
@@ -319,12 +319,13 @@ const server = Bun.serve({
     // GET / POST /api/external-bounties — live external bounties scanner & feed
     if (pathname === '/api/external-bounties') {
       const nowSec = Math.floor(Date.now() / 1000)
+      const hideCutoff = nowSec - 3 * 24 * 60 * 60
       const isSync = req.method === 'POST' || url.searchParams.get('sync') === '1'
       if (isSync) {
         if (isRateLimited(`extsync:${ip}`, 10, 5 * 60 * 1000)) return err('Too many sync requests', 429, origin)
         const { bounties: scanned, source } = await scanLiveGuaranteedBounties()
         saveExternalBountiesToSqlite(scanned)
-        const active = stmtGetActiveExternalBounties.all(nowSec)
+        const active = stmtGetActiveExternalBounties.all(hideCutoff, nowSec)
         return json({ ok: true, source, bounties: active, synced_at: nowSec }, 200, origin)
       }
 
@@ -342,11 +343,12 @@ const server = Bun.serve({
           return json({ bounty: row }, 200, origin)
         }
 
-        let active = stmtGetActiveExternalBounties.all(nowSec)
-        if (active.length < 10) {
+        let active = stmtGetActiveExternalBounties.all(hideCutoff, nowSec)
+        const liveCount = active.filter(b => Number(b.deadline) > nowSec).length
+        if (liveCount < 10) {
           const { bounties: scanned } = await scanLiveGuaranteedBounties()
           saveExternalBountiesToSqlite(scanned)
-          active = stmtGetActiveExternalBounties.all(nowSec)
+          active = stmtGetActiveExternalBounties.all(hideCutoff, nowSec)
         }
         return json({ bounties: active, synced_at: nowSec }, 200, origin)
       }

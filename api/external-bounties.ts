@@ -64,6 +64,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     await ensureSchema()
     const nowSec = Math.floor(Date.now() / 1000)
+    const hideCutoff = nowSec - 3 * 24 * 60 * 60 // Keep ended bounties visible for 3 days as ENDED
 
     // POST /api/external-bounties (or GET with ?sync=1 or x-vercel-cron header)
     const isCronHeader = Boolean(req.headers['x-vercel-cron'])
@@ -77,9 +78,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const { rows } = await pool.sql`
         SELECT * FROM external_bounties
-        WHERE deadline > ${nowSec}
-        ORDER BY reward_usdc DESC, deadline ASC
-        LIMIT 20
+        WHERE deadline > ${hideCutoff}
+        ORDER BY (deadline > ${nowSec}) DESC, reward_usdc DESC, deadline ASC
+        LIMIT 24
       `
       return res.status(200).json({
         ok: true,
@@ -118,20 +119,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     let { rows } = await pool.sql`
       SELECT * FROM external_bounties
-      WHERE deadline > ${nowSec}
-      ORDER BY reward_usdc DESC, deadline ASC
-      LIMIT 20
+      WHERE deadline > ${hideCutoff}
+      ORDER BY (deadline > ${nowSec}) DESC, reward_usdc DESC, deadline ASC
+      LIMIT 24
     `
 
+    const liveRowsCount = rows.filter(r => Number(r.deadline) > nowSec).length
+
     // Auto-seed / refresh if fewer than 10 live external bounties are currently active
-    if (rows.length < 10) {
+    if (liveRowsCount < 10) {
       const { bounties: scanned } = await scanLiveGuaranteedBounties()
       await upsertScannedBounties(scanned)
       const refreshed = await pool.sql`
         SELECT * FROM external_bounties
-        WHERE deadline > ${nowSec}
-        ORDER BY reward_usdc DESC, deadline ASC
-        LIMIT 20
+        WHERE deadline > ${hideCutoff}
+        ORDER BY (deadline > ${nowSec}) DESC, reward_usdc DESC, deadline ASC
+        LIMIT 24
       `
       rows = refreshed.rows
     }
