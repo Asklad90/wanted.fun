@@ -19,6 +19,62 @@ export interface ExternalBounty {
   created_at: number | string
 }
 
+export const LEGACY_EXTERNAL_BOUNTY_IDS = [
+  'ext-circle-cctp-widget',
+  'ext-superteam-solana-blinks',
+  'ext-bountycaster-farcaster-miniapp',
+  'ext-arc-defi-analytics-dashboard',
+  'ext-base-ai-agent-wallet-tool',
+  'ext-uniswap-v4-hook-security',
+  'ext-superteam-motion-launch-reel',
+  'ext-Arbitrum-stylus-rust-sdk',
+  'ext-design-neobrutalist-icon-pack',
+  'ext-deep-dive-research-thread',
+  'ext-eigenlayer-avs-monitoring-cli',
+  'ext-privy-embedded-wallet-ux',
+  'ext-monad-parallel-evm-benchmark',
+  'ext-solana-mobile-dapp-store-ui',
+  'ext-wormhole-multichain-bounty-relayer',
+  'ext-web3-security-audit-ctf-writeup',
+  'ext-solana-pay-pos-terminal-ui',
+] as const
+
+export function isExactXStatusUrl(url: string): boolean {
+  return /^https?:\/\/(?:x\.com|twitter\.com)\/[A-Za-z0-9_]+\/status\/\d+/i.test((url || '').trim())
+}
+
+export function isGenericXProfileUrl(url: string): boolean {
+  return /^https?:\/\/(?:x\.com|twitter\.com)\/[A-Za-z0-9_]+\/?$/i.test((url || '').trim())
+}
+
+export function isGenericHomepageUrl(url: string): boolean {
+  const trimmed = (url || '').trim()
+  if (!trimmed) return true
+  if (isGenericXProfileUrl(trimmed)) return true
+  try {
+    const u = new URL(trimmed)
+    const p = u.pathname.replace(/\/+$/, '')
+    if (!p) return true
+    return ['/bounties', '/en/developers', '/builders'].includes(p.toLowerCase())
+  } catch {
+    return true
+  }
+}
+
+export function buildXAnnouncementSearchUrl(handle: string, title: string): string {
+  const cleanHandle = handle.replace(/^@/, '').replace(/[^A-Za-z0-9_]/g, '')
+  const keywords = title
+    .replace(/[^a-zA-Z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w.length > 3)
+    .slice(0, 4)
+    .join(' ')
+  const query = cleanHandle
+    ? `(from:${cleanHandle} ${keywords || 'bounty'}) OR "${keywords || cleanHandle}"`
+    : `"${keywords || 'USDC bounty'}"`
+  return `https://x.com/search?q=${encodeURIComponent(query)}&f=live`
+}
+
 /**
  * Deterministic 0x40 hex address derived from an external poster handle so
  * PixelAvatar renders a unique retro avatar for each external creator.
@@ -33,6 +89,10 @@ export function handleToPseudoAddress(handle: string): string {
   return `0x${hex}`
 }
 
+/**
+ * Fallback curated feed backed by real Superteam Earn open listing URLs
+ * and verified X /status/ post permalinks (never generic company/profile roots).
+ */
 export function getFallbackExternalBounties(nowSec = Math.floor(Date.now() / 1000)): ExternalBounty[] {
   const bucketSec = Math.floor(nowSec / 21600) * 21600
 
@@ -44,339 +104,230 @@ export function getFallbackExternalBounties(nowSec = Math.floor(Date.now() / 100
     rewardUsd: number
     rewardLabel: string
     maxWinners: number
-    hoursLeft: number
+    deadlineIso?: string
+    hoursLeft?: number
     posterHandle: string
     posterName: string
     verifiedSource: string
-    tweetUrl: string
+    tweetUrl?: string
     participationUrl: string
     category: 'dev' | 'design' | 'content' | 'growth'
     requirementsSummary: string
   }> = [
     {
-      slug: 'ext-circle-cctp-widget',
-      tweetId: '189401209841201',
-      title: 'Build a Drop-In Cross-Chain USDC Checkout Widget with Circle CCTP v2',
+      slug: 'ext-se-raenest-global-bounty',
+      tweetId: 'se-raenest',
+      title: 'The Raenest Global Bounty — Writing, Video & Animation',
       description:
-        'We are looking for a clean, open-source React component that lets any web3 app accept USDC from Base, Arbitrum, or Optimism and settle natively via Circle CCTP v2.\n\nDeliverables:\n• Published npm package or clean GitHub template repo\n• Live interactive demo deployed on Vercel\n• 60-second walkthrough video showing a fast transfer flow\n\nGuaranteed prize pool hosted by the ecosystem developer grants team.',
+        'Raenest helps individuals and businesses manage money globally with multi-currency accounts and stablecoin support. Create clear, insightful writing, video, or animation showing how cross-border stablecoin payments and USDC/USDT flows work in practice.',
       rewardUsd: 1500,
       rewardLabel: 'USDC',
-      maxWinners: 2,
-      hoursLeft: 138,
-      posterHandle: 'circle_devs',
-      posterName: 'Circle Developer Ecosystem',
-      verifiedSource: 'Verified Org',
-      tweetUrl: 'https://x.com/circle',
-      participationUrl: 'https://www.circle.com/en/developers',
-      category: 'dev',
-      requirementsSummary: 'Open-source GitHub repo (MIT license) + live Vercel preview link + 60s demo video.',
-    },
-    {
-      slug: 'ext-superteam-solana-blinks',
-      tweetId: '189401209841202',
-      title: 'Design & Ship a Viral Solana Actions / Blinks Mini-App for Social Feeds',
-      description:
-        'Create a working Solana Action (Blink) that unfurls directly inside social posts and enables 1-click micro-tipping or prediction voting in USDC.\n\nJudging Criteria:\n1. Instant UX with clear action metadata & preview card\n2. Public GitHub repository with setup instructions\n3. Short demo post showing the Blink unfurling live',
-      rewardUsd: 1000,
-      rewardLabel: 'USDC',
-      maxWinners: 3,
-      hoursLeft: 112,
-      posterHandle: 'SuperteamEarn',
-      posterName: 'Superteam Earn',
-      verifiedSource: 'Superteam Guaranteed',
-      tweetUrl: 'https://x.com/SuperteamEarn',
-      participationUrl: 'https://earn.superteam.fun/bounties/',
-      category: 'dev',
-      requirementsSummary: 'Submit your deployed Blink URL, GitHub repository, and demo post on Superteam Earn.',
-    },
-    {
-      slug: 'ext-bountycaster-farcaster-miniapp',
-      tweetId: '189401209841203',
-      title: 'Onchain Split-Bill & Group Escrow Mini-App for Farcaster v2 Frames',
-      description:
-        'Build a mobile-first Frame v2 mini-app where friends in a group channel can split a dinner or event tab in USDC and settle in one tap.\n\nBonus points for automatic receipt OCR and clean brutalist UI.',
-      rewardUsd: 750,
-      rewardLabel: 'USDC',
-      maxWinners: 1,
-      hoursLeft: 84,
-      posterHandle: 'bountycaster',
-      posterName: 'Bountycaster',
-      verifiedSource: 'Bountycaster Escrow',
-      tweetUrl: 'https://x.com/bountycaster',
-      participationUrl: 'https://www.bountycaster.xyz',
-      category: 'dev',
-      requirementsSummary: 'Submit your live Frame v2 URL and open-source repository via the official Bountycaster page.',
-    },
-    {
-      slug: 'ext-arc-defi-analytics-dashboard',
-      tweetId: '189401209841204',
-      title: 'Arc Network Stablecoin Velocity & Escrow Analytics Dashboard',
-      description:
-        'Build a public real-time analytics dashboard tracking USDC volume, active smart-contract escrows, and top builders across Arc.\n\nMust feature responsive charts, wallet lookup, CSV export, and sub-second load times.',
-      rewardUsd: 1200,
-      rewardLabel: 'USDC',
-      maxWinners: 2,
-      hoursLeft: 160,
-      posterHandle: 'arcdotio',
-      posterName: 'Arc Ecosystem',
-      verifiedSource: 'Verified Ecosystem',
-      tweetUrl: 'https://x.com/search?q=arc%20bounty%20usdc',
-      participationUrl: 'https://arc.io',
-      category: 'dev',
-      requirementsSummary: 'Live hosted dashboard URL + public GitHub repo querying live chain RPC/indexer.',
-    },
-    {
-      slug: 'ext-base-ai-agent-wallet-tool',
-      tweetId: '189401209841205',
-      title: 'Autonomous AI Agent Bounty Hunter Plugin using Base AgentKit',
-      description:
-        'Create an open-source AgentKit plugin that lets an AI agent browse open coding/content tasks, verify USDC escrow on-chain, and draft pull requests autonomously.\n\nPrize is guaranteed for the top 2 working implementations with clean documentation.',
-      rewardUsd: 1000,
-      rewardLabel: 'USDC',
-      maxWinners: 2,
-      hoursLeft: 148,
-      posterHandle: 'base',
-      posterName: 'Base Builders',
-      verifiedSource: 'Verified Org',
-      tweetUrl: 'https://x.com/base',
-      participationUrl: 'https://www.base.org/builders',
-      category: 'dev',
-      requirementsSummary: 'Working AgentKit plugin PR + 2-minute loom/video demonstration.',
-    },
-    {
-      slug: 'ext-uniswap-v4-hook-security',
-      tweetId: '189401209841206',
-      title: 'Uniswap v4 Dynamic Fee Hook + Foundry Fuzz Test Suite',
-      description:
-        'Implement a gas-optimized Uniswap v4 Hook that adjusts LP fees dynamically based on on-chain volatility, complete with Foundry invariant and fuzz tests (>95% branch coverage).',
-      rewardUsd: 2000,
-      rewardLabel: 'USDC',
-      maxWinners: 1,
-      hoursLeft: 185,
-      posterHandle: 'UniswapFND',
-      posterName: 'Uniswap Foundation',
-      verifiedSource: 'Verified Grant',
-      tweetUrl: 'https://x.com/UniswapFND',
-      participationUrl: 'https://www.uniswapfoundation.org',
-      category: 'dev',
-      requirementsSummary: 'Foundry repository with passing invariant tests + gas benchmark report.',
-    },
-    {
-      slug: 'ext-superteam-motion-launch-reel',
-      tweetId: '189401209841207',
-      title: '45-Second High-Energy Motion Graphics Launch Trailer for Onchain Payments',
-      description:
-        'Produce a punchy, kinetic-typography + 2D/3D motion graphics video (16:9 and 9:16 cuts) explaining why instant stablecoin settlement beats legacy 3-day wire transfers.\n\nStyle references: Apple Pay, Wise, Neo-Brutalist web3.',
-      rewardUsd: 600,
-      rewardLabel: 'USDC',
-      maxWinners: 2,
-      hoursLeft: 92,
-      posterHandle: 'SuperteamEarn',
-      posterName: 'Superteam Creative',
-      verifiedSource: 'Superteam Guaranteed',
-      tweetUrl: 'https://x.com/SuperteamEarn',
-      participationUrl: 'https://earn.superteam.fun/bounties/',
-      category: 'design',
-      requirementsSummary: '1080p MP4 (60fps) + project source file upon selection.',
-    },
-    {
-      slug: 'ext-Arbitrum-stylus-rust-sdk',
-      tweetId: '189401209841208',
-      title: 'Port an Ed25519 Signature Verifier to Arbitrum Stylus (Rust WASM)',
-      description:
-        'Write a clean, audit-ready Rust smart contract for Arbitrum Stylus that verifies Ed25519 signatures at a fraction of EVM precompile gas cost, and benchmark it against Solidity.',
-      rewardUsd: 1500,
-      rewardLabel: 'USDC',
-      maxWinners: 1,
-      hoursLeft: 172,
-      posterHandle: 'arbitrumdevs',
-      posterName: 'Arbitrum Developers',
-      verifiedSource: 'Verified Org',
-      tweetUrl: 'https://x.com/arbitrumdevs',
-      participationUrl: 'https://arbitrum.foundation',
-      category: 'dev',
-      requirementsSummary: 'Rust Stylus crate + Solidity comparison benchmark + testnet deployment tx.',
-    },
-    {
-      slug: 'ext-design-neobrutalist-icon-pack',
-      tweetId: '189401209841209',
-      title: 'Design a 30-Piece Neo-Brutalist Crypto & Escrow SVG Icon System',
-      description:
-        'We need a cohesive set of 30 custom pixel/brutalist SVG icons (vaults, USDC coins, trophies, wallets, smart contracts, badges) with thick #111 strokes and vibrant pop accents.\n\nAll 3 top finalists receive guaranteed USDC payouts.',
-      rewardUsd: 400,
-      rewardLabel: 'USDC',
-      maxWinners: 3,
-      hoursLeft: 68,
-      posterHandle: 'bountycaster',
-      posterName: 'Bountycaster Design',
-      verifiedSource: 'Bountycaster Escrow',
-      tweetUrl: 'https://x.com/bountycaster',
-      participationUrl: 'https://www.bountycaster.xyz',
-      category: 'design',
-      requirementsSummary: 'Public Figma community file + optimized inline-ready SVG bundle.',
-    },
-    {
-      slug: 'ext-deep-dive-research-thread',
-      tweetId: '189401209841210',
-      title: 'Technical Deep-Dive Thread & Diagram Set: Programmable Stablecoin Escrows',
-      description:
-        'Write a comprehensive, zero-fluff longform article or 10+ post thread breaking down how modern on-chain escrow contracts eliminate counterparty risk for freelance & bounty marketplaces.\n\nMust include 3 original architecture/flow diagrams.',
-      rewardUsd: 300,
-      rewardLabel: 'USDC',
-      maxWinners: 4,
-      hoursLeft: 76,
-      posterHandle: 'layer3xyz',
-      posterName: 'Layer3 Quests & Bounties',
-      verifiedSource: 'Verified Platform',
-      tweetUrl: 'https://x.com/layer3xyz',
-      participationUrl: 'https://app.layer3.xyz',
+      maxWinners: 6,
+      deadlineIso: '2026-12-13T22:59:59.000Z',
+      posterHandle: 'RaenestApp',
+      posterName: 'Raenest',
+      verifiedSource: 'Superteam Earn',
+      participationUrl: 'https://earn.superteam.fun/listing/the-raenest-global-bounty-writing-video-and-animation/',
       category: 'content',
-      requirementsSummary: 'Publish thread/article and submit the link via the official participation page.',
+      requirementsSummary: 'Submit your published article, video, or animation link directly on the Superteam Earn listing page.',
     },
     {
-      slug: 'ext-eigenlayer-avs-monitoring-cli',
-      tweetId: '189401209841211',
-      title: 'Build a Terminal TUI / CLI Monitor for EigenLayer AVS Operator Health',
+      slug: 'ext-se-multihopper-build-route',
+      tweetId: 'se-multihopper',
+      title: 'MultiHopper Build & Route Challenge',
       description:
-        'Create a fast Rust or Go terminal dashboard (TUI) that lets AVS operators monitor quorum signatures, slashable events, and RPC latency in real time with webhook alerts.',
-      rewardUsd: 1250,
+        'Build a useful Solana product powered by MultiHopper, bring real users, and compete for a guaranteed milestone prize pool plus ongoing integration revenue share.',
+      rewardUsd: 1500,
       rewardLabel: 'USDC',
-      maxWinners: 2,
-      hoursLeft: 196,
-      posterHandle: 'eigenlayer',
-      posterName: 'EigenLayer Ecosystem',
-      verifiedSource: 'Verified Org',
-      tweetUrl: 'https://x.com/eigenlayer',
-      participationUrl: 'https://www.eigenlayer.xyz',
+      maxWinners: 3,
+      deadlineIso: '2026-12-14T21:59:59.000Z',
+      posterHandle: 'multihopper',
+      posterName: 'MultiHopper',
+      verifiedSource: 'Superteam Earn',
+      participationUrl: 'https://earn.superteam.fun/listing/multihopper-build-and-route-challenge-up-to-dollar50000-revenue-share-1/',
       category: 'dev',
-      requirementsSummary: 'Open-source binary + GitHub repo + README with Docker/binary quickstart.',
+      requirementsSummary: 'Submit your deployed app, GitHub repository, and integration metrics on the listing submission page.',
     },
     {
-      slug: 'ext-privy-embedded-wallet-ux',
-      tweetId: '189401209841212',
-      title: 'Zero-Friction Passkey + Embedded Wallet Onboarding Template (Next.js / Vite)',
+      slug: 'ext-se-students-workshop-thread',
+      tweetId: '2120067693479137334',
+      title: 'Write a Twitter/X Thread on Opportunities for Students Workshop',
       description:
-        'Build a starter kit demonstrating sub-5-second user onboarding with Privy embedded wallets, gas sponsorship, and 1-click USDC signing without browser extension popups.',
-      rewardUsd: 800,
+        'Superteam Ukraine & dev3pack hosted a workshop covering developer grants, bounties, and ecosystem opportunities for students. Publish an insightful X thread summarizing key takeaways and submit your thread link.',
+      rewardUsd: 100,
+      rewardLabel: 'USDG',
+      maxWinners: 4,
+      deadlineIso: '2026-11-23T23:59:59.999Z',
+      posterHandle: 'dev3pack',
+      posterName: 'Superteam Ukraine × dev3pack',
+      verifiedSource: 'Verified X + Superteam',
+      tweetUrl: 'https://x.com/dev3pack/status/2120067693479137334',
+      participationUrl: 'https://earn.superteam.fun/listing/write-a-twitter-thread-on-opportunities-for-students-workshop/',
+      category: 'content',
+      requirementsSummary: 'Publish a detailed X thread referencing the workshop and submit your post URL on Superteam Earn.',
+    },
+    {
+      slug: 'ext-se-baobao-paj-narrative',
+      tweetId: '2110442017637671124',
+      title: 'Share Your Narrative of Using PAJ for Instant Naira-to-Token Swaps',
+      description:
+        'Try buying BAOBAO on PAJ with instant Naira settlement and share an authentic walkthrough thread on X explaining the user experience.',
+      rewardUsd: 250,
       rewardLabel: 'USDC',
-      maxWinners: 2,
-      hoursLeft: 124,
-      posterHandle: 'privy_io',
-      posterName: 'Privy Developer Bounties',
-      verifiedSource: 'Verified Org',
-      tweetUrl: 'https://x.com/privy_io',
-      participationUrl: 'https://www.privy.io',
+      maxWinners: 3,
+      deadlineIso: '2026-11-21T22:59:59.000Z',
+      posterHandle: 'paj_cash',
+      posterName: 'PAJ Cash × BAOBAO',
+      verifiedSource: 'Verified X + Superteam',
+      tweetUrl: 'https://x.com/paj_cash/status/2110442017637671124',
+      participationUrl: 'https://earn.superteam.fun/listing/a-narrative-of-buying-baobao-on-paj-twitter-x-thread/',
+      category: 'content',
+      requirementsSummary: 'Post your X thread and submit the link on the official Superteam Earn listing page.',
+    },
+    {
+      slug: 'ext-se-oobe-capital-agent',
+      tweetId: 'se-oobe-agent',
+      title: 'Build an Autonomous Capital Agent on Solana (Steve Capital Challenge)',
+      description:
+        'Build and deploy an autonomous capital agent using Steve Capital & OOBE Protocol. Configure permissions and risk controls and compete for guaranteed USDC prizes.',
+      rewardUsd: 100,
+      rewardLabel: 'USDC',
+      maxWinners: 5,
+      deadlineIso: '2026-12-10T22:59:59.000Z',
+      posterHandle: 'OOBEonSol',
+      posterName: 'OOBE Protocol',
+      verifiedSource: 'Superteam Earn',
+      participationUrl: 'https://earn.superteam.fun/listing/build-an-autonomous-capital-agent-on-solana-and-compete-for-dollar500-in-rewards/',
       category: 'dev',
-      requirementsSummary: 'Public GitHub template + live demo URL + clean setup guide.',
+      requirementsSummary: 'Submit your deployed agent repo and live demo on the Superteam Earn listing page.',
     },
     {
-      slug: 'ext-monad-parallel-evm-benchmark',
-      tweetId: '189401209841213',
-      title: 'Interactive Visualizer for Parallel EVM Execution vs Sequential Blocks',
+      slug: 'ext-se-fundraising-article',
+      tweetId: 'se-fundraising',
+      title: 'Write an Article on Fundraising for Early & Mid-Stage Projects',
       description:
-        'Build an interactive 60fps canvas/WebGL explainer showing how optimistic parallel transaction execution handles state conflicts vs sequential EVM execution.',
-      rewardUsd: 900,
+        'Create a deep-dive practical article covering ecosystem grants, venture funding, and community fundraising strategies for early and mid-stage web3 founders.',
+      rewardUsd: 175,
+      rewardLabel: 'USDG',
+      maxWinners: 3,
+      deadlineIso: '2026-11-23T23:59:59.999Z',
+      posterHandle: 'SuperteamUKR',
+      posterName: 'Superteam Ukraine',
+      verifiedSource: 'Superteam Earn',
+      participationUrl: 'https://earn.superteam.fun/listing/write-an-article-on-fundraising-opportunities-for-early-and-mid-stage-projects/',
+      category: 'content',
+      requirementsSummary: 'Submit your published article URL directly on the Superteam Earn listing page.',
+    },
+    {
+      slug: 'ext-se-worm-premier-league',
+      tweetId: 'se-worm-pl',
+      title: 'Create Content on Premier League Predictions with worm',
+      description:
+        'Showcase how prediction markets work for live Premier League fixtures on worm.wtf with short-form video breakdowns, memes, or match threads.',
+      rewardUsd: 100,
       rewardLabel: 'USDC',
-      maxWinners: 2,
-      hoursLeft: 150,
-      posterHandle: 'monad_dev',
-      posterName: 'Monad Developer Community',
-      verifiedSource: 'Verified Ecosystem',
-      tweetUrl: 'https://x.com/monad_xyz',
-      participationUrl: 'https://www.monad.xyz',
+      maxWinners: 5,
+      deadlineIso: '2026-11-24T02:59:59.000Z',
+      posterHandle: 'wormwtf',
+      posterName: 'worm',
+      verifiedSource: 'Superteam Earn',
+      participationUrl: 'https://earn.superteam.fun/listing/create-content-on-premier-league-predictions-with-worm/',
+      category: 'content',
+      requirementsSummary: 'Submit your published video/post link on the Superteam Earn listing page.',
+    },
+    {
+      slug: 'ext-se-ssrfun-beta-challenge',
+      tweetId: 'se-ssrfun',
+      title: 'SSR.FUN Beta Launch Creator & Trading Challenge',
+      description:
+        'Test tokenized portfolios on SSR.FUN (crypto + tokenized stocks/ETFs), document your experience, and share a crisp breakdown post.',
+      rewardUsd: 100,
+      rewardLabel: 'USDC',
+      maxWinners: 3,
+      deadlineIso: '2026-11-30T23:59:59.000Z',
+      posterHandle: 'strategicsuperr',
+      posterName: 'Strategic Super Reserve',
+      verifiedSource: 'Superteam Earn',
+      participationUrl: 'https://earn.superteam.fun/listing/ssrfun-beta-launch-challenge/',
+      category: 'growth',
+      requirementsSummary: 'Submit your beta walkthrough link directly on the Superteam Earn listing page.',
+    },
+    {
+      slug: 'ext-se-anna-ai-messenger',
+      tweetId: 'se-anna-ai',
+      title: 'Create an Engaging X Thread Introducing Anna AI Messenger',
+      description:
+        'Explore Anna AI-native messenger workflows combining agents and human chat, and write an illustrated X thread showcasing practical use cases.',
+      rewardUsd: 100,
+      rewardLabel: 'USDC',
+      maxWinners: 3,
+      deadlineIso: '2026-11-30T22:59:59.999Z',
+      posterHandle: 'annaos_ai',
+      posterName: 'Anna AI',
+      verifiedSource: 'Superteam Earn',
+      participationUrl: 'https://earn.superteam.fun/listing/create-an-engaging-x-thread-introducing-anna-ai-messenger-1/',
       category: 'design',
-      requirementsSummary: 'Interactive web app URL + source repository.',
+      requirementsSummary: 'Submit your X thread link via the official Superteam Earn submission button.',
     },
     {
-      slug: 'ext-solana-mobile-dapp-store-ui',
-      tweetId: '189401209841214',
-      title: 'Redesign a Mobile-First Micro-Task & Bounty Claiming Flow (Figma Prototype)',
+      slug: 'ext-se-kriptok-creator',
+      tweetId: 'se-kriptok',
+      title: 'KriptoK Creator Challenge · 200 USDC Prize Pool',
       description:
-        'Create an interactive Figma prototype for a mobile crypto bounty hunter experience: browsing tasks, submitting proof from a phone camera, and receiving instant USDC push notifications.',
+        'Explore KriptoK tools and publish creative video/visual content explaining its features to new users.',
+      rewardUsd: 40,
+      rewardLabel: 'USDC',
+      maxWinners: 5,
+      deadlineIso: '2026-11-25T20:59:59.000Z',
+      posterHandle: 'KriptoKLeague',
+      posterName: 'KriptoK',
+      verifiedSource: 'Superteam Earn',
+      participationUrl: 'https://earn.superteam.fun/listing/kriptok-creator-challenge-01/',
+      category: 'content',
+      requirementsSummary: 'Submit your content link directly on the Superteam Earn listing page.',
+    },
+    {
+      slug: 'ext-se-inside-the-block-ended',
+      tweetId: 'se-ended-demo',
+      title: 'Inside the Block: How Solana Validators Order Transactions (Ended)',
+      description:
+        'Deep technical explainer on transaction scheduling and validator block packing. The submission window for this external challenge has ended.',
       rewardUsd: 500,
       rewardLabel: 'USDC',
-      maxWinners: 2,
-      hoursLeft: 104,
-      posterHandle: 'SuperteamEarn',
-      posterName: 'Superteam Design',
-      verifiedSource: 'Superteam Guaranteed',
-      tweetUrl: 'https://x.com/SuperteamEarn',
-      participationUrl: 'https://earn.superteam.fun/bounties/',
-      category: 'design',
-      requirementsSummary: 'Interactive Figma prototype link + 90-second Loom walkthrough.',
-    },
-    {
-      slug: 'ext-wormhole-multichain-bounty-relayer',
-      tweetId: '189401209841215',
-      title: 'Cross-Chain Bounty Payout Relayer PoC with Wormhole Settlement',
-      description:
-        'Build a proof-of-concept contract + script that allows a bounty poster on one EVM chain to pay a winning contributor on their preferred destination chain in native USDC.',
-      rewardUsd: 1750,
-      rewardLabel: 'USDC',
-      maxWinners: 1,
-      hoursLeft: 210,
-      posterHandle: 'wormhole',
-      posterName: 'Wormhole Builders',
-      verifiedSource: 'Verified Org',
-      tweetUrl: 'https://x.com/wormhole',
-      participationUrl: 'https://wormhole.com',
-      category: 'dev',
-      requirementsSummary: 'Smart contracts + end-to-end testnet transaction hashes + GitHub repo.',
-    },
-    {
-      slug: 'ext-web3-security-audit-ctf-writeup',
-      tweetId: '189401209841216',
-      title: 'Smart Contract Escrow Security Checklist & Interactive PoC Walkthrough',
-      description:
-        'Create a practical developer guide covering the top 7 pitfalls in ERC-20 escrow smart contracts (reentrancy, fee-on-transfer tokens, blocklist griefing, pull-over-push fallback) with Foundry PoCs.',
-      rewardUsd: 450,
-      rewardLabel: 'USDC',
-      maxWinners: 3,
-      hoursLeft: 118,
-      posterHandle: 'immunefi',
-      posterName: 'Web3 Security Community',
-      verifiedSource: 'Verified Platform',
-      tweetUrl: 'https://x.com/immunefi',
-      participationUrl: 'https://immunefi.com',
-      category: 'content',
-      requirementsSummary: 'Published technical article + companion Foundry test repository.',
-    },
-    {
-      slug: 'ext-solana-pay-pos-terminal-ui',
-      tweetId: '189401209841217',
-      title: 'Merchant Tap-to-Pay Stablecoin Checkout Receipt UI (Ended)',
-      description:
-        'Design and prototype a clean merchant checkout & printable NFC receipt screen for instant stablecoin point-of-sale payments.\n\nThis external bounty window has concluded and submissions are being reviewed by the host.',
-      rewardUsd: 650,
-      rewardLabel: 'USDC',
-      maxWinners: 2,
+      maxWinners: 5,
       hoursLeft: -18,
-      posterHandle: 'SuperteamEarn',
-      posterName: 'Superteam Earn',
-      verifiedSource: 'Superteam Guaranteed',
-      tweetUrl: 'https://x.com/SuperteamEarn',
-      participationUrl: 'https://earn.superteam.fun/bounties/',
-      category: 'design',
-      requirementsSummary: 'Submission window has ended on the external host platform.',
+      posterHandle: 'SuperteamUKR',
+      posterName: 'Superteam Ukraine',
+      verifiedSource: 'Superteam Earn',
+      participationUrl: 'https://earn.superteam.fun/listing/inside-the-block-how-solana-validators-order-transactions/',
+      category: 'dev',
+      requirementsSummary: 'Submission window has ended on Superteam Earn.',
     },
   ]
 
-  return specs.map((s, idx) => ({
-    id: s.slug,
-    tweet_id: s.tweetId,
-    title: s.title,
-    description: s.description,
-    reward_usdc: Math.round(s.rewardUsd * 1_000_000),
-    reward_label: s.rewardLabel,
-    max_winners: s.maxWinners,
-    deadline: bucketSec + s.hoursLeft * 3600,
-    poster_handle: s.posterHandle,
-    poster_name: s.posterName,
-    verified_source: s.verifiedSource,
-    tweet_url: s.tweetUrl,
-    participation_url: s.participationUrl,
-    category: s.category,
-    requirements_summary: s.requirementsSummary,
-    created_at: bucketSec - idx * 3600,
-  }))
+  return specs.map((s, idx) => {
+    const parsedDeadline = s.deadlineIso ? Math.floor(Date.parse(s.deadlineIso) / 1000) : NaN
+    const deadlineSec = Number.isFinite(parsedDeadline)
+      ? parsedDeadline
+      : bucketSec + (s.hoursLeft ?? 96) * 3600
+
+    return {
+      id: s.slug,
+      tweet_id: s.tweetId,
+      title: s.title,
+      description: s.description,
+      reward_usdc: Math.round(s.rewardUsd * 1_000_000),
+      reward_label: s.rewardLabel,
+      max_winners: s.maxWinners,
+      deadline: deadlineSec,
+      poster_handle: s.posterHandle,
+      poster_name: s.posterName,
+      verified_source: s.verifiedSource,
+      tweet_url: s.tweetUrl || buildXAnnouncementSearchUrl(s.posterHandle, s.title),
+      participation_url: s.participationUrl,
+      category: s.category,
+      requirements_summary: s.requirementsSummary,
+      created_at: bucketSec - idx * 3600,
+    }
+  })
 }

@@ -6,7 +6,12 @@
 
 import { Database } from 'bun:sqlite'
 import path from 'path'
-import { scanLiveGuaranteedBounties, type ScannedExternalBounty } from '../api/_x-scanner'
+import {
+  scanLiveGuaranteedBounties,
+  LEGACY_EXTERNAL_BOUNTY_IDS,
+  isGenericHomepageUrl,
+  type ScannedExternalBounty,
+} from '../api/_x-scanner'
 
 const DB_PATH = path.join(import.meta.dir, '..', 'data', 'submissions.db')
 
@@ -115,6 +120,20 @@ const stmtGetActiveExternalBounties = db.prepare<ScannedExternalBounty, [number,
 const stmtGetSingleExternalBounty = db.prepare<ScannedExternalBounty, [string]>(
   'SELECT * FROM external_bounties WHERE id = ? LIMIT 1'
 )
+
+function purgeStaleExternalBountiesSqlite() {
+  const legacySet = new Set<string>(LEGACY_EXTERNAL_BOUNTY_IDS)
+  const rows = db.prepare<{ id: string; tweet_url: string; participation_url: string }, []>(
+    'SELECT id, tweet_url, participation_url FROM external_bounties'
+  ).all()
+  const del = db.prepare('DELETE FROM external_bounties WHERE id = ?')
+  for (const r of rows) {
+    const isBareXProfile = /^https?:\/\/(?:x\.com|twitter\.com)\/[A-Za-z0-9_]+\/?$/i.test(r.tweet_url || '')
+    if (legacySet.has(r.id) || isBareXProfile || isGenericHomepageUrl(r.participation_url || '')) {
+      del.run(r.id)
+    }
+  }
+}
 
 function saveExternalBountiesToSqlite(bounties: ScannedExternalBounty[]) {
   for (const b of bounties) {
@@ -323,6 +342,7 @@ const server = Bun.serve({
       const isSync = req.method === 'POST' || url.searchParams.get('sync') === '1'
       if (isSync) {
         if (isRateLimited(`extsync:${ip}`, 10, 5 * 60 * 1000)) return err('Too many sync requests', 429, origin)
+        purgeStaleExternalBountiesSqlite()
         const { bounties: scanned, source } = await scanLiveGuaranteedBounties()
         saveExternalBountiesToSqlite(scanned)
         const active = stmtGetActiveExternalBounties.all(hideCutoff, nowSec)
@@ -331,6 +351,7 @@ const server = Bun.serve({
 
       if (req.method === 'GET') {
         if (isRateLimited(`extget:${ip}`, 60, 60 * 1000)) return err('Too many requests', 429, origin)
+        purgeStaleExternalBountiesSqlite()
         const singleId = url.searchParams.get('id')
         if (singleId) {
           let row = stmtGetSingleExternalBounty.get(singleId)

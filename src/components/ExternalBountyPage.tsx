@@ -8,6 +8,7 @@ import { formatUsdc, timeLeft } from '../lib/utils'
 import {
   fetchSingleExternalBounty,
   handleToPseudoAddress,
+  isExactXStatusUrl,
   type ExternalBounty,
 } from '../lib/submissions-api'
 
@@ -98,6 +99,9 @@ export function ExternalBountyPage({ externalId, onBack }: ExternalBountyPagePro
   const maxWinnersNum = Number(currentBounty.max_winners) || 1
   const totalPrizeBig = rewardPerWinnerBig * BigInt(maxWinnersNum)
   const pseudoAddress = handleToPseudoAddress(currentBounty.poster_handle)
+  const cleanHandle = currentBounty.poster_handle.replace(/^@/, '')
+  const hostProfileUrl = `https://x.com/${cleanHandle}`
+  const hasExactPost = isExactXStatusUrl(currentBounty.tweet_url)
 
   function getShareUrl(): string {
     if (typeof window !== 'undefined') {
@@ -253,7 +257,7 @@ export function ExternalBountyPage({ externalId, onBack }: ExternalBountyPagePro
                 {/* External Creator Attribution */}
                 <div className="flex items-center justify-between gap-2 flex-wrap pt-2 border-t-[2px] border-[#111]/10">
                   <a
-                    href={bounty.tweet_url}
+                    href={hostProfileUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 group cursor-pointer"
@@ -397,10 +401,19 @@ export function ExternalBountyPage({ externalId, onBack }: ExternalBountyPagePro
                     </h2>
 
                     <p className="font-mono-ui text-[12px] text-[#111]/80 leading-relaxed">
-                      Because this bounty was created outside of Want.fun by <strong>{bounty.poster_name} (@{bounty.poster_handle})</strong>, Want.fun does not collect submissions for it directly. Use the links below to view the host&apos;s submission portal or original post.
+                      Because this bounty was created outside of Want.fun by <strong>{bounty.poster_name} (@{cleanHandle})</strong>, Want.fun does not collect submissions for it directly. Use the links below to open the direct submission listing or X announcement.
                     </p>
 
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
+                    <div className="rounded-lg border-[2px] border-[#111]/25 bg-[#FFFDF0] px-3 py-2 flex items-center justify-between gap-2">
+                      <span className="font-mono-bold text-[10px] uppercase tracking-wider text-[#111]/60 shrink-0">
+                        Submit Link
+                      </span>
+                      <span className="font-mono-ui text-[11px] text-[#111] truncate" title={bounty.participation_url}>
+                        {bounty.participation_url}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1">
                       <a
                         href={bounty.participation_url}
                         target="_blank"
@@ -418,7 +431,7 @@ export function ExternalBountyPage({ externalId, onBack }: ExternalBountyPagePro
                         className="inline-flex items-center justify-center gap-2 rounded-full border-[3px] border-[#111] shadow-hard-sm btn-press bg-[#111] text-white hover:text-[#FFE600] font-mono-bold uppercase tracking-wider px-5 py-3.5 text-[12px] text-center cursor-pointer"
                       >
                         <XIcon size={13} />
-                        <span>Original Post ↗</span>
+                        <span>{hasExactPost ? 'Original Post ↗' : 'Find Post on X ↗'}</span>
                       </a>
                     </div>
                   </div>
@@ -478,7 +491,7 @@ export function ExternalBountyPage({ externalId, onBack }: ExternalBountyPagePro
           <WindowCard title="EXTERNAL_HOST.EXE" titleBarColor="#FF3E9A" bodyClassName="flex flex-col gap-0 !p-0">
             <div className="checkerboard p-3.5 border-b-[2.5px] border-[#111]">
               <a
-                href={bounty.tweet_url}
+                href={hostProfileUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group flex items-center gap-3 p-2.5 bg-white border-[2.5px] border-[#111] rounded-xl shadow-hard-xs hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform"
@@ -510,7 +523,7 @@ export function ExternalBountyPage({ externalId, onBack }: ExternalBountyPagePro
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 font-mono-bold text-[10px] uppercase tracking-wider text-[#111] bg-[#FFE600] hover:bg-[#111] hover:text-[#FFE600] border-[2px] border-[#111] rounded-full px-3 py-1 shadow-hard-xs transition-colors"
                 >
-                  <span>View Source</span>
+                  <span>{hasExactPost ? 'Original Post' : 'Find on X'}</span>
                   <span>↗</span>
                 </a>
               </div>

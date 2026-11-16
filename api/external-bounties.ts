@@ -1,7 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { pool, ensureSchema } from './_db.js'
 import { createRateLimiter, getClientIp } from './_rate-limit.js'
-import { scanLiveGuaranteedBounties, type ScannedExternalBounty } from './_x-scanner.js'
+import {
+  scanLiveGuaranteedBounties,
+  LEGACY_EXTERNAL_BOUNTY_IDS,
+  isGenericHomepageUrl,
+  type ScannedExternalBounty,
+} from './_x-scanner.js'
 
 const getLimiter = createRateLimiter({ windowMs: 60 * 1000, max: 60 })
 const syncLimiter = createRateLimiter({ windowMs: 5 * 60 * 1000, max: 10 })
@@ -12,6 +17,20 @@ function hasDatabaseUrl(): boolean {
     process.env.POSTGRES_URL ||
     process.env.DATABASE_URL
   )
+}
+
+async function purgeStaleExternalRows(): Promise<void> {
+  const legacySet = new Set<string>(LEGACY_EXTERNAL_BOUNTY_IDS)
+  const { rows } = await pool.sql`SELECT id, tweet_url, participation_url FROM external_bounties`
+  for (const r of rows) {
+    const id = String(r.id ?? '')
+    const tweetUrl = String(r.tweet_url ?? '')
+    const partUrl = String(r.participation_url ?? '')
+    const isBareXProfile = /^https?:\/\/(?:x\.com|twitter\.com)\/[A-Za-z0-9_]+\/?$/i.test(tweetUrl)
+    if (legacySet.has(id) || isBareXProfile || isGenericHomepageUrl(partUrl)) {
+      await pool.sql`DELETE FROM external_bounties WHERE id = ${id}`
+    }
+  }
 }
 
 async function upsertScannedBounties(bounties: ScannedExternalBounty[]): Promise<void> {
@@ -73,6 +92,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (syncLimiter.isLimited(ip)) {
         return res.status(429).json({ error: 'Sync rate limit reached. Try again in a few minutes.' })
       }
+      await purgeStaleExternalRows()
       const { bounties: scanned, source } = await scanLiveGuaranteedBounties()
       await upsertScannedBounties(scanned)
 
@@ -116,6 +136,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       return res.status(200).json({ bounty: rows[0] })
     }
+
+    await purgeStaleExternalRows()
 
     let { rows } = await pool.sql`
       SELECT * FROM external_bounties

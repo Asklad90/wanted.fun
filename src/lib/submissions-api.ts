@@ -11,10 +11,13 @@ import { config } from '../config'
 import {
   getFallbackExternalBounties,
   handleToPseudoAddress,
+  isExactXStatusUrl,
+  isGenericXProfileUrl,
+  buildXAnnouncementSearchUrl,
   type ExternalBounty,
 } from './external-bounties-seed'
 
-export { handleToPseudoAddress, type ExternalBounty }
+export { handleToPseudoAddress, isExactXStatusUrl, type ExternalBounty }
 
 // ── Auth helpers ─────────────────────────────────────────────────────────────
 
@@ -332,6 +335,13 @@ export async function saveProfile(
 
 // ── External Bounties (Curated / Scanned from outside Want.fun) ─────────────
 
+function normalizeExternalBountyRecord(b: ExternalBounty): ExternalBounty {
+  const safeTweetUrl = isGenericXProfileUrl(b.tweet_url)
+    ? buildXAnnouncementSearchUrl(b.poster_handle, b.title)
+    : b.tweet_url
+  return safeTweetUrl === b.tweet_url ? b : { ...b, tweet_url: safeTweetUrl }
+}
+
 /**
  * Fetch 10–20 live guaranteed external bounties.
  * Falls back to the built-in curated list if the local backend is offline.
@@ -342,7 +352,7 @@ export async function fetchExternalBounties(): Promise<ExternalBounty[]> {
     if (!res.ok) return getFallbackExternalBounties()
     const data = (await res.json()) as { bounties?: ExternalBounty[] }
     if (Array.isArray(data.bounties) && data.bounties.length > 0) {
-      return data.bounties
+      return data.bounties.map(normalizeExternalBountyRecord)
     }
     return getFallbackExternalBounties()
   } catch {
@@ -351,14 +361,14 @@ export async function fetchExternalBounties(): Promise<ExternalBounty[]> {
 }
 
 /**
- * Fetch a single external bounty by its ID (e.g. `ext-circle-cctp-widget`).
+ * Fetch a single external bounty by its ID (e.g. `ext-se-raenest-global-bounty`).
  */
 export async function fetchSingleExternalBounty(id: string): Promise<ExternalBounty | null> {
   try {
     const res = await fetch(`/api/external-bounties?id=${encodeURIComponent(id)}`)
     if (res.ok) {
       const data = (await res.json()) as { bounty?: ExternalBounty }
-      if (data.bounty) return data.bounty
+      if (data.bounty) return normalizeExternalBountyRecord(data.bounty)
     }
   } catch {
     // fall through to local lookup
@@ -376,7 +386,7 @@ export async function syncExternalBounties(): Promise<{ bounties: ExternalBounty
     if (res.ok) {
       const data = (await res.json()) as { bounties?: ExternalBounty[]; source?: string }
       if (Array.isArray(data.bounties) && data.bounties.length > 0) {
-        return { bounties: data.bounties, source: data.source }
+        return { bounties: data.bounties.map(normalizeExternalBountyRecord), source: data.source }
       }
     }
   } catch {
