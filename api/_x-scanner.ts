@@ -43,15 +43,24 @@ export function isGenericXProfileUrl(url: string): boolean {
   return /^https?:\/\/(?:x\.com|twitter\.com)\/[A-Za-z0-9_]+\/?$/i.test((url || '').trim())
 }
 
+const CHALLENGE_SUBDOMAIN_ROOTS = ['.devpost.com', '.hackerearth.com']
+
 export function isGenericHomepageUrl(url: string): boolean {
   const trimmed = (url || '').trim()
   if (!trimmed) return true
   if (isGenericXProfileUrl(trimmed)) return true
   try {
     const u = new URL(trimmed)
+    const host = u.hostname.toLowerCase()
     const p = u.pathname.replace(/\/+$/, '')
-    if (!p) return true
-    return ['/bounties', '/en/developers', '/builders'].includes(p.toLowerCase())
+    if (!p) {
+      // Allow dedicated challenge subdomains like kiroween.devpost.com (but not www.devpost.com or devpost.com)
+      const isChallengeSubdomain = CHALLENGE_SUBDOMAIN_ROOTS.some(
+        root => host.endsWith(root) && host.length > root.length && !host.startsWith('www.')
+      )
+      return !isChallengeSubdomain
+    }
+    return ['/bounties', '/en/developers', '/builders', '/bug-bounty', '/programs'].includes(p.toLowerCase())
   } catch {
     return true
   }
@@ -420,7 +429,7 @@ async function scanWithSuperteamEarn(nowSec: number): Promise<ScannedExternalBou
   const usdTokens = new Set(['USDC', 'USDG', 'USDT', 'USD'])
   const candidates = listings
     .filter(item => item.slug && item.title && typeof item.rewardAmount === 'number' && item.rewardAmount > 0 && usdTokens.has((item.token ?? '').toUpperCase()))
-    .slice(0, 15)
+    .slice(0, 5)
 
   if (candidates.length === 0) return []
 
@@ -484,6 +493,321 @@ async function scanWithSuperteamEarn(nowSec: number): Promise<ScannedExternalBou
   return detailed.filter((b): b is ScannedExternalBounty => b !== null)
 }
 
+interface DevpostHackathonRaw {
+  id?: number
+  title?: string
+  url?: string
+  submission_period_dates?: string
+  time_left_to_submission?: string
+  prize_amount?: string
+  prizes_counts?: { cash?: number; other?: number }
+  themes?: Array<{ name?: string }>
+  organization_name?: string
+}
+
+interface ImmunefiBountyRaw {
+  slug?: string
+  project?: string
+  maxBounty?: number
+  rewardsToken?: string
+  endDate?: string | null
+  updatedDate?: string
+  isPaused?: boolean
+  description?: string
+  ecosystem?: string[]
+}
+
+interface IntigritiProgramRaw {
+  programId?: string
+  status?: number
+  confidentialityLevel?: number
+  companyHandle?: string
+  companyName?: string
+  handle?: string
+  name?: string
+  description?: string
+  maxBounty?: { value?: number; currency?: string }
+  lastUpdatedAt?: number
+}
+
+function stripHtmlAndCollapse(raw: string): string {
+  return raw
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function sanitizeHandle(raw: string, fallback: string): string {
+  const cleaned = raw.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 20)
+  return cleaned || fallback
+}
+
+function parseDevpostDeadlineSec(periodDates: string, timeLeft: string, nowSec: number): number {
+  const fullRange = periodDates.match(/([A-Za-z]{3,9})\s+\d{1,2}\s*-\s*([A-Za-z]{3,9})\s+(\d{1,2}),\s*(\d{4})/i)
+  if (fullRange) {
+    const parsed = Date.parse(`${fullRange[2]} ${fullRange[3]}, ${fullRange[4]} 23:59:59 UTC`)
+    if (Number.isFinite(parsed)) return Math.floor(parsed / 1000)
+  }
+
+  const sameMonthRange = periodDates.match(/([A-Za-z]{3,9})\s+\d{1,2}\s*-\s*(\d{1,2}),\s*(\d{4})/i)
+  if (sameMonthRange) {
+    const parsed = Date.parse(`${sameMonthRange[1]} ${sameMonthRange[2]}, ${sameMonthRange[3]} 23:59:59 UTC`)
+    if (Number.isFinite(parsed)) return Math.floor(parsed / 1000)
+  }
+
+  const singleDate = periodDates.match(/([A-Za-z]{3,9})\s+(\d{1,2}),\s*(\d{4})/i)
+  if (singleDate) {
+    const parsed = Date.parse(`${singleDate[1]} ${singleDate[2]}, ${singleDate[3]} 23:59:59 UTC`)
+    if (Number.isFinite(parsed)) return Math.floor(parsed / 1000)
+  }
+
+  const rel = timeLeft.toLowerCase()
+  const monthMatch = rel.match(/(\d+)\s+month/)
+  if (monthMatch) return nowSec + Number(monthMatch[1]) * 30 * 86400
+  const dayMatch = rel.match(/(\d+)\s+day/)
+  if (dayMatch) return nowSec + Number(dayMatch[1]) * 86400
+  const hourMatch = rel.match(/(\d+)\s+hour/)
+  if (hourMatch) return nowSec + Number(hourMatch[1]) * 3600
+
+  return nowSec + 14 * 86400
+}
+
+function inferDevpostCategory(title: string, themes: Array<{ name?: string }>): 'dev' | 'design' | 'content' | 'growth' {
+  const hay = `${title} ${themes.map(t => t.name || '').join(' ')}`.toLowerCase()
+  if (/design|game|vr|ar|ux|ui|creative/.test(hay)) return 'design'
+  if (/content|video|story|social/.test(hay)) return 'content'
+  if (/growth|community|marketing/.test(hay)) return 'growth'
+  return 'dev'
+}
+
+export async function scanWithDevpost(nowSec: number): Promise<ScannedExternalBounty[]> {
+  const res = await fetch('https://devpost.com/api/hackathons?status[]=open', {
+    headers: {
+      Accept: 'application/json',
+      'User-Agent': 'WantFunScanner/1.0',
+    },
+    signal: AbortSignal.timeout(5500),
+  })
+  if (!res.ok) return []
+
+  const payload = (await res.json()) as { hackathons?: DevpostHackathonRaw[] }
+  const hackathons = Array.isArray(payload.hackathons) ? payload.hackathons : []
+
+  const results: ScannedExternalBounty[] = []
+  for (const h of hackathons) {
+    if (!h.id || !h.title || !h.url) continue
+
+    let cleanUrl = ''
+    try {
+      const parsed = new URL(h.url)
+      cleanUrl = `${parsed.origin}${parsed.pathname}`.replace(/\/?$/, '/')
+    } catch {
+      continue
+    }
+    if (isGenericHomepageUrl(cleanUrl)) continue
+
+    const prizeText = stripHtmlAndCollapse(h.prize_amount || '').replace(/,/g, '')
+    const prizeNumMatch = prizeText.match(/\d+(?:\.\d+)?/)
+    const poolUsd = prizeNumMatch ? Number(prizeNumMatch[0]) : 0
+    if (!Number.isFinite(poolUsd) || poolUsd < 100) continue
+
+    const deadlineSec = parseDevpostDeadlineSec(
+      h.submission_period_dates || '',
+      h.time_left_to_submission || '',
+      nowSec
+    )
+    if (deadlineSec <= nowSec) continue
+
+    const cashCount = h.prizes_counts?.cash && h.prizes_counts.cash > 0 ? Math.min(20, h.prizes_counts.cash) : 1
+    const maxWinners = Math.max(1, cashCount)
+    const perWinnerUsd = Math.max(50, Math.round(poolUsd / maxWinners))
+
+    const orgName = (h.organization_name || 'Devpost Host').trim()
+    const posterHandle = sanitizeHandle(orgName, 'devpost')
+    const themeNames = (h.themes || []).map(t => t.name).filter((n): n is string => Boolean(n)).slice(0, 4)
+    const themeText = themeNames.length > 0 ? ` Focus areas: ${themeNames.join(', ')}.` : ''
+    const windowText = h.submission_period_dates ? ` Submission window: ${h.submission_period_dates}.` : ''
+
+    results.push({
+      id: `ext-dp-${h.id}`,
+      tweet_id: `dp-${h.id}`,
+      title: h.title.trim().slice(0, 140),
+      description: `${orgName} hackathon featuring $${Math.round(poolUsd).toLocaleString()} total prize pool across ${maxWinners} cash prize track${maxWinners > 1 ? 's' : ''}.${themeText}${windowText}`.slice(0, 420),
+      reward_usdc: perWinnerUsd * 1_000_000,
+      reward_label: 'USD',
+      max_winners: maxWinners,
+      deadline: deadlineSec,
+      poster_handle: posterHandle,
+      poster_name: orgName.slice(0, 60),
+      verified_source: 'Devpost',
+      tweet_url: buildXAnnouncementSearchUrl(posterHandle, h.title.trim()),
+      participation_url: cleanUrl,
+      category: inferDevpostCategory(h.title, h.themes || []),
+      requirements_summary: `Submit your working project repo, demo video, and writeup directly on Devpost (${cleanUrl}).`,
+      created_at: nowSec,
+    })
+
+    if (results.length >= 4) break
+  }
+
+  return results
+}
+
+export async function scanWithImmunefi(nowSec: number): Promise<ScannedExternalBounty[]> {
+  const res = await fetch('https://immunefi.com/public-api/bounties.json', {
+    headers: {
+      Accept: 'application/json',
+      'User-Agent': 'WantFunScanner/1.0',
+    },
+    signal: AbortSignal.timeout(6500),
+  })
+  if (!res.ok) return []
+
+  const items = (await res.json()) as ImmunefiBountyRaw[]
+  if (!Array.isArray(items)) return []
+
+  const rollingDeadline = Math.floor(nowSec / 86400) * 86400 + 60 * 86400
+
+  const candidates = items
+    .filter(b => {
+      if (!b.slug || !b.project || b.isPaused) return false
+      if (typeof b.maxBounty !== 'number' || !Number.isFinite(b.maxBounty) || b.maxBounty < 5000) return false
+      if (b.endDate) {
+        const endMs = Date.parse(b.endDate)
+        if (Number.isFinite(endMs) && endMs <= nowSec * 1000) return false
+      }
+      return true
+    })
+    .sort((a, b) => {
+      const aTime = Date.parse(a.updatedDate || '') || 0
+      const bTime = Date.parse(b.updatedDate || '') || 0
+      if (bTime !== aTime) return bTime - aTime
+      return (b.maxBounty || 0) - (a.maxBounty || 0)
+    })
+    .slice(0, 4)
+
+  return candidates.map(b => {
+    const slug = String(b.slug)
+    const project = String(b.project).trim()
+    const partUrl = `https://immunefi.com/bug-bounty/${slug}/information/`
+    const endMs = b.endDate ? Date.parse(b.endDate) : NaN
+    const deadlineSec = Number.isFinite(endMs) && endMs > nowSec * 1000 ? Math.floor(endMs / 1000) : rollingDeadline
+    const cleanDesc = stripHtmlAndCollapse(b.description || '')
+    const ecosystems = Array.isArray(b.ecosystem) && b.ecosystem.length > 0 ? ` Ecosystems: ${b.ecosystem.slice(0, 3).join(', ')}.` : ''
+    const fallbackDesc = `Security bug bounty program for ${project} offering up to $${Math.round(b.maxBounty || 0).toLocaleString()} for verified vulnerability reports.${ecosystems}`
+    const rewardLabel = (b.rewardsToken || 'USDC').replace(/[^A-Za-z0-9.+-]/g, '').toUpperCase().slice(0, 10) || 'USDC'
+    const posterHandle = sanitizeHandle(slug, 'immunefi')
+
+    return {
+      id: `ext-im-${slug}`.slice(0, 64),
+      tweet_id: `im-${slug}`.slice(0, 48),
+      title: `${project} Bug Bounty Program`,
+      description: (cleanDesc.length >= 40 ? cleanDesc : fallbackDesc).slice(0, 420),
+      reward_usdc: Math.round((b.maxBounty || 0) * 1_000_000),
+      reward_label: rewardLabel,
+      max_winners: 1,
+      deadline: deadlineSec,
+      poster_handle: posterHandle,
+      poster_name: project.slice(0, 60),
+      verified_source: 'Immunefi',
+      tweet_url: buildXAnnouncementSearchUrl(posterHandle, `${project} Immunefi`),
+      participation_url: partUrl,
+      category: 'dev',
+      requirements_summary: 'Review in-scope smart contracts/assets and submit a reproducible PoC report on Immunefi.',
+      created_at: nowSec,
+    }
+  })
+}
+
+export async function scanWithIntigriti(nowSec: number): Promise<ScannedExternalBounty[]> {
+  const res = await fetch('https://app.intigriti.com/api/core/public/programs', {
+    headers: {
+      Accept: 'application/json',
+      'User-Agent': 'WantFunScanner/1.0',
+    },
+    signal: AbortSignal.timeout(5500),
+  })
+  if (!res.ok) return []
+
+  const items = (await res.json()) as IntigritiProgramRaw[]
+  if (!Array.isArray(items)) return []
+
+  const rollingDeadline = Math.floor(nowSec / 86400) * 86400 + 45 * 86400
+
+  const candidates = items
+    .filter(p => {
+      if (p.status !== 3) return false
+      if (!p.confidentialityLevel || p.confidentialityLevel < 2) return false
+      if (!p.companyHandle || !p.handle || !p.name) return false
+      if (!p.maxBounty || typeof p.maxBounty.value !== 'number' || p.maxBounty.value < 500) return false
+      return true
+    })
+    .sort((a, b) => (b.lastUpdatedAt || 0) - (a.lastUpdatedAt || 0))
+    .slice(0, 4)
+
+  return candidates.map(p => {
+    const companyHandle = String(p.companyHandle)
+    const handle = String(p.handle)
+    const partUrl = `https://app.intigriti.com/programs/${companyHandle}/${handle}/detail`
+    const companyName = (p.companyName || p.name || companyHandle).trim()
+    const posterHandle = sanitizeHandle(companyHandle, 'intigriti')
+    const currency = (p.maxBounty?.currency || 'EUR').toUpperCase().slice(0, 8)
+    const maxVal = Math.round(p.maxBounty?.value || 0)
+    const rawDesc = stripHtmlAndCollapse(p.description || '')
+    const fallbackDesc = `${companyName} security bug bounty program on Intigriti rewarding up to ${maxVal.toLocaleString()} ${currency} for valid security findings.`
+
+    return {
+      id: `ext-ig-${companyHandle}-${handle}`.slice(0, 64),
+      tweet_id: `ig-${handle}`.slice(0, 48),
+      title: String(p.name).trim().slice(0, 140),
+      description: (rawDesc.length >= 40 ? rawDesc : fallbackDesc).slice(0, 420),
+      reward_usdc: maxVal * 1_000_000,
+      reward_label: currency,
+      max_winners: 1,
+      deadline: rollingDeadline,
+      poster_handle: posterHandle,
+      poster_name: companyName.slice(0, 60),
+      verified_source: 'Intigriti',
+      tweet_url: buildXAnnouncementSearchUrl(posterHandle, `${String(p.name)} bug bounty`),
+      participation_url: partUrl,
+      category: 'dev',
+      requirements_summary: 'Check program scope and out-of-scope rules, then submit your vulnerability report via Intigriti.',
+      created_at: nowSec,
+    }
+  })
+}
+
+function interleaveMultiSource(
+  groups: ScannedExternalBounty[][],
+  nowSec: number,
+  limit = 16
+): ScannedExternalBounty[] {
+  const seenIds = new Set<string>()
+  const seenUrls = new Set<string>()
+  const out: ScannedExternalBounty[] = []
+  const maxLen = groups.reduce((max, g) => Math.max(max, g.length), 0)
+
+  for (let i = 0; i < maxLen && out.length < limit; i++) {
+    for (const group of groups) {
+      const item = group[i]
+      if (!item) continue
+      const normalizedUrl = item.participation_url.replace(/\/+$/, '').toLowerCase()
+      if (seenIds.has(item.id) || seenUrls.has(normalizedUrl)) continue
+      seenIds.add(item.id)
+      seenUrls.add(normalizedUrl)
+      out.push({
+        ...item,
+        created_at: nowSec - out.length * 1200,
+      })
+      if (out.length >= limit) break
+    }
+  }
+
+  return out
+}
+
 export function getCuratedExternalBounties(nowSec: number): ScannedExternalBounty[] {
   const bucketSec = Math.floor(nowSec / 21600) * 21600
 
@@ -506,11 +830,28 @@ export function getCuratedExternalBounties(nowSec: number): ScannedExternalBount
     requirementsSummary: string
   }> = [
     {
+      slug: 'ext-dp-kiroween-2026',
+      tweetId: 'dp-kiroween',
+      title: 'Kiroween 2026 — Build Spec-Driven Apps with Kiro',
+      description:
+        'Kiro hackathon on Devpost with $100,000 total prize pool across 18 cash tracks. Build imaginative applications powered by spec-driven AI workflows and submit your working prototype.',
+      rewardUsd: 5500,
+      rewardLabel: 'USD',
+      maxWinners: 18,
+      deadlineIso: '2026-12-04T23:59:59.000Z',
+      posterHandle: 'kirodotdev',
+      posterName: 'Kiro',
+      verifiedSource: 'Devpost',
+      participationUrl: 'https://kiroween.devpost.com/',
+      category: 'dev',
+      requirementsSummary: 'Submit your working project repo, demo video, and writeup on Devpost.',
+    },
+    {
       slug: 'ext-se-raenest-global-bounty',
       tweetId: 'se-raenest',
       title: 'The Raenest Global Bounty — Writing, Video & Animation',
       description:
-        'Raenest helps individuals and businesses manage money globally with multi-currency accounts and stablecoin support. Create clear, insightful writing, video, or animation showing how cross-border stablecoin payments and USDC/USDT flows work in practice.',
+        'Raenest helps individuals and businesses manage money globally with multi-currency accounts and stablecoin support. Create clear writing, video, or animation showing how cross-border USDC/USDT flows work.',
       rewardUsd: 1500,
       rewardLabel: 'USDC',
       maxWinners: 6,
@@ -521,6 +862,57 @@ export function getCuratedExternalBounties(nowSec: number): ScannedExternalBount
       participationUrl: 'https://earn.superteam.fun/listing/the-raenest-global-bounty-writing-video-and-animation/',
       category: 'content',
       requirementsSummary: 'Submit your published article, video, or animation link directly on the Superteam Earn listing page.',
+    },
+    {
+      slug: 'ext-im-ondo-finance',
+      tweetId: 'im-ondo-finance',
+      title: 'Ondo Finance Bug Bounty Program',
+      description:
+        'Security bug bounty program for Ondo Finance rewarding up to $1,000,000 USDC for verified critical smart contract and protocol vulnerability reports.',
+      rewardUsd: 1000000,
+      rewardLabel: 'USDC',
+      maxWinners: 1,
+      hoursLeft: 60 * 24,
+      posterHandle: 'OndoFinance',
+      posterName: 'Ondo Finance',
+      verifiedSource: 'Immunefi',
+      participationUrl: 'https://immunefi.com/bug-bounty/ondofinance/information/',
+      category: 'dev',
+      requirementsSummary: 'Review in-scope smart contracts and submit a reproducible PoC report on Immunefi.',
+    },
+    {
+      slug: 'ext-ig-personio',
+      tweetId: 'ig-personio',
+      title: 'Personio Bug Bounty Program',
+      description:
+        'Public security bug bounty program by Personio on Intigriti rewarding security researchers up to 5,000 EUR for valid web application and API vulnerability findings.',
+      rewardUsd: 5000,
+      rewardLabel: 'EUR',
+      maxWinners: 1,
+      hoursLeft: 45 * 24,
+      posterHandle: 'personio',
+      posterName: 'Personio',
+      verifiedSource: 'Intigriti',
+      participationUrl: 'https://app.intigriti.com/programs/personio/personio/detail',
+      category: 'dev',
+      requirementsSummary: 'Review target scope and submit valid vulnerability findings via Intigriti.',
+    },
+    {
+      slug: 'ext-dp-codegeist-2026',
+      tweetId: 'dp-codegeist',
+      title: 'Codegeist 2026 — Atlassian Forge App Challenge',
+      description:
+        'Atlassian Codegeist hackathon with $120,000 in cash prizes. Build Forge apps extending Jira, Confluence, or Rovo workflows and submit your app listing.',
+      rewardUsd: 6000,
+      rewardLabel: 'USD',
+      maxWinners: 20,
+      deadlineIso: '2026-12-22T23:59:59.000Z',
+      posterHandle: 'Atlassian',
+      posterName: 'Atlassian',
+      verifiedSource: 'Devpost',
+      participationUrl: 'https://codegeist.devpost.com/',
+      category: 'dev',
+      requirementsSummary: 'Build and deploy an Atlassian Forge app and submit on Devpost.',
     },
     {
       slug: 'ext-se-multihopper-build-route',
@@ -540,11 +932,62 @@ export function getCuratedExternalBounties(nowSec: number): ScannedExternalBount
       requirementsSummary: 'Submit your deployed app, GitHub repository, and integration metrics on the listing submission page.',
     },
     {
+      slug: 'ext-im-livepeer',
+      tweetId: 'im-livepeer',
+      title: 'Livepeer Bug Bounty Program',
+      description:
+        'Immunefi bug bounty program for Livepeer decentralized video streaming protocol offering up to $40,000 USDC for verified critical findings.',
+      rewardUsd: 40000,
+      rewardLabel: 'USDC',
+      maxWinners: 1,
+      hoursLeft: 60 * 24,
+      posterHandle: 'Livepeer',
+      posterName: 'Livepeer',
+      verifiedSource: 'Immunefi',
+      participationUrl: 'https://immunefi.com/bug-bounty/livepeer/information/',
+      category: 'dev',
+      requirementsSummary: 'Inspect in-scope Livepeer contracts and submit a detailed PoC report on Immunefi.',
+    },
+    {
+      slug: 'ext-ig-daytona',
+      tweetId: 'ig-daytona',
+      title: 'Daytona Bug Bounty Program',
+      description:
+        'Open developer workspace infrastructure bug bounty program on Intigriti offering up to 3,500 EUR for critical security vulnerabilities.',
+      rewardUsd: 3500,
+      rewardLabel: 'EUR',
+      maxWinners: 1,
+      hoursLeft: 45 * 24,
+      posterHandle: 'daytonaio',
+      posterName: 'Daytona',
+      verifiedSource: 'Intigriti',
+      participationUrl: 'https://app.intigriti.com/programs/daytona/daytonabugbounty/detail',
+      category: 'dev',
+      requirementsSummary: 'Test strictly within Daytona program scope and submit findings via Intigriti.',
+    },
+    {
+      slug: 'ext-dp-buildhybridai-2026',
+      tweetId: 'dp-hybridai',
+      title: '#BuildHybridAI 2026 — On-Device & Cloud AI Challenge',
+      description:
+        'Google hybrid AI hackathon on Devpost with $30,000 in cash prizes for applications combining local on-device inference with cloud models.',
+      rewardUsd: 3000,
+      rewardLabel: 'USD',
+      maxWinners: 10,
+      deadlineIso: '2026-12-10T23:59:59.000Z',
+      posterHandle: 'GoogleDevs',
+      posterName: 'Google',
+      verifiedSource: 'Devpost',
+      participationUrl: 'https://hybridai.devpost.com/',
+      category: 'dev',
+      requirementsSummary: 'Submit your hybrid AI app repo, live test instructions, and demo video on Devpost.',
+    },
+    {
       slug: 'ext-se-students-workshop-thread',
       tweetId: '2120067693479137334',
       title: 'Write a Twitter/X Thread on Opportunities for Students Workshop',
       description:
-        'Superteam Ukraine & dev3pack hosted a workshop covering developer grants, bounties, and ecosystem opportunities for students. Publish an insightful X thread summarizing key takeaways and submit your thread link.',
+        'Superteam Ukraine & dev3pack hosted a workshop covering developer grants, bounties, and ecosystem opportunities for students. Publish an insightful X thread summarizing key takeaways.',
       rewardUsd: 100,
       rewardLabel: 'USDG',
       maxWinners: 4,
@@ -558,124 +1001,21 @@ export function getCuratedExternalBounties(nowSec: number): ScannedExternalBount
       requirementsSummary: 'Publish a detailed X thread referencing the workshop and submit your post URL on Superteam Earn.',
     },
     {
-      slug: 'ext-se-baobao-paj-narrative',
-      tweetId: '2110442017637671124',
-      title: 'Share Your Narrative of Using PAJ for Instant Naira-to-Token Swaps',
+      slug: 'ext-im-hedera',
+      tweetId: 'im-hedera',
+      title: 'Hedera Bug Bounty Program',
       description:
-        'Try buying BAOBAO on PAJ with instant Naira settlement and share an authentic walkthrough thread on X explaining the user experience.',
-      rewardUsd: 250,
+        'Bug bounty program protecting Hedera network nodes, consensus services, and smart contracts with rewards up to $30,000 USDC.',
+      rewardUsd: 30000,
       rewardLabel: 'USDC',
-      maxWinners: 3,
-      deadlineIso: '2026-11-21T22:59:59.000Z',
-      posterHandle: 'paj_cash',
-      posterName: 'PAJ Cash × BAOBAO',
-      verifiedSource: 'Verified X + Superteam',
-      tweetUrl: 'https://x.com/paj_cash/status/2110442017637671124',
-      participationUrl: 'https://earn.superteam.fun/listing/a-narrative-of-buying-baobao-on-paj-twitter-x-thread/',
-      category: 'content',
-      requirementsSummary: 'Post your X thread and submit the link on the official Superteam Earn listing page.',
-    },
-    {
-      slug: 'ext-se-oobe-capital-agent',
-      tweetId: 'se-oobe-agent',
-      title: 'Build an Autonomous Capital Agent on Solana (Steve Capital Challenge)',
-      description:
-        'Build and deploy an autonomous capital agent using Steve Capital & OOBE Protocol. Configure permissions and risk controls and compete for guaranteed USDC prizes.',
-      rewardUsd: 100,
-      rewardLabel: 'USDC',
-      maxWinners: 5,
-      deadlineIso: '2026-12-10T22:59:59.000Z',
-      posterHandle: 'OOBEonSol',
-      posterName: 'OOBE Protocol',
-      verifiedSource: 'Superteam Earn',
-      participationUrl: 'https://earn.superteam.fun/listing/build-an-autonomous-capital-agent-on-solana-and-compete-for-dollar500-in-rewards/',
+      maxWinners: 1,
+      hoursLeft: 60 * 24,
+      posterHandle: 'hedera',
+      posterName: 'Hedera',
+      verifiedSource: 'Immunefi',
+      participationUrl: 'https://immunefi.com/bug-bounty/hedera/information/',
       category: 'dev',
-      requirementsSummary: 'Submit your deployed agent repo and live demo on the Superteam Earn listing page.',
-    },
-    {
-      slug: 'ext-se-fundraising-article',
-      tweetId: 'se-fundraising',
-      title: 'Write an Article on Fundraising for Early & Mid-Stage Projects',
-      description:
-        'Create a deep-dive practical article covering ecosystem grants, venture funding, and community fundraising strategies for early and mid-stage web3 founders.',
-      rewardUsd: 175,
-      rewardLabel: 'USDG',
-      maxWinners: 3,
-      deadlineIso: '2026-11-23T23:59:59.999Z',
-      posterHandle: 'SuperteamUKR',
-      posterName: 'Superteam Ukraine',
-      verifiedSource: 'Superteam Earn',
-      participationUrl: 'https://earn.superteam.fun/listing/write-an-article-on-fundraising-opportunities-for-early-and-mid-stage-projects/',
-      category: 'content',
-      requirementsSummary: 'Submit your published article URL directly on the Superteam Earn listing page.',
-    },
-    {
-      slug: 'ext-se-worm-premier-league',
-      tweetId: 'se-worm-pl',
-      title: 'Create Content on Premier League Predictions with worm',
-      description:
-        'Showcase how prediction markets work for live Premier League fixtures on worm.wtf with short-form video breakdowns, memes, or match threads.',
-      rewardUsd: 100,
-      rewardLabel: 'USDC',
-      maxWinners: 5,
-      deadlineIso: '2026-11-24T02:59:59.000Z',
-      posterHandle: 'wormwtf',
-      posterName: 'worm',
-      verifiedSource: 'Superteam Earn',
-      participationUrl: 'https://earn.superteam.fun/listing/create-content-on-premier-league-predictions-with-worm/',
-      category: 'content',
-      requirementsSummary: 'Submit your published video/post link on the Superteam Earn listing page.',
-    },
-    {
-      slug: 'ext-se-ssrfun-beta-challenge',
-      tweetId: 'se-ssrfun',
-      title: 'SSR.FUN Beta Launch Creator & Trading Challenge',
-      description:
-        'Test tokenized portfolios on SSR.FUN (crypto + tokenized stocks/ETFs), document your experience, and share a crisp breakdown post.',
-      rewardUsd: 100,
-      rewardLabel: 'USDC',
-      maxWinners: 3,
-      deadlineIso: '2026-11-30T23:59:59.000Z',
-      posterHandle: 'strategicsuperr',
-      posterName: 'Strategic Super Reserve',
-      verifiedSource: 'Superteam Earn',
-      participationUrl: 'https://earn.superteam.fun/listing/ssrfun-beta-launch-challenge/',
-      category: 'growth',
-      requirementsSummary: 'Submit your beta walkthrough link directly on the Superteam Earn listing page.',
-    },
-    {
-      slug: 'ext-se-anna-ai-messenger',
-      tweetId: 'se-anna-ai',
-      title: 'Create an Engaging X Thread Introducing Anna AI Messenger',
-      description:
-        'Explore Anna AI-native messenger workflows combining agents and human chat, and write an illustrated X thread showcasing practical use cases.',
-      rewardUsd: 100,
-      rewardLabel: 'USDC',
-      maxWinners: 3,
-      deadlineIso: '2026-11-30T22:59:59.999Z',
-      posterHandle: 'annaos_ai',
-      posterName: 'Anna AI',
-      verifiedSource: 'Superteam Earn',
-      participationUrl: 'https://earn.superteam.fun/listing/create-an-engaging-x-thread-introducing-anna-ai-messenger-1/',
-      category: 'design',
-      requirementsSummary: 'Submit your X thread link via the official Superteam Earn submission button.',
-    },
-    {
-      slug: 'ext-se-kriptok-creator',
-      tweetId: 'se-kriptok',
-      title: 'KriptoK Creator Challenge · 200 USDC Prize Pool',
-      description:
-        'Explore KriptoK tools and publish creative video/visual content explaining its features to new users.',
-      rewardUsd: 40,
-      rewardLabel: 'USDC',
-      maxWinners: 5,
-      deadlineIso: '2026-11-25T20:59:59.000Z',
-      posterHandle: 'KriptoKLeague',
-      posterName: 'KriptoK',
-      verifiedSource: 'Superteam Earn',
-      participationUrl: 'https://earn.superteam.fun/listing/kriptok-creator-challenge-01/',
-      category: 'content',
-      requirementsSummary: 'Submit your content link directly on the Superteam Earn listing page.',
+      requirementsSummary: 'Submit verified vulnerability PoCs against in-scope Hedera assets on Immunefi.',
     },
     {
       slug: 'ext-se-inside-the-block-ended',
@@ -718,19 +1058,39 @@ export function getCuratedExternalBounties(nowSec: number): ScannedExternalBount
       participation_url: s.participationUrl,
       category: s.category,
       requirements_summary: s.requirementsSummary,
-      created_at: bucketSec - idx * 3600,
+      created_at: bucketSec - idx * 1200,
     }
   })
 }
 
+async function scanMultiPlatformFeeds(nowSec: number): Promise<ScannedExternalBounty[]> {
+  const [devpostRes, superteamRes, immunefiRes, intigritiRes] = await Promise.allSettled([
+    scanWithDevpost(nowSec),
+    scanWithSuperteamEarn(nowSec),
+    scanWithImmunefi(nowSec),
+    scanWithIntigriti(nowSec),
+  ])
+
+  const devpost = devpostRes.status === 'fulfilled' ? devpostRes.value : []
+  const superteam = superteamRes.status === 'fulfilled' ? superteamRes.value : []
+  const immunefi = immunefiRes.status === 'fulfilled' ? immunefiRes.value : []
+  const intigriti = intigritiRes.status === 'fulfilled' ? intigritiRes.value : []
+
+  const liveMerged = interleaveMultiSource([devpost, superteam, immunefi, intigriti], nowSec, 16)
+  if (liveMerged.length >= 12) return liveMerged
+
+  // Guarantee multi-platform variety if one or more live feeds timed out
+  const fallback = getCuratedExternalBounties(nowSec)
+  return interleaveMultiSource([devpost, superteam, immunefi, intigriti, fallback], nowSec, 16)
+}
+
 /**
- * Scan X and live bounty feeds for 10–20 live guaranteed bounties.
- * Ensures every returned bounty has a specific submission/participation page URL
- * and an exact X /status/ post (or targeted X post search, never a misleading host profile).
+ * Scan X and multiple live bounty platforms (Devpost, Superteam Earn, Immunefi, Intigriti)
+ * for 12–16 live guaranteed bounties with specific submission pages.
  */
 export async function scanLiveGuaranteedBounties(): Promise<{
   bounties: ScannedExternalBounty[]
-  source: 'xai-live' | 'twitter-api' | 'superteam-live' | 'curated-feed'
+  source: 'xai-live' | 'twitter-api' | 'multi-platform-live' | 'curated-feed'
 }> {
   const nowSec = Math.floor(Date.now() / 1000)
   const xaiKey = process.env.XAI_API_KEY?.trim()
@@ -740,12 +1100,18 @@ export async function scanLiveGuaranteedBounties(): Promise<{
     try {
       const live = await scanWithGrok(xaiKey, nowSec)
       if (live.length >= 10) {
-        return { bounties: live.slice(0, 20), source: 'xai-live' }
+        const multi = await scanMultiPlatformFeeds(nowSec).catch(() => [])
+        return {
+          bounties: interleaveMultiSource([live, multi], nowSec, 18),
+          source: 'xai-live',
+        }
       }
       if (live.length > 0) {
-        const superteam = await scanWithSuperteamEarn(nowSec).catch(() => [])
-        const base = superteam.length > 0 ? superteam : getCuratedExternalBounties(nowSec)
-        return { bounties: [...live, ...base].slice(0, 18), source: 'xai-live' }
+        const multi = await scanMultiPlatformFeeds(nowSec).catch(() => getCuratedExternalBounties(nowSec))
+        return {
+          bounties: interleaveMultiSource([live, multi], nowSec, 16),
+          source: 'xai-live',
+        }
       }
     } catch (e) {
       console.warn('Grok live X scan failed, falling back:', e)
@@ -756,12 +1122,18 @@ export async function scanLiveGuaranteedBounties(): Promise<{
     try {
       const live = await scanWithTwitterBearer(twitterBearer, nowSec)
       if (live.length >= 10) {
-        return { bounties: live.slice(0, 20), source: 'twitter-api' }
+        const multi = await scanMultiPlatformFeeds(nowSec).catch(() => [])
+        return {
+          bounties: interleaveMultiSource([live, multi], nowSec, 18),
+          source: 'twitter-api',
+        }
       }
       if (live.length > 0) {
-        const superteam = await scanWithSuperteamEarn(nowSec).catch(() => [])
-        const base = superteam.length > 0 ? superteam : getCuratedExternalBounties(nowSec)
-        return { bounties: [...live, ...base].slice(0, 18), source: 'twitter-api' }
+        const multi = await scanMultiPlatformFeeds(nowSec).catch(() => getCuratedExternalBounties(nowSec))
+        return {
+          bounties: interleaveMultiSource([live, multi], nowSec, 16),
+          source: 'twitter-api',
+        }
       }
     } catch (e) {
       console.warn('Twitter API scan failed, falling back:', e)
@@ -769,16 +1141,12 @@ export async function scanLiveGuaranteedBounties(): Promise<{
   }
 
   try {
-    const superteamLive = await scanWithSuperteamEarn(nowSec)
-    if (superteamLive.length >= 8) {
-      return { bounties: superteamLive.slice(0, 18), source: 'superteam-live' }
-    }
-    if (superteamLive.length > 0) {
-      const fallback = getCuratedExternalBounties(nowSec).filter(f => !superteamLive.some(s => s.participation_url === f.participation_url))
-      return { bounties: [...superteamLive, ...fallback].slice(0, 16), source: 'superteam-live' }
+    const multiLive = await scanMultiPlatformFeeds(nowSec)
+    if (multiLive.length > 0) {
+      return { bounties: multiLive, source: 'multi-platform-live' }
     }
   } catch (e) {
-    console.warn('Superteam live scan failed, falling back to curated seed:', e)
+    console.warn('Multi-platform live scan failed, falling back to curated seed:', e)
   }
 
   return {

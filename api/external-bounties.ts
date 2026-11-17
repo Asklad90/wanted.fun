@@ -58,6 +58,7 @@ async function upsertScannedBounties(bounties: ScannedExternalBounty[]): Promise
         tweet_url = EXCLUDED.tweet_url,
         participation_url = EXCLUDED.participation_url,
         category = EXCLUDED.category,
+        created_at = EXCLUDED.created_at,
         requirements_summary = EXCLUDED.requirements_summary
     `
   }
@@ -94,12 +95,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       await purgeStaleExternalRows()
       const { bounties: scanned, source } = await scanLiveGuaranteedBounties()
-      await upsertScannedBounties(scanned)
+      if (scanned.length > 0) {
+        await pool.sql`DELETE FROM external_bounties WHERE id LIKE 'ext-se-%'`
+        await upsertScannedBounties(scanned)
+      }
 
       const { rows } = await pool.sql`
         SELECT * FROM external_bounties
         WHERE deadline > ${hideCutoff}
-        ORDER BY (deadline > ${nowSec}) DESC, reward_usdc DESC, deadline ASC
+        ORDER BY (deadline > ${nowSec}) DESC, created_at DESC, reward_usdc DESC
         LIMIT 24
       `
       return res.status(200).json({
@@ -142,20 +146,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let { rows } = await pool.sql`
       SELECT * FROM external_bounties
       WHERE deadline > ${hideCutoff}
-      ORDER BY (deadline > ${nowSec}) DESC, reward_usdc DESC, deadline ASC
+      ORDER BY (deadline > ${nowSec}) DESC, created_at DESC, reward_usdc DESC
       LIMIT 24
     `
 
-    const liveRowsCount = rows.filter(r => Number(r.deadline) > nowSec).length
+    const liveRows = rows.filter(r => Number(r.deadline) > nowSec)
+    const distinctSources = new Set(liveRows.map(r => String(r.verified_source ?? '').trim()).filter(Boolean))
+    const needsDiversityRefresh = liveRows.length > 0 && distinctSources.size < 2
 
-    // Auto-seed / refresh if fewer than 10 live external bounties are currently active
-    if (liveRowsCount < 10) {
+    // Auto-seed / refresh if fewer than 10 live bounties are active or cache only holds 1 platform
+    if (liveRows.length < 10 || needsDiversityRefresh) {
       const { bounties: scanned } = await scanLiveGuaranteedBounties()
-      await upsertScannedBounties(scanned)
+      if (scanned.length > 0) {
+        if (needsDiversityRefresh) {
+          await pool.sql`DELETE FROM external_bounties WHERE id LIKE 'ext-se-%'`
+        }
+        await upsertScannedBounties(scanned)
+      }
       const refreshed = await pool.sql`
         SELECT * FROM external_bounties
         WHERE deadline > ${hideCutoff}
-        ORDER BY (deadline > ${nowSec}) DESC, reward_usdc DESC, deadline ASC
+        ORDER BY (deadline > ${nowSec}) DESC, created_at DESC, reward_usdc DESC
         LIMIT 24
       `
       rows = refreshed.rows

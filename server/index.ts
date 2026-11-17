@@ -112,10 +112,11 @@ const stmtUpsertExternalBounty = db.prepare(`
     tweet_url = excluded.tweet_url,
     participation_url = excluded.participation_url,
     category = excluded.category,
+    created_at = excluded.created_at,
     requirements_summary = excluded.requirements_summary
 `)
 const stmtGetActiveExternalBounties = db.prepare<ScannedExternalBounty, [number, number]>(
-  'SELECT * FROM external_bounties WHERE deadline > ? ORDER BY (deadline > ?) DESC, reward_usdc DESC, deadline ASC LIMIT 24'
+  'SELECT * FROM external_bounties WHERE deadline > ? ORDER BY (deadline > ?) DESC, created_at DESC, reward_usdc DESC LIMIT 24'
 )
 const stmtGetSingleExternalBounty = db.prepare<ScannedExternalBounty, [string]>(
   'SELECT * FROM external_bounties WHERE id = ? LIMIT 1'
@@ -344,7 +345,10 @@ const server = Bun.serve({
         if (isRateLimited(`extsync:${ip}`, 10, 5 * 60 * 1000)) return err('Too many sync requests', 429, origin)
         purgeStaleExternalBountiesSqlite()
         const { bounties: scanned, source } = await scanLiveGuaranteedBounties()
-        saveExternalBountiesToSqlite(scanned)
+        if (scanned.length > 0) {
+          db.prepare("DELETE FROM external_bounties WHERE id LIKE 'ext-se-%'").run()
+          saveExternalBountiesToSqlite(scanned)
+        }
         const active = stmtGetActiveExternalBounties.all(hideCutoff, nowSec)
         return json({ ok: true, source, bounties: active, synced_at: nowSec }, 200, origin)
       }
@@ -365,10 +369,18 @@ const server = Bun.serve({
         }
 
         let active = stmtGetActiveExternalBounties.all(hideCutoff, nowSec)
-        const liveCount = active.filter(b => Number(b.deadline) > nowSec).length
-        if (liveCount < 10) {
+        const liveRows = active.filter(b => Number(b.deadline) > nowSec)
+        const distinctSources = new Set(liveRows.map(b => String(b.verified_source || '').trim()).filter(Boolean))
+        const needsDiversityRefresh = liveRows.length > 0 && distinctSources.size < 2
+
+        if (liveRows.length < 10 || needsDiversityRefresh) {
           const { bounties: scanned } = await scanLiveGuaranteedBounties()
-          saveExternalBountiesToSqlite(scanned)
+          if (scanned.length > 0) {
+            if (needsDiversityRefresh) {
+              db.prepare("DELETE FROM external_bounties WHERE id LIKE 'ext-se-%'").run()
+            }
+            saveExternalBountiesToSqlite(scanned)
+          }
           active = stmtGetActiveExternalBounties.all(hideCutoff, nowSec)
         }
         return json({ bounties: active, synced_at: nowSec }, 200, origin)
