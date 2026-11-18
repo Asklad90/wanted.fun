@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useAccount } from 'wagmi'
 import { ConnectButton } from './components/ConnectButton'
@@ -141,11 +141,24 @@ export default function App() {
   const [refreshKey, setRefreshKey] = useState(0)
   const [scrollProgress, setScrollProgress] = useState(0)
 
+  const routeViewRef = useRef<ParsedRoute['view']>(route.view)
+  const wallScrollYRef = useRef(0)
+  const pendingScrollRestoreRef = useRef(false)
+  const explicitNavToWallRef = useRef(false)
+  const hasInAppHistoryRef = useRef(false)
+
+  useEffect(() => {
+    routeViewRef.current = route.view
+  }, [route.view])
+
   useEffect(() => {
     const handleScroll = () => {
       const totalHeight = document.documentElement.scrollHeight - window.innerHeight
       if (totalHeight > 0) {
         setScrollProgress(Math.min(100, Math.max(0, (window.scrollY / totalHeight) * 100)))
+      }
+      if (routeViewRef.current === 'wall' && !pendingScrollRestoreRef.current) {
+        wallScrollYRef.current = window.scrollY
       }
     }
     window.addEventListener('scroll', handleScroll, { passive: true })
@@ -158,9 +171,26 @@ export default function App() {
   const activeProfileAddr = route.profileAddr
 
   useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual'
+    }
+
     function handleRouteChange() {
-      setRoute(parseRoute())
-      // Always scroll to the top when navigating to a new page
+      const prevView = routeViewRef.current
+      const nextRoute = parseRoute()
+      hasInAppHistoryRef.current = true
+      routeViewRef.current = nextRoute.view
+      setRoute(nextRoute)
+
+      const isExplicitWallNav = explicitNavToWallRef.current
+      explicitNavToWallRef.current = false
+
+      if (nextRoute.view === 'wall' && prevView !== 'wall' && !isExplicitWallNav) {
+        pendingScrollRestoreRef.current = true
+        return
+      }
+
+      pendingScrollRestoreRef.current = false
       window.scrollTo({ top: 0, behavior: 'instant' })
     }
     window.addEventListener('hashchange', handleRouteChange)
@@ -230,32 +260,78 @@ export default function App() {
     }
   }, [route])
 
-  const openBounty = useCallback((id: bigint) => {
-    window.location.hash = `#/bounty/${id.toString()}`
+  const captureWallScroll = useCallback(() => {
+    if (routeViewRef.current === 'wall' && !pendingScrollRestoreRef.current) {
+      wallScrollYRef.current = window.scrollY
+    }
   }, [])
+
+  const handleWallMounted = useCallback(() => {
+    if (!pendingScrollRestoreRef.current) return
+    const targetY = wallScrollYRef.current
+    pendingScrollRestoreRef.current = false
+
+    if (targetY <= 0) {
+      window.scrollTo({ top: 0, behavior: 'instant' })
+      return
+    }
+
+    let attempts = 0
+    let cancelled = false
+    const cancelOnUserInput = () => { cancelled = true }
+    window.addEventListener('wheel', cancelOnUserInput, { once: true, passive: true })
+    window.addEventListener('touchstart', cancelOnUserInput, { once: true, passive: true })
+
+    const tryRestore = () => {
+      if (cancelled || routeViewRef.current !== 'wall') return
+      window.scrollTo({ top: targetY, behavior: 'instant' })
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight
+      if (maxScroll >= targetY - 4 && Math.abs(window.scrollY - targetY) <= 4) {
+        return
+      }
+      if (attempts++ < 15) {
+        window.setTimeout(() => requestAnimationFrame(tryRestore), 60)
+      }
+    }
+
+    requestAnimationFrame(tryRestore)
+    window.setTimeout(() => {
+      window.removeEventListener('wheel', cancelOnUserInput)
+      window.removeEventListener('touchstart', cancelOnUserInput)
+    }, 1200)
+  }, [])
+
+  const openBounty = useCallback((id: bigint) => {
+    captureWallScroll()
+    window.location.hash = `#/bounty/${id.toString()}`
+  }, [captureWallScroll])
 
   const openExternalBounty = useCallback((id: string) => {
+    captureWallScroll()
     window.location.hash = `#/external/${encodeURIComponent(id)}`
-  }, [])
+  }, [captureWallScroll])
 
   const openProfile = useCallback((addr: `0x${string}`) => {
+    captureWallScroll()
     window.location.hash = `#/profile/${addr}`
-  }, [])
+  }, [captureWallScroll])
 
   const openCreate = useCallback(() => {
+    captureWallScroll()
     window.location.hash = `#/create`
-  }, [])
+  }, [captureWallScroll])
 
   const openGuide = useCallback((scrollId?: string) => {
+    captureWallScroll()
     window.location.hash = `#/how-it-works`
     if (scrollId) {
       window.setTimeout(() => document.getElementById(scrollId)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
     }
-  }, [])
+  }, [captureWallScroll])
 
   const goBack = useCallback(() => {
     const curHash = window.location.hash
-    if (curHash && curHash !== '#' && curHash !== '#/' && curHash !== '#/wall') {
+    if (hasInAppHistoryRef.current && curHash && curHash !== '#' && curHash !== '#/' && curHash !== '#/wall') {
       window.history.back()
     } else {
       window.location.hash = '#/'
@@ -263,6 +339,8 @@ export default function App() {
   }, [])
 
   const onCreated = useCallback(() => {
+    explicitNavToWallRef.current = true
+    wallScrollYRef.current = 0
     setRefreshKey(k => k + 1)
     window.location.hash = '#/'
   }, [])
@@ -270,6 +348,7 @@ export default function App() {
   const goTo = useCallback((id: string) => {
     const wasWall = route.view === 'wall'
     if (window.location.hash && window.location.hash !== '#' && window.location.hash !== '#/' && window.location.hash !== '#/wall') {
+      explicitNavToWallRef.current = true
       window.location.hash = '#/'
     }
     window.setTimeout(
@@ -289,6 +368,7 @@ export default function App() {
           <button
             onClick={() => {
               if (window.location.hash && window.location.hash !== '#' && window.location.hash !== '#/' && window.location.hash !== '#/wall') {
+                explicitNavToWallRef.current = true
                 window.location.hash = '#/'
               } else {
                 goTo('wall')
@@ -433,7 +513,10 @@ export default function App() {
                   onBack={goBack}
                   onSelectBounty={openBounty}
                   onCreateBounty={openCreate}
-                  onBrowseWall={() => { window.location.hash = '#/' }}
+                  onBrowseWall={() => {
+                    explicitNavToWallRef.current = true
+                    window.location.hash = '#/'
+                  }}
                 />
               </PageView>
             ) : view === 'bounty' && activeBountyId !== null ? (
@@ -460,7 +543,13 @@ export default function App() {
               </PageView>
             ) : view === 'not-found' ? (
               <PageView key="not-found" narrow>
-                <NotFoundPage onBackToWall={() => { window.location.hash = '#/' }} onHowItWorks={() => { window.location.hash = '#/how-it-works' }} />
+                <NotFoundPage
+                  onBackToWall={() => {
+                    explicitNavToWallRef.current = true
+                    window.location.hash = '#/'
+                  }}
+                  onHowItWorks={() => { window.location.hash = '#/how-it-works' }}
+                />
               </PageView>
             ) : (
               <PageView key="wall">
@@ -468,6 +557,7 @@ export default function App() {
                   onSelectBounty={openBounty}
                   onSelectExternalBounty={openExternalBounty}
                   onCreateBounty={openCreate}
+                  onWallMounted={handleWallMounted}
                   refreshKey={refreshKey}
                 />
               </PageView>
@@ -502,7 +592,10 @@ export default function App() {
             </button>
             <span className="text-[#FFFDF0]/30">·</span>
             <button
-              onClick={() => { window.location.hash = '#/privacy' }}
+              onClick={() => {
+                captureWallScroll()
+                window.location.hash = '#/privacy'
+              }}
               className="text-[#FFFDF0]/80 hover:text-[#FFE600] transition-colors font-mono-ui font-bold uppercase cursor-pointer"
             >
               Privacy & Terms

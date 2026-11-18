@@ -43,9 +43,26 @@ const FILTERS: { id: StatusFilter; label: string }[] = [
 
 const SOURCE_FILTERS: { id: SourceFilter; label: string }[] = [
   { id: 'all',      label: 'All Bounties' },
-  { id: 'native',   label: 'Want.fun Escrow' },
+  { id: 'native',   label: 'Want.fun Bounties' },
   { id: 'external', label: 'External Bounties' },
 ]
+
+// Preserve wall filter, pagination, and fetched feed across bounty-detail navigation
+const wallUiCache: {
+  tab: Tab
+  filter: StatusFilter
+  sourceFilter: SourceFilter
+  query: string
+  limitByFilter: Record<string, number>
+  externalBounties: ExternalBounty[] | null
+} = {
+  tab: 'wall',
+  filter: 'all',
+  sourceFilter: 'all',
+  query: '',
+  limitByFilter: {},
+  externalBounties: null,
+}
 
 function matchesFilter(status: BountyStatusType, filter: StatusFilter): boolean {
   if (filter === 'all') return true
@@ -58,6 +75,7 @@ interface WallPageProps {
   onSelectBounty: (id: bigint) => void
   onSelectExternalBounty: (id: string) => void
   onCreateBounty: () => void
+  onWallMounted?: () => void
   refreshKey: number
 }
 
@@ -442,7 +460,11 @@ function BountyGrid({
   const [agedOffMap, setAgedOffMap] = useState<Record<string, boolean>>({})
   const [activeMap, setActiveMap] = useState<Record<string, boolean>>({})
   const [visibleMap, setVisibleMap] = useState<Record<string, boolean>>({})
-  const [limitByFilter, setLimitByFilter] = useState<Record<string, number>>({})
+  const [limitByFilter, setLimitByFilter] = useState<Record<string, number>>(() => wallUiCache.limitByFilter)
+
+  useEffect(() => {
+    wallUiCache.limitByFilter = limitByFilter
+  }, [limitByFilter])
 
   const filterKey = `${filter}::${ query.trim().toLowerCase()}`
   const pageKey = `${filter}::${sourceFilter}::${query.trim().toLowerCase()}`
@@ -620,20 +642,34 @@ function BountyGrid({
   )
 }
 
-export function WallPage({ onSelectBounty, onSelectExternalBounty, onCreateBounty, refreshKey }: WallPageProps) {
-  const [tab, setTab] = useState<Tab>('wall')
-  const [filter, setFilter] = useState<StatusFilter>('all')
-  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all')
-  const [query, setQuery] = useState('')
+export function WallPage({ onSelectBounty, onSelectExternalBounty, onCreateBounty, onWallMounted, refreshKey }: WallPageProps) {
+  const [tab, setTab] = useState<Tab>(() => wallUiCache.tab)
+  const [filter, setFilter] = useState<StatusFilter>(() => wallUiCache.filter)
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>(() => wallUiCache.sourceFilter)
+  const [query, setQuery] = useState(() => wallUiCache.query)
   const [hiddenSnapshot, setHiddenSnapshot] = useState<{ hidden: boolean; activeCount: number; totalBounties: number } | null>(null)
-  const [externalBounties, setExternalBounties] = useState<ExternalBounty[]>([])
+  const [externalBounties, setExternalBounties] = useState<ExternalBounty[]>(() => wallUiCache.externalBounties ?? [])
   const [syncingExternal, setSyncingExternal] = useState(false)
+
+  useEffect(() => {
+    wallUiCache.tab = tab
+    wallUiCache.filter = filter
+    wallUiCache.sourceFilter = sourceFilter
+    wallUiCache.query = query
+  }, [tab, filter, sourceFilter, query])
+
+  useEffect(() => {
+    onWallMounted?.()
+  }, [onWallMounted])
 
   useEffect(() => {
     let cancelled = false
     fetchExternalBounties()
       .then(list => {
-        if (!cancelled) setExternalBounties(list)
+        if (!cancelled) {
+          wallUiCache.externalBounties = list
+          setExternalBounties(list)
+        }
       })
       .catch(() => {})
     return () => {
@@ -645,6 +681,7 @@ export function WallPage({ onSelectBounty, onSelectExternalBounty, onCreateBount
     setSyncingExternal(true)
     try {
       const res = await syncExternalBounties()
+      wallUiCache.externalBounties = res.bounties
       setExternalBounties(res.bounties)
       toast.success(`Synced ${res.bounties.length} live external bounties!`)
     } catch {
@@ -701,10 +738,6 @@ export function WallPage({ onSelectBounty, onSelectExternalBounty, onCreateBount
             <div className="flex flex-col gap-4">
               {/* Dedicated black card for headline & copy */}
               <div className="dark-grid-surface text-[#FFFDF0] rounded-2xl border-[3px] border-[#111] shadow-hard p-6 sm:p-8 relative overflow-hidden">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#C6F23A] text-[#111] border-[2px] border-[#111] font-mono-bold text-[10px] uppercase tracking-wider mb-4 shadow-[2px_2px_0_#FFFDF0]">
-                  <span className="w-2 h-2 rounded-full bg-[#111] animate-pulse" />
-                  100% Escrow Guaranteed on Arc
-                </div>
                 <h1
                   className="font-heading text-[36px] sm:text-[48px] desk:text-[54px] font-extrabold leading-[1.04] text-white text-balance"
                   style={{ letterSpacing: '-0.025em' }}
