@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react'
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import {
   useAccount,
@@ -20,6 +20,7 @@ import {
   Copy,
   ExternalLink,
   Folder,
+  ImagePlus,
   Inbox,
   Lock,
   Pencil,
@@ -27,6 +28,7 @@ import {
   Share2,
   ShieldCheck,
   Sparkles,
+  Trash2,
   Trophy,
   Wallet,
   X,
@@ -191,6 +193,65 @@ async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
+const MAX_RAW_AVATAR_BYTES = 15 * 1024 * 1024 // 15 MB raw photo before compression
+const AVATAR_CANVAS_PX = 256
+const MAX_DATA_URL_LEN = 200_000
+
+/**
+ * Center-crop and compress a gallery photo into a crisp 256×256 square data URL
+ * so it uploads instantly and stays lightweight in Postgres.
+ */
+async function compressAvatarImage(file: File): Promise<string> {
+  if (!file.type.startsWith('image/')) {
+    throw new Error('Please choose an image file (JPG, PNG, WebP, or GIF).')
+  }
+  if (file.size > MAX_RAW_AVATAR_BYTES) {
+    throw new Error('Image is too large (max 15 MB).')
+  }
+
+  const objectUrl = URL.createObjectURL(file)
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image()
+      el.onload = () => resolve(el)
+      el.onerror = () => reject(new Error('Could not read that image. Try another photo.'))
+      el.src = objectUrl
+    })
+
+    const canvas = document.createElement('canvas')
+    canvas.width = AVATAR_CANVAS_PX
+    canvas.height = AVATAR_CANVAS_PX
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('Browser canvas unavailable.')
+
+    // Fill with warm neutral backdrop in case image has transparency
+    ctx.fillStyle = '#FFFDF0'
+    ctx.fillRect(0, 0, AVATAR_CANVAS_PX, AVATAR_CANVAS_PX)
+
+    const side = Math.min(img.naturalWidth || img.width, img.naturalHeight || img.height)
+    const sx = Math.max(0, ((img.naturalWidth || img.width) - side) / 2)
+    const sy = Math.max(0, ((img.naturalHeight || img.height) - side) / 2)
+    ctx.imageSmoothingEnabled = true
+    ctx.imageSmoothingQuality = 'high'
+    ctx.drawImage(img, sx, sy, side, side, 0, 0, AVATAR_CANVAS_PX, AVATAR_CANVAS_PX)
+
+    // Prefer WebP; fall back to JPEG when WebP encoding isn't supported (e.g. older Safari)
+    let dataUrl = canvas.toDataURL('image/webp', 0.86)
+    if (!dataUrl.startsWith('data:image/webp')) {
+      dataUrl = canvas.toDataURL('image/jpeg', 0.86)
+    }
+    if (dataUrl.length > MAX_DATA_URL_LEN) {
+      dataUrl = canvas.toDataURL('image/jpeg', 0.72)
+    }
+    if (dataUrl.length > MAX_DATA_URL_LEN) {
+      throw new Error('Compressed image is still too large. Please choose a simpler photo.')
+    }
+    return dataUrl
+  } finally {
+    URL.revokeObjectURL(objectUrl)
+  }
+}
+
 // ─── Minimal Dialog Shell ─────────────────────────────────────────────────────
 function DialogShell({
   title,
@@ -330,11 +391,30 @@ function EditProfileModal({
 }) {
   const [bioDraft, setBioDraft] = useState(profile.bio || '')
   const [avatarDraft, setAvatarDraft] = useState(profile.avatar_variant || 0)
+  const [avatarUrlDraft, setAvatarUrlDraft] = useState(profile.avatar_url || '')
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [twitterDraft, setTwitterDraft] = useState(profile.twitter || '')
   const [githubDraft, setGithubDraft] = useState(profile.github || '')
   const [websiteDraft, setWebsiteDraft] = useState(profile.website || '')
   const [saving, setSaving] = useState(false)
   const [saveErr, setSaveErr] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  async function handlePhotoPick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setUploadingPhoto(true)
+    setSaveErr('')
+    try {
+      const compressed = await compressAvatarImage(file)
+      setAvatarUrlDraft(compressed)
+    } catch (err) {
+      setSaveErr(err instanceof Error ? err.message : 'Could not load that image.')
+    } finally {
+      setUploadingPhoto(false)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -343,6 +423,7 @@ function EditProfileModal({
     const result = await saveProfile(address, {
       bio: bioDraft,
       avatarVariant: avatarDraft,
+      avatarUrl: avatarUrlDraft,
       twitter: twitterDraft,
       github: githubDraft,
       website: websiteDraft,
@@ -353,6 +434,7 @@ function EditProfileModal({
         ...profile,
         bio: bioDraft.trim(),
         avatar_variant: avatarDraft,
+        avatar_url: avatarUrlDraft,
         twitter: twitterDraft.trim(),
         github: githubDraft.trim(),
         website: websiteDraft.trim(),
@@ -377,41 +459,93 @@ function EditProfileModal({
         }}
         className="flex flex-col gap-5"
       >
-        {/* Avatar live preview + selector */}
+        {/* Profile Picture: Gallery upload + Geometric fallback */}
         <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-3.5 p-3 rounded-xl bg-[#FAF9F2] border border-[#111]/10">
-            <div className="rounded-xl overflow-hidden border border-[#111]/12 shrink-0 bg-[#FFFDF0]">
-              <PixelAvatar address={address} size={52} variant={avatarDraft} />
+          <div className="flex items-center gap-3.5 p-3.5 rounded-xl bg-[#FAF9F2] border border-[#111]/10">
+            <div className="w-[56px] h-[56px] rounded-xl overflow-hidden border border-[#111]/12 shrink-0 bg-[#FFFDF0]">
+              <PixelAvatar
+                address={address}
+                size={56}
+                variant={avatarDraft}
+                src={avatarUrlDraft || undefined}
+              />
             </div>
-            <div className="min-w-0">
-              <p className="text-[13px] font-semibold text-[#111]">Geometric Identity</p>
-              <p className="text-[12px] text-[#111]/55">
-                Deterministic pixel mark derived from your wallet address.
-              </p>
+            <div className="min-w-0 flex-1 flex flex-col gap-2">
+              <div>
+                <p className="text-[13px] font-semibold text-[#111]">Profile Picture</p>
+                <p className="text-[11.5px] text-[#111]/55">
+                  Upload a photo from your gallery or pick a geometric mark below.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={e => {
+                    void handlePhotoPick(e)
+                  }}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingPhoto || saving}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#111] hover:bg-[#222] text-[#FFFDF0] text-[12px] font-medium transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <ImagePlus className="w-3.5 h-3.5" />
+                  <span>
+                    {uploadingPhoto
+                      ? 'Processing…'
+                      : avatarUrlDraft
+                        ? 'Change Photo'
+                        : 'Choose from Gallery'}
+                  </span>
+                </button>
+                {avatarUrlDraft && (
+                  <button
+                    type="button"
+                    onClick={() => setAvatarUrlDraft('')}
+                    disabled={uploadingPhoto || saving}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[#111]/15 bg-white hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 text-[12px] font-medium text-[#111]/70 transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Remove</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-6 gap-2" role="radiogroup" aria-label="Avatar style">
-            {Array.from({ length: AVATAR_VARIANT_COUNT }, (_, v) => {
-              const active = v === avatarDraft
-              return (
-                <button
-                  key={v}
-                  type="button"
-                  role="radio"
-                  aria-checked={active}
-                  aria-label={`Avatar style ${v + 1}`}
-                  onClick={() => setAvatarDraft(v)}
-                  className={`rounded-xl overflow-hidden border p-1 bg-[#FFFDF0] flex items-center justify-center transition-all cursor-pointer ${
-                    active
-                      ? 'border-[#111] ring-2 ring-[#111] ring-offset-1'
-                      : 'border-[#111]/12 hover:border-[#111]/40 opacity-80 hover:opacity-100'
-                  }`}
-                >
-                  <PixelAvatar address={address} size={36} variant={v} />
-                </button>
-              )
-            })}
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[11px] font-mono-ui uppercase tracking-wider text-[#111]/45">
+              Or choose a geometric avatar
+            </span>
+            <div className="grid grid-cols-6 gap-2" role="radiogroup" aria-label="Avatar style">
+              {Array.from({ length: AVATAR_VARIANT_COUNT }, (_, v) => {
+                const active = !avatarUrlDraft && v === avatarDraft
+                return (
+                  <button
+                    key={v}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    aria-label={`Avatar style ${v + 1}`}
+                    onClick={() => {
+                      setAvatarUrlDraft('')
+                      setAvatarDraft(v)
+                    }}
+                    className={`rounded-xl overflow-hidden border p-1 bg-[#FFFDF0] flex items-center justify-center transition-all cursor-pointer ${
+                      active
+                        ? 'border-[#111] ring-2 ring-[#111] ring-offset-1'
+                        : 'border-[#111]/12 hover:border-[#111]/40 opacity-80 hover:opacity-100'
+                    }`}
+                  >
+                    <PixelAvatar address={address} size={36} variant={v} />
+                  </button>
+                )
+              })}
+            </div>
           </div>
         </div>
 
@@ -1521,7 +1655,12 @@ function ProfilePageContent({
             {/* Avatar */}
             <div className="relative shrink-0">
               <div className="w-[80px] h-[80px] rounded-2xl overflow-hidden border border-[#111]/12 bg-[#FFFDF0] shadow-sm">
-                <PixelAvatar address={address} size={80} variant={profile.avatar_variant} />
+                <PixelAvatar
+                  address={address}
+                  size={80}
+                  variant={profile.avatar_variant}
+                  src={profile.avatar_url}
+                />
               </div>
               {isOwn && (
                 <button

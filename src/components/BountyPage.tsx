@@ -1568,7 +1568,7 @@ function PosterCard({ poster }: { poster: string }) {
           className="group flex items-center gap-3 p-2.5 bg-white border-[2.5px] border-[#111] rounded-xl shadow-hard-xs hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform"
         >
           <div className="border-[2px] border-[#111] rounded-xl overflow-hidden shrink-0 shadow-hard-xs bg-[#FFFDF0]">
-            <PixelAvatar address={poster} size={46} variant={profile.avatar_variant} />
+            <PixelAvatar address={poster} size={46} variant={profile.avatar_variant} src={profile.avatar_url} />
           </div>
           <div className="flex flex-col min-w-0 flex-1">
             <span className="font-heading text-[15px] font-extrabold text-[#111] group-hover:text-[#1A1AE6] truncate">

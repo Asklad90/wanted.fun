@@ -262,13 +262,14 @@ export async function setVisibility(
 export interface OffchainProfile {
   bio: string
   avatar_variant: number
+  avatar_url?: string
   twitter?: string
   github?: string
   website?: string
   created_at?: number
 }
 
-const PROFILE_DEFAULT: OffchainProfile = { bio: '', avatar_variant: 0, twitter: '', github: '', website: '' }
+const PROFILE_DEFAULT: OffchainProfile = { bio: '', avatar_variant: 0, avatar_url: '', twitter: '', github: '', website: '' }
 
 /** Public — no auth needed. Returns defaults if the wallet has never saved a profile. */
 export async function fetchProfile(address: string): Promise<OffchainProfile> {
@@ -279,6 +280,7 @@ export async function fetchProfile(address: string): Promise<OffchainProfile> {
     return {
       bio: data.bio ?? '',
       avatar_variant: data.avatar_variant ?? 0,
+      avatar_url: data.avatar_url ?? '',
       twitter: data.twitter ?? '',
       github: data.github ?? '',
       website: data.website ?? '',
@@ -313,13 +315,14 @@ export async function fetchWalletSubmissions(wallet: string): Promise<bigint[]> 
 export interface SaveProfileInput {
   bio: string
   avatarVariant: number
+  avatarUrl?: string
   twitter?: string
   github?: string
   website?: string
 }
 
 /**
- * Save your own bio, avatar variant, and social links.
+ * Save your own bio, avatar variant, custom profile photo, and social links.
  * Directly saves offchain without requiring an unnecessary wallet signature popup.
  */
 export async function saveProfile(
@@ -333,6 +336,7 @@ export async function saveProfile(
     : {
         bio: input.bio,
         avatar_variant: input.avatarVariant,
+        ...(input.avatarUrl !== undefined ? { avatar_url: input.avatarUrl } : {}),
         twitter: input.twitter ?? '',
         github: input.github ?? '',
         website: input.website ?? '',

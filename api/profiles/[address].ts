@@ -5,6 +5,8 @@ import { createRateLimiter, getClientIp } from '../_rate-limit.js'
 
 const MAX_BIO_LEN = 160
 const MAX_AVATAR_VARIANT = 11
+const MAX_AVATAR_URL_LEN = 220_000
+const SAFE_DATA_IMAGE_RE = /^data:image\/(jpeg|jpg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/
 
 // GET: 120 reads per IP per minute (every profile view hits this)
 const getLimiter = createRateLimiter({ windowMs: 60 * 1000, max: 120 })
@@ -30,11 +32,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (getLimiter.isLimited(ip)) return res.status(429).json({ error: 'Too many requests' })
 
       const { rows } = await pool.sql`
-        SELECT bio, avatar_variant, twitter, github, website, created_at FROM profiles WHERE address = ${address}
+        SELECT bio, avatar_variant, avatar_url, twitter, github, website, created_at FROM profiles WHERE address = ${address}
       `
       let row = rows[0] as {
         bio: string | null
         avatar_variant: number
+        avatar_url: string | null
         twitter: string | null
         github: string | null
         website: string | null
@@ -63,6 +66,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         row = {
           bio: '',
           avatar_variant: 0,
+          avatar_url: '',
           twitter: '',
           github: '',
           website: '',
@@ -88,6 +92,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({
         bio: row.bio ?? '',
         avatar_variant: row.avatar_variant ?? 0,
+        avatar_url: row.avatar_url ?? '',
         twitter: row.twitter ?? '',
         github: row.github ?? '',
         website: row.website ?? '',
@@ -102,6 +107,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const body = (req.body ?? {}) as {
         bio?: string
         avatar_variant?: number
+        avatar_url?: string
         twitter?: string
         github?: string
         website?: string
@@ -128,6 +134,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       let avatarVariant = typeof body.avatar_variant === 'number' ? Math.trunc(body.avatar_variant) : 0
       if (!Number.isFinite(avatarVariant) || avatarVariant < 0 || avatarVariant > MAX_AVATAR_VARIANT) avatarVariant = 0
 
+      const hasAvatarUrl = typeof body.avatar_url === 'string'
+      let avatarUrl = ''
+      if (hasAvatarUrl) {
+        const trimmedAvatar = body.avatar_url!.trim()
+        if (trimmedAvatar.length > 0) {
+          if (trimmedAvatar.length > MAX_AVATAR_URL_LEN) {
+            return res.status(400).json({ error: 'Profile image is too large. Please choose a smaller photo.' })
+          }
+          if (!SAFE_DATA_IMAGE_RE.test(trimmedAvatar)) {
+            return res.status(400).json({ error: 'Unsupported profile image format. Use PNG, JPG, WebP, or GIF.' })
+          }
+          avatarUrl = trimmedAvatar
+        }
+      }
+
       // Clean social handles: strip leading @ or url prefixes if pasted
       let twitter = typeof body.twitter === 'string' ? body.twitter.trim().replace(/^@/, '').replace(/^(https?:\/\/)?(www\.)?(twitter|x)\.com\//, '').replace(/[/?#].*$/, '').trim() : ''
       if (twitter.length > 50) twitter = twitter.slice(0, 50)
@@ -140,19 +161,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const now = Math.floor(Date.now() / 1000)
       const { rows: updatedRows } = await pool.sql`
-        INSERT INTO profiles (address, bio, avatar_variant, twitter, github, website, created_at, updated_at)
-        VALUES (${address}, ${bio}, ${avatarVariant}, ${twitter}, ${github}, ${website}, ${now}, ${now})
+        INSERT INTO profiles (address, bio, avatar_variant, avatar_url, twitter, github, website, created_at, updated_at)
+        VALUES (${address}, ${bio}, ${avatarVariant}, ${avatarUrl}, ${twitter}, ${github}, ${website}, ${now}, ${now})
         ON CONFLICT (address) DO UPDATE SET
           bio = ${bio},
           avatar_variant = ${avatarVariant},
+          avatar_url = CASE WHEN ${hasAvatarUrl} THEN ${avatarUrl} ELSE profiles.avatar_url END,
           twitter = ${twitter},
           github = ${github},
           website = ${website},
           updated_at = ${now}
-        RETURNING created_at
+        RETURNING created_at, avatar_url
       `
       const createdAt = updatedRows[0]?.created_at ? Number(updatedRows[0].created_at) : now
-      return res.status(200).json({ ok: true, bio, avatar_variant: avatarVariant, twitter, github, website, created_at: createdAt })
+      const savedAvatarUrl = typeof updatedRows[0]?.avatar_url === 'string' ? updatedRows[0].avatar_url : avatarUrl
+      return res.status(200).json({ ok: true, bio, avatar_variant: avatarVariant, avatar_url: savedAvatarUrl, twitter, github, website, created_at: createdAt })
     }
 
     return res.status(405).json({ error: 'Method not allowed' })

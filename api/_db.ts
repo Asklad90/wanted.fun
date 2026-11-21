@@ -105,6 +105,7 @@ export function ensureSchema(): Promise<void> {
           address TEXT PRIMARY KEY,
           bio TEXT,
           avatar_variant INTEGER NOT NULL DEFAULT 0,
+          avatar_url TEXT,
           twitter TEXT,
           github TEXT,
           website TEXT,
@@ -116,6 +117,7 @@ export function ensureSchema(): Promise<void> {
       await pool.sql`ALTER TABLE bounties ADD COLUMN IF NOT EXISTS require_social BOOLEAN NOT NULL DEFAULT FALSE`
       await pool.sql`ALTER TABLE bounties ADD COLUMN IF NOT EXISTS min_account_age_days INTEGER NOT NULL DEFAULT 0`
       await pool.sql`ALTER TABLE bounties ADD COLUMN IF NOT EXISTS min_onchain_tx BOOLEAN NOT NULL DEFAULT FALSE`
+      await pool.sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS avatar_url TEXT`
       await pool.sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS twitter TEXT`
       await pool.sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS github TEXT`
       await pool.sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS website TEXT`

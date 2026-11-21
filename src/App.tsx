@@ -27,7 +27,11 @@ function parseRoute(): ParsedRoute {
   if (typeof window === 'undefined') {
     return { view: 'wall', bountyId: null, externalBountyId: null, profileAddr: null }
   }
-  const hash = window.location.hash.replace(/^#\/?/, '').trim()
+  const rawHash = window.location.hash
+  if (rawHash === '#/' || rawHash === '#/wall') {
+    return { view: 'wall', bountyId: null, externalBountyId: null, profileAddr: null }
+  }
+  const hash = rawHash.replace(/^#\/?/, '').trim()
   const pathname = window.location.pathname.replace(/^\//, '').trim()
   const clean = hash || pathname
   if (!clean || clean === 'wall') {
@@ -122,17 +126,20 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, Error
 }
 
 const pageVariants = {
-  initial: { opacity: 0, y: 14, scale: 0.992 },
-  animate: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.26, ease: [0.22, 1, 0.36, 1] } },
-  exit:    { opacity: 0, y: -8, scale: 0.995, transition: { duration: 0.15, ease: 'easeIn' } },
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.22, ease: [0.22, 1, 0.36, 1] } },
 }
 
 function PageView({ children, narrow = false }: { children: React.ReactNode; narrow?: boolean }) {
   return (
-    <motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit">
+    <motion.div variants={pageVariants} initial="initial" animate="animate">
       {narrow ? <div className="max-w-[1120px] mx-auto w-full">{children}</div> : children}
     </motion.div>
   )
+}
+
+function routeKeyOf(r: ParsedRoute): string {
+  return `${r.view}|${r.bountyId?.toString() ?? ''}|${r.externalBountyId ?? ''}|${r.profileAddr ?? ''}`
 }
 
 export default function App() {
@@ -142,6 +149,7 @@ export default function App() {
   const [scrollProgress, setScrollProgress] = useState(0)
 
   const routeViewRef = useRef<ParsedRoute['view']>(route.view)
+  const routeKeyRef = useRef<string>(routeKeyOf(route))
   const wallScrollYRef = useRef(0)
   const pendingScrollRestoreRef = useRef(false)
   const explicitNavToWallRef = useRef(false)
@@ -149,7 +157,8 @@ export default function App() {
 
   useEffect(() => {
     routeViewRef.current = route.view
-  }, [route.view])
+    routeKeyRef.current = routeKeyOf(route)
+  }, [route])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -176,10 +185,16 @@ export default function App() {
     }
 
     function handleRouteChange() {
-      const prevView = routeViewRef.current
       const nextRoute = parseRoute()
+      const nextKey = routeKeyOf(nextRoute)
+      // Browsers often fire both popstate and hashchange back-to-back for the same navigation.
+      // Ignore duplicate route events so we don't clobber scroll restore or trigger redundant remounts.
+      if (nextKey === routeKeyRef.current) return
+
+      const prevView = routeViewRef.current
       hasInAppHistoryRef.current = true
       routeViewRef.current = nextRoute.view
+      routeKeyRef.current = nextKey
       setRoute(nextRoute)
 
       const isExplicitWallNav = explicitNavToWallRef.current
@@ -505,64 +520,64 @@ export default function App() {
       {/* ─── Main ─────────────────────────────────────────────────────────────── */}
       <main className="flex-1 max-w-[1280px] mx-auto w-full px-4 py-6">
         <ErrorBoundary>
-          <AnimatePresence mode="wait">
-            {view === 'profile' && activeProfileAddr ? (
-              <PageView key="profile" narrow>
-                <ProfilePage
-                  address={activeProfileAddr}
-                  onBack={goBack}
-                  onSelectBounty={openBounty}
-                  onCreateBounty={openCreate}
-                  onBrowseWall={() => {
-                    explicitNavToWallRef.current = true
-                    window.location.hash = '#/'
-                  }}
-                />
-              </PageView>
-            ) : view === 'bounty' && activeBountyId !== null ? (
-              <PageView key={`bounty-${activeBountyId}`} narrow>
-                <BountyPage bountyId={activeBountyId} onBack={goBack} onDataChange={() => setRefreshKey(k => k + 1)} />
-              </PageView>
-            ) : view === 'external-bounty' && activeExternalBountyId !== null ? (
-              <PageView key={`external-${activeExternalBountyId}`} narrow>
-                <ExternalBountyPage externalId={activeExternalBountyId} onBack={goBack} />
-              </PageView>
-            ) : view === 'create' ? (
-              <PageView key="create" narrow>
-                <div className="max-w-2xl mx-auto">
-                  <CreateBountyForm onClose={goBack} onSuccess={onCreated} />
-                </div>
-              </PageView>
-            ) : view === 'how-it-works' ? (
-              <PageView key="how-it-works" narrow>
-                <HowItWorksPage onCreateBounty={openCreate} onBrowse={() => goTo('wall')} />
-              </PageView>
-            ) : view === 'privacy' ? (
-              <PageView key="privacy" narrow>
-                <PrivacyPage onBack={goBack} />
-              </PageView>
-            ) : view === 'not-found' ? (
-              <PageView key="not-found" narrow>
-                <NotFoundPage
-                  onBackToWall={() => {
-                    explicitNavToWallRef.current = true
-                    window.location.hash = '#/'
-                  }}
-                  onHowItWorks={() => { window.location.hash = '#/how-it-works' }}
-                />
-              </PageView>
-            ) : (
-              <PageView key="wall">
-                <WallPage
-                  onSelectBounty={openBounty}
-                  onSelectExternalBounty={openExternalBounty}
-                  onCreateBounty={openCreate}
-                  onWallMounted={handleWallMounted}
-                  refreshKey={refreshKey}
-                />
-              </PageView>
-            )}
-          </AnimatePresence>
+          {view === 'profile' && activeProfileAddr ? (
+            <PageView key={`profile-${activeProfileAddr}`} narrow>
+              <ProfilePage
+                address={activeProfileAddr}
+                onBack={() => {
+                  window.location.hash = '#/'
+                }}
+                onSelectBounty={openBounty}
+                onCreateBounty={openCreate}
+                onBrowseWall={() => {
+                  explicitNavToWallRef.current = true
+                  window.location.hash = '#/'
+                }}
+              />
+            </PageView>
+          ) : view === 'bounty' && activeBountyId !== null ? (
+            <PageView key={`bounty-${activeBountyId}`} narrow>
+              <BountyPage bountyId={activeBountyId} onBack={goBack} onDataChange={() => setRefreshKey(k => k + 1)} />
+            </PageView>
+          ) : view === 'external-bounty' && activeExternalBountyId !== null ? (
+            <PageView key={`external-${activeExternalBountyId}`} narrow>
+              <ExternalBountyPage externalId={activeExternalBountyId} onBack={goBack} />
+            </PageView>
+          ) : view === 'create' ? (
+            <PageView key="create" narrow>
+              <div className="max-w-2xl mx-auto">
+                <CreateBountyForm onClose={goBack} onSuccess={onCreated} />
+              </div>
+            </PageView>
+          ) : view === 'how-it-works' ? (
+            <PageView key="how-it-works" narrow>
+              <HowItWorksPage onCreateBounty={openCreate} onBrowse={() => goTo('wall')} />
+            </PageView>
+          ) : view === 'privacy' ? (
+            <PageView key="privacy" narrow>
+              <PrivacyPage onBack={goBack} />
+            </PageView>
+          ) : view === 'not-found' ? (
+            <PageView key="not-found" narrow>
+              <NotFoundPage
+                onBackToWall={() => {
+                  explicitNavToWallRef.current = true
+                  window.location.hash = '#/'
+                }}
+                onHowItWorks={() => { window.location.hash = '#/how-it-works' }}
+              />
+            </PageView>
+          ) : (
+            <PageView key="wall">
+              <WallPage
+                onSelectBounty={openBounty}
+                onSelectExternalBounty={openExternalBounty}
+                onCreateBounty={openCreate}
+                onWallMounted={handleWallMounted}
+                refreshKey={refreshKey}
+              />
+            </PageView>
+          )}
         </ErrorBoundary>
       </main>
 

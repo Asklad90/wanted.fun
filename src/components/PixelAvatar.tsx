@@ -1,6 +1,8 @@
+import { useState } from 'react'
+
 /**
- * Deterministic pixel-art block avatar generated from an Ethereum address.
- * Inline SVG only — no external images, no canvas.
+ * Deterministic pixel-art block avatar generated from an Ethereum address,
+ * with optional custom profile image override (`src`).
  */
 
 interface PixelAvatarProps {
@@ -8,6 +10,8 @@ interface PixelAvatarProps {
   size?: number
   /** 0–11. Picks a different look for the same address — lets someone "customize" their avatar without an upload. */
   variant?: number
+  /** Optional custom profile picture (data URL or image URL). Falls back to pixel art if omitted or broken. */
+  src?: string
 }
 
 /** How many distinct looks a single address can produce. Keep in sync with the server's MAX_AVATAR_VARIANT. */
@@ -27,7 +31,29 @@ function hashAddress(addr: string, variant: number): number[] {
 
 const PALETTE = ['#FF3E9A', '#7FF3F0', '#C6F23A', '#FFE600', '#8B5CF6', '#FF6B57', '#1A1AE6', '#1FB5A5']
 
-export function PixelAvatar({ address, size = 48, variant = 0 }: PixelAvatarProps) {
+export function PixelAvatar({ address, size = 48, variant = 0, src }: PixelAvatarProps) {
+  const [failedSrc, setFailedSrc] = useState<string | null>(null)
+  const trimmedSrc = src?.trim() ?? ''
+  const showImage = trimmedSrc.length > 0 && failedSrc !== trimmedSrc
+
+  if (showImage) {
+    return (
+      <img
+        src={trimmedSrc}
+        alt={`Avatar for ${address.slice(0, 6)}...`}
+        width={size}
+        height={size}
+        onError={() => setFailedSrc(trimmedSrc)}
+        style={{
+          width: `${size}px`,
+          height: `${size}px`,
+          display: 'block',
+          objectFit: 'cover',
+        }}
+      />
+    )
+  }
+
   const bytes = hashAddress(address, variant)
   const GRID = 5 // 5×5 mirrored grid
   const cellSize = size / GRID
