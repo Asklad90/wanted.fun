@@ -84,12 +84,19 @@ export function SkeletonSubmissionRow() {
 // ─── Profile bounty row placeholder ──────────────────────────────────────────
 export function SkeletonBountyRow() {
   return (
-    <div className="border-[3px] border-[#111]/20 rounded-lg p-3 bg-[#FFFDF0]/60 flex items-center justify-between gap-2 h-14">
-      <div className="flex flex-col gap-1.5 flex-1">
-        <SkeletonLine width="60%" height="11px" />
-        <SkeletonLine width="40%" height="9px" />
+    <div className="px-5 sm:px-6 py-4 flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-2 flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <SkeletonLine width="42px" height="14px" />
+          <SkeletonLine width="54px" height="16px" className="rounded-full" />
+        </div>
+        <SkeletonLine width="58%" height="15px" />
+        <SkeletonLine width="32%" height="11px" />
       </div>
-      <SkeletonLine width="48px" height="20px" className="rounded-full shrink-0" />
+      <div className="flex flex-col items-end gap-1.5 shrink-0">
+        <SkeletonLine width="78px" height="16px" />
+        <SkeletonLine width="44px" height="10px" />
+      </div>
     </div>
   )
 }

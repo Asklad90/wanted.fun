@@ -289,6 +289,27 @@ export async function fetchProfile(address: string): Promise<OffchainProfile> {
   }
 }
 
+/** Fetch bounty IDs where a wallet has submitted off-chain work. */
+export async function fetchWalletSubmissions(wallet: string): Promise<bigint[]> {
+  try {
+    const res = await fetch(`/api/submissions-by-wallet?wallet=${wallet.toLowerCase()}`)
+    if (!res.ok) return []
+    const data = (await res.json()) as { bountyIds?: string[] }
+    if (!Array.isArray(data.bountyIds)) return []
+    const ids: bigint[] = []
+    for (const raw of data.bountyIds) {
+      try {
+        ids.push(BigInt(raw))
+      } catch {
+        // ignore malformed ids
+      }
+    }
+    return ids
+  } catch {
+    return []
+  }
+}
+
 export interface SaveProfileInput {
   bio: string
   avatarVariant: number
